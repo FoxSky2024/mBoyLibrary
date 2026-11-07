@@ -1,4 +1,4 @@
-# GBA Library (alpha)
+# GBA Library (beta 0.2)
 
 Emulador de Game Boy Advance para Android (nucleo [mGBA](https://mgba.io/)) con la biblioteca
 organizada como la de Steam: cuadricula con portadas, favoritos, colecciones, orden por tiempo
@@ -34,7 +34,7 @@ Controles fisicos: cruceta/stick, A/B/X/Y, L1/R1, Start/Select; teclado: flechas
 A=L, S=R, Enter=Start, Borrar=Select.
 
 ## Estado
-Alpha: solo emulador + biblioteca. Mira `PROGRESS.md` para el detalle y lo que sigue.
+Beta 0.2: sonido corregido, imagen pixel perfect (OpenGL), todo en horizontal, biblioteca estilo Steam, menu en juego y personalizacion. Mira `PROGRESS.md` para el detalle y lo que sigue.
 
 ## Legal
 No incluye ROMs ni BIOS. Usa solo juegos que poseas. mGBA se distribuye bajo MPL-2.0.
