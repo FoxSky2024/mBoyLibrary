@@ -42,7 +42,7 @@ class GbaGlView(context: Context) : GLSurfaceView(context) {
         setEGLContextClientVersion(2)
         preserveEGLContextOnPause = true
         setRenderer(renderer)
-        renderMode = RENDERMODE_CONTINUOUS
+        renderMode = GLSurfaceView.RENDERMODE_CONTINUOUSLY
     }
 
     private inner class GlRenderer : GLSurfaceView.Renderer {

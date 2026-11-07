@@ -49,6 +49,7 @@ android {
 }
 
 dependencies {
+    implementation("org.apache.commons:commons-compress:1.26.0")
     val composeBom = platform("androidx.compose:compose-bom:2024.10.01")
     implementation(composeBom)
     implementation("androidx.compose.ui:ui")
