@@ -1,0 +1,21 @@
+package app.gbalibrary.ui
+
+import java.text.DateFormat
+import java.util.Date
+
+fun formatPlayTime(seconds: Long): String = when {
+    seconds <= 0 -> "Sin jugar"
+    seconds < 60 -> "$seconds s"
+    seconds < 3600 -> "${seconds / 60} min"
+    else -> "${seconds / 3600} h ${(seconds % 3600) / 60} min"
+}
+
+fun formatDate(ms: Long): String =
+    if (ms <= 0) "Nunca"
+    else DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(ms))
+
+fun formatSize(bytes: Long): String = when {
+    bytes < 1024 -> "$bytes B"
+    bytes < 1024 * 1024 -> "${bytes / 1024} KB"
+    else -> String.format("%.1f MB", bytes / 1048576.0)
+}
