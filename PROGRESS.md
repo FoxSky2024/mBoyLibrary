@@ -4,7 +4,7 @@
 
 ## Estado: 0.2.1 — codigo escrito, NO compilado ni probado (ver CHANGELOG.md)
 
-0.2.1 agrega zip/7z, editor de controles, mando, vinilo+playlist, Eevee, Ajustes nuevos y guardado por ROM. Primer paso: build en GitHub Actions y pegar errores.
+0.2.1 agrega zip/7z, editor de controles, mando, vinilo+playlist, Ajustes nuevos y guardado por ROM. Primer paso: build en GitHub Actions y pegar errores.
 
 Esta version se escribio sin Android SDK (no se pudo compilar localmente). Se reviso a mano (llaves, nombres JNI, imports), pero la primera build en GitHub Actions puede mostrar algun error menor: pegar el log y se corrige.
 
@@ -46,3 +46,6 @@ Esta version se escribio sin Android SDK (no se pudo compilar localmente). Se re
 - `blip_end_frame`/rates de mGBA 0.10.5: si sigue sin sonido, loguear `avail` en `Native.step`.
 - Desenfoque del fondo = reduccion de imagen (funciona en todas las versiones de Android).
 - mGBA es MPL-2.0 (mantener licencia). No se incluyen ROMs ni BIOS.
+
+## 0.3.0-beta
+Hecho: barra oculta, sin Eevee, UI de Ajustes, GB/GBC, disco con giro. Sin compilar localmente (sin SDK): verificar el build en Actions.

@@ -173,6 +173,28 @@ object Music {
         }
     }
 
+    /** Cambia de cancion sin el sonido de cassette (lo usa el disco: [delta] +1 siguiente, -1 anterior). */
+    fun change(delta: Int) {
+        val ctx = appCtx ?: return
+        val n = order.size
+        if (n == 0) return
+        pos = ((pos + delta) % n + n) % n
+        play(ctx, order[pos], false)
+    }
+
+    /** Nombre de la cancion vecina (para la vista previa al arrastrar el disco). */
+    fun peek(delta: Int): String {
+        val ctx = appCtx ?: return ""
+        val n = order.size
+        if (n == 0) return ""
+        val uri = tracks.getOrNull(order[((pos + delta) % n + n) % n]) ?: return ""
+        return try {
+            DocumentFile.fromSingleUri(ctx, uri)?.name?.substringBeforeLast('.') ?: ""
+        } catch (e: Exception) {
+            ""
+        }
+    }
+
     /** Siguiente cancion (con sonido de cambio de cassette). */
     fun next() {
         skip(true)
@@ -316,4 +338,28 @@ object Sfx {
 
     fun click() = play(ToneGenerator.TONE_PROP_BEEP, 40)
     fun enter() = play(ToneGenerator.TONE_PROP_ACK, 120)
+}
+
+/** Clic corto del disco (res/raw/disc_click.wav), volumen bajo. */
+object DiscClick {
+    private var pool: android.media.SoundPool? = null
+    private var id = 0
+    private var ready = false
+
+    fun init(ctx: Context) {
+        if (pool != null) return
+        val p = android.media.SoundPool.Builder()
+            .setMaxStreams(2)
+            .setAudioAttributes(
+                AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build()
+            )
+            .build()
+        p.setOnLoadCompleteListener { _, _, status -> ready = status == 0 }
+        id = p.load(ctx.applicationContext, app.gbalibrary.R.raw.disc_click, 1)
+        pool = p
+    }
+
+    fun play() {
+        if (ready) pool?.play(id, 0.3f, 0.3f, 1, 0, 1f)
+    }
 }

@@ -1,6 +1,8 @@
 package app.gbalibrary.ui
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.EaseOut
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloatAsState
@@ -16,7 +18,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
@@ -36,6 +40,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -56,6 +65,59 @@ fun VinylOverlay(modifier: Modifier = Modifier) {
     val playing = Music.playing.value
     var showName by remember { mutableStateOf(false) }
     var tapStamp by remember { mutableIntStateOf(0) }
+
+    // Giro de moneda (eje Y) y arrastre vertical sobre el disco.
+    val ctx = LocalContext.current
+    val density = LocalDensity.current
+    val scope = rememberCoroutineScope()
+    val flip = remember { Animatable(0f) }
+    var dragY by remember { mutableStateOf(0f) }
+    var dragging by remember { mutableStateOf(false) }
+    var peekTitle by remember { mutableStateOf("") }
+    LaunchedEffect(Unit) { DiscClick.init(ctx) }
+    val thresholdPx = with(density) { 40.dp.toPx() }
+    val gesture = Modifier.pointerInput(Unit) {
+        detectVerticalDragGestures(
+            onDragStart = {
+                if (flip.isRunning) return@detectVerticalDragGestures
+                dragging = true
+                dragY = 0f
+            },
+            onVerticalDrag = { change, amount ->
+                if (!dragging) return@detectVerticalDragGestures
+                change.consume()
+                dragY += amount
+                // arriba = siguiente, abajo = anterior
+                val d = if (dragY < 0f) 1 else -1
+                if (kotlin.math.abs(dragY) > 8f) peekTitle = Music.peek(d)
+            },
+            onDragEnd = {
+                val total = dragY
+                dragging = false
+                dragY = 0f
+                if (kotlin.math.abs(total) >= thresholdPx && !flip.isRunning) {
+                    val delta = if (total < 0f) 1 else -1
+                    scope.launch {
+                        var fired = false
+                        flip.snapTo(0f)
+                        flip.animateTo(360f, tween(600, easing = EaseOut)) {
+                            // a mitad del giro (90 grados): suena el clic y cambia la cancion/caratula
+                            if (!fired && value >= 90f) {
+                                fired = true
+                                DiscClick.play()
+                                Music.change(delta)
+                            }
+                        }
+                        flip.snapTo(0f)
+                    }
+                }
+            },
+            onDragCancel = {
+                dragging = false
+                dragY = 0f
+            },
+        )
+    }
 
     // Cada cancion nueva muestra la tarjeta 5 s.
     LaunchedEffect(Music.trackStamp.intValue) {
@@ -101,26 +163,54 @@ fun VinylOverlay(modifier: Modifier = Modifier) {
                             Text(Music.artist.value, color = Color(0xFFB0BEC5), fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                     }
-                    Disc(size = 64, angle = angle)
+                    Box(gesture) { Disc(size = 64, angle = angle, flipY = flip.value) }
                 }
             }
             // Mini icono (aparece al desvanecerse la tarjeta). Tocar = mostrar el nombre.
             if (miniAlpha > 0.01f) {
                 Box(
                     Modifier
-                        .alpha(miniAlpha)
+                        .alpha(if (dragging) 0.75f else miniAlpha)
+                        .size(48.dp)
+                        .then(gesture)
                         .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { tapStamp++ },
-                ) { Disc(size = 34, angle = angle) }
+                    contentAlignment = Alignment.Center,
+                ) { Disc(size = 34, angle = angle, flipY = flip.value) }
+            }
+            // Vista previa de la cancion de destino (alpha 0.35) mientras se arrastra.
+            if (dragging && kotlin.math.abs(dragY) > 8f) {
+                val maxPx = with(density) { 48.dp.toPx() }
+                val off = dragY.coerceIn(-maxPx, maxPx)
+                Row(
+                    Modifier
+                        .offset { androidx.compose.ui.unit.IntOffset(0, (off * 0.6f).toInt() + (if (dragY < 0f) -maxPx.toInt() else maxPx.toInt())) }
+                        .alpha(0.35f),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    if (peekTitle.isNotEmpty()) {
+                        Text(peekTitle, color = Color.White, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 160.dp))
+                    }
+                    Disc(size = 34, angle = 0f, flipY = 0f)
+                }
             }
         }
     }
 }
 
 @Composable
-private fun Disc(size: Int, angle: Float) {
+private fun Disc(size: Int, angle: Float, flipY: Float = 0f) {
     val art = Music.art.value
     val accent = LocalPalette.current.accent
-    Box(Modifier.size(size.dp), contentAlignment = Alignment.Center) {
+    val camera = with(LocalDensity.current) { 12.dp.toPx() * 4f }
+    Box(
+        Modifier
+            .size(size.dp)
+            .graphicsLayer { rotationY = flipY; cameraDistance = camera }
+            // pasado 90 grados la cara se ve de espaldas: se contrarresta para que la caratula no salga espejada
+            .graphicsLayer { scaleX = if (flipY in 90f..270f) -1f else 1f },
+        contentAlignment = Alignment.Center,
+    ) {
         Canvas(Modifier.size(size.dp).graphicsLayer { rotationZ = angle }) {
             val r = this.size.width / 2f
             val c = Offset(r, r)

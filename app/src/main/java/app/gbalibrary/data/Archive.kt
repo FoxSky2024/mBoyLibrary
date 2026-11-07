@@ -17,7 +17,7 @@ import java.util.zip.ZipInputStream
  */
 object Archive {
     private const val TAG = "Archive"
-    private val ROM_EXT = setOf("gba", "agb")
+    private val ROM_EXT = setOf("gba", "agb", "gbc", "gb")
 
     enum class Kind { NONE, ZIP, SEVENZ }
 
@@ -98,9 +98,9 @@ object Archive {
 
     private fun cacheDir(ctx: Context) = File(ctx.cacheDir, "roms").apply { mkdirs() }
 
-    /** Descomprime la entrada [entry] del archivo a la cache y devuelve el .gba (o null). */
+    /** Descomprime la entrada [entry] del archivo a la cache y devuelve la ROM (.gba/.gbc/.gb) o null. */
     fun extractToCache(ctx: Context, uri: Uri, entry: String): File? = try {
-        val dest = File(cacheDir(ctx), "rom_${(uri.toString() + "|" + entry).hashCode().toUInt()}.gba")
+        val dest = File(cacheDir(ctx), "rom_${(uri.toString() + "|" + entry).hashCode().toUInt()}.${entry.substringAfterLast('.', "gba").lowercase()}")
         val ok = when (kind(ctx, uri)) {
             Kind.ZIP -> extractZip(ctx, uri, entry, dest)
             Kind.SEVENZ -> extract7z(ctx, uri, entry, dest)

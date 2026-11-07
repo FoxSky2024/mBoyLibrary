@@ -10,7 +10,7 @@ import java.io.InputStream
 import java.security.MessageDigest
 
 object RomScanner {
-    private val EXTENSIONS = setOf("gba", "agb")
+    private val EXTENSIONS = setOf("gba", "agb", "gbc", "gb")
 
     /** Recorre recursivamente una carpeta elegida con el selector de Android (SAF). */
     suspend fun scanTree(ctx: Context, tree: Uri): List<Game> = withContext(Dispatchers.IO) {

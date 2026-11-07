@@ -65,9 +65,6 @@ import app.gbalibrary.ui.GbaTheme
 import app.gbalibrary.ui.MenuActions
 import app.gbalibrary.ui.ControlsCanvas
 import app.gbalibrary.ui.ControlsEditorPanel
-import app.gbalibrary.ui.EeveeCompanion
-import app.gbalibrary.ui.EeveeSay
-import app.gbalibrary.ui.EeveeState
 import app.gbalibrary.data.Archive
 import app.gbalibrary.input.PadInput
 import kotlinx.coroutines.delay
@@ -85,7 +82,6 @@ class EmulatorActivity : ComponentActivity() {
     private lateinit var store: GameStore
     private val layout = ControlLayout()
     private var layoutScope = "global" // de donde se cargo el layout (y donde se guarda al terminar)
-    private val eevee = EeveeState()
     private val forceTouch = mutableStateOf(false) // mostrar tactiles aunque haya mando
     private val trigHeld = HashSet<Int>()
 
@@ -100,6 +96,8 @@ class EmulatorActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        applyImmersive()
+        watchBars()
         Settings.init(this)
         store = GameStore.get(this)
         val found = intent.getStringExtra(EXTRA_GAME_ID)?.let { store.get(it) }
@@ -170,7 +168,6 @@ class EmulatorActivity : ComponentActivity() {
     private fun setMenu(open: Boolean) {
         menuOpen.value = open
         syncPause()
-        if (open) eevee.say(EeveeSay.PAUSE)
     }
 
     private fun padShown(): Boolean {
@@ -204,7 +201,25 @@ class EmulatorActivity : ComponentActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         controller.hide(WindowInsetsCompat.Type.systemBars())
+        if (Build.VERSION.SDK_INT >= 28) {
+            window.attributes = window.attributes.apply {
+                layoutInDisplayCutoutMode = android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            }
+        }
     }
+
+    /** Si la barra aparece (deslizando desde arriba), vuelve a esconderse sola a los pocos segundos. */
+    @Suppress("DEPRECATION")
+    private fun watchBars() {
+        window.decorView.setOnSystemUiVisibilityChangeListener { vis ->
+            if (vis and android.view.View.SYSTEM_UI_FLAG_FULLSCREEN == 0) {
+                window.decorView.removeCallbacks(rehide)
+                window.decorView.postDelayed(rehide, 2500)
+            }
+        }
+    }
+
+    private val rehide = Runnable { applyImmersive() }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
@@ -216,6 +231,7 @@ class EmulatorActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         activityResumed = true
+        applyImmersive()
         resumedAt = SystemClock.elapsedRealtime()
         glView?.onResume()
         syncPause()
@@ -253,10 +269,7 @@ class EmulatorActivity : ComponentActivity() {
     private fun doSave(slot: String) {
         engine?.saveState(statePath(slot)) { ok ->
             flash(if (ok) "Estado guardado" else "No se pudo guardar")
-            if (ok) runOnUiThread {
-                eevee.say(EeveeSay.SAVED)
-                PadInput.rumble(80)
-            }
+            if (ok) runOnUiThread { PadInput.rumble(80) }
         }
     }
 
@@ -279,8 +292,10 @@ class EmulatorActivity : ComponentActivity() {
 
     private fun saveScreenshot(argb: IntArray): Boolean {
         return try {
-            val small = Bitmap.createBitmap(argb, 240, 160, Bitmap.Config.ARGB_8888)
-            val bmp = Bitmap.createScaledBitmap(small, 960, 640, false) // 4x sin suavizar
+            val vw = app.gbalibrary.emu.Native.videoWidth().coerceAtLeast(1)
+            val vh = (argb.size / vw).coerceAtLeast(1)
+            val small = Bitmap.createBitmap(argb, vw, vh, Bitmap.Config.ARGB_8888)
+            val bmp = Bitmap.createScaledBitmap(small, vw * 4, vh * 4, false) // 4x sin suavizar
             val name = "GBA_${game.title.replace(Regex("[^A-Za-z0-9]+"), "_")}_${System.currentTimeMillis()}.png"
             if (Build.VERSION.SDK_INT >= 29) {
                 val values = ContentValues().apply {
@@ -404,10 +419,6 @@ class EmulatorActivity : ComponentActivity() {
             eng.volume = Settings.volume.intValue
             eng.muted = Settings.muted.value
         }
-        LaunchedEffect(Unit) {
-            delay(900)
-            eevee.say(EeveeSay.ENTER)
-        }
         var fps by remember { mutableIntStateOf(0) }
         LaunchedEffect(Settings.showFps.value) {
             while (Settings.showFps.value) {
@@ -426,8 +437,6 @@ class EmulatorActivity : ComponentActivity() {
                     v.brightness = Settings.brightness.floatValue
                 },
             )
-
-            EeveeCompanion(eevee, layout, padShown() || editing.value, paused = menuOpen.value || editing.value)
 
             Controls(eng)
 
@@ -486,7 +495,6 @@ class EmulatorActivity : ComponentActivity() {
                             eng.reset()
                             setMenu(false)
                             flash("Juego reiniciado")
-                            eevee.say(EeveeSay.OOPS.random())
                         },
                         screenshot = { doScreenshot() },
                         exit = { finish() },
@@ -503,7 +511,6 @@ class EmulatorActivity : ComponentActivity() {
                         setSpeed = {
                             speed.intValue = it
                             eng.speed = it
-                            if (it >= 2) eevee.say(EeveeSay.FAST)
                         },
                     ),
                 )

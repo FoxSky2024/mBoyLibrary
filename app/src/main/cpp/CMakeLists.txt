@@ -28,7 +28,7 @@ ExternalProject_Add(mgba_ep
         -DBUILD_SHARED=OFF
         -DBUILD_STATIC=ON
         -DM_CORE_GBA=ON
-        -DM_CORE_GB=OFF
+        -DM_CORE_GB=ON
         -DBUILD_QT=OFF
         -DBUILD_SDL=OFF
         -DBUILD_LIBRETRO=OFF

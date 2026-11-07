@@ -5,6 +5,11 @@ object RomHeader {
     class Info(val title: String, val code: String, val maker: String, val valid: Boolean)
 
     fun parse(head: ByteArray, length: Int): Info? {
+        // Game Boy / Color: logo de Nintendo en 0x104 (CE ED ...); titulo en 0x134.
+        if (length >= 0x150 && (head[0x104].toInt() and 0xFF) == 0xCE && (head[0x105].toInt() and 0xFF) == 0xED) {
+            val t = String(head, 0x134, 15, Charsets.US_ASCII).filter { it.code in 32..126 }.trim()
+            return Info(title = t, code = "", maker = "", valid = true)
+        }
         if (length < 0xC0) return null
         fun ascii(off: Int, n: Int): String =
             String(head, off, n, Charsets.US_ASCII)

@@ -16,8 +16,10 @@ object Native {
 
     /** Ejecuta un frame y devuelve cuantos frames de audio estereo se escribieron en [audio]. */
     external fun step(audio: ShortArray, render: Boolean): Int
-    /** Copia el ultimo frame (240x160 RGBA) al buffer directo. True si habia frame nuevo. */
-    external fun copyFrame(dst: ByteBuffer): Boolean
+    /** Copia el ultimo frame (RGBA compacto) al buffer directo. 0 = sin frame nuevo; si no, (ancho shl 16) or alto. */
+    external fun copyFrame(dst: ByteBuffer): Int
+    external fun videoWidth(): Int
+    external fun videoHeight(): Int
     external fun saveState(path: String): Boolean
     external fun loadState(path: String): Boolean
     external fun screenshot(): IntArray?

@@ -20,10 +20,6 @@
 - Vinilo abajo a la derecha (solo biblioteca/ajustes): carátula y nombre 5 s, luego mini icono; tocar el mini icono muestra el nombre 5 s; se esconde al pausar.
 - Sonido sintetizado de "cambio de cassette" entre canciones.
 
-### P1 — Eevee compañero
-- Sprite pixel-art en el margen lateral (derecha por defecto, configurable) que esquiva pantalla y controles; esquinita si no hay margen.
-- Animaciones: parpadeo, cola, respiración, salto. Frases: entrar, guardar, pausar, x2/x3, reiniciar, charla aleatoria. Tocarlo da reacción aleatoria. Se activa/desactiva en Ajustes > Eevee.
-
 ### P2 — Ajustes
 - Nuevo layout con categorías laterales y una columna con scroll; botones y chips en FlowRow (nada encimado ni cortado).
 
@@ -31,5 +27,11 @@
 - El tipo de guardado (SRAM / FLASH 64K / FLASH 128K / EEPROM) se detecta leyendo las cadenas de la librería de guardado dentro de la ROM y se fuerza en mGBA, no por código de juego.
 
 ### Límites conocidos
-- Eevee no detecta "Game Over" automáticamente (haría falta un mapa de RAM por juego); reacciona al reiniciar.
 - Código escrito sin poder compilar en este entorno (sin Android SDK ni red): la primera build en GitHub Actions puede pedir correcciones menores.
+
+## 0.3.0-beta
+- Barra de Android oculta dentro del emulador (aparece al deslizar y se vuelve a esconder).
+- Se elimino Eevee por completo.
+- Ajustes y biblioteca: interfaz 0.2.0, barra superior sin encimarse, titulos en 2 lineas sin "...".
+- El emulador abre .gba, .gbc y .gb (nucleo GB activado en mGBA; tamano de imagen dinamico).
+- Disco de musica: giro de moneda, clic, deslizar arriba/abajo para cambiar de cancion.

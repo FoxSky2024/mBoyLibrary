@@ -54,16 +54,13 @@ private val SolidColors = listOf(
     0xFF1B2838, 0xFF000000, 0xFF263238, 0xFF0D2B3E, 0xFF1B3A1F, 0xFF3A1F1F, 0xFF2E1F47, 0xFF3E2C1C,
 ).map { it.toInt() }
 
-private val CATEGORIES = listOf("Perfil", "Apariencia", "Controles", "Música", "Eevee", "Biblioteca")
-
 /**
- * Ajustes: navegacion lateral por categorias + UNA sola columna con scroll. Todo lo que tiene
- * varios botones o chips usa FlowRow (se acomoda en varias lineas) para que nada se encime ni se corte.
+ * Ajustes (diseno de la 0.2.0): cabecera + dos columnas de tarjetas con scroll. Las tarjetas son
+ * semi-opacas para que se lean sobre cualquier fondo. Botones y chips usan FlowRow (nada se encima).
  */
 @Composable
 fun SettingsScreen(vm: LibraryViewModel, actions: LibraryActions, onBack: () -> Unit) {
     val p = LocalPalette.current
-    var cat by remember { mutableIntStateOf(0) }
     var editingPad by remember { mutableStateOf(false) }
     val globalLayout = remember { ControlLayout().also { it.load("global") } }
 
@@ -72,40 +69,26 @@ fun SettingsScreen(vm: LibraryViewModel, actions: LibraryActions, onBack: () -> 
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
             Row(
-                Modifier.fillMaxWidth().height(52.dp).background(p.panel.copy(alpha = 0.95f)).padding(horizontal = 16.dp),
+                Modifier.fillMaxWidth().height(52.dp).background(p.panel.copy(alpha = 0.97f)).padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Text("← Volver", color = p.accent, fontWeight = FontWeight.Bold, modifier = Modifier.clickable(onClick = onBack).padding(8.dp))
+                Text("← Volver", color = p.accent, fontWeight = FontWeight.Bold, maxLines = 1, modifier = Modifier.clickable(onClick = onBack).padding(8.dp))
                 Text("Ajustes y personalización", color = p.text, fontWeight = FontWeight.Bold, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
-            Row(Modifier.fillMaxSize()) {
-                Column(
-                    Modifier.width(140.dp).fillMaxHeight().background(p.panel.copy(alpha = 0.7f)).verticalScroll(rememberScrollState()).padding(vertical = 8.dp),
-                ) {
-                    CATEGORIES.forEachIndexed { i, name ->
-                        Text(
-                            name,
-                            color = if (i == cat) p.accent else p.text,
-                            fontWeight = if (i == cat) FontWeight.Bold else FontWeight.Normal,
-                            maxLines = 1,
-                            modifier = Modifier.fillMaxWidth().background(if (i == cat) p.card else Color.Transparent)
-                                .clickable { Sfx.click(); cat = i }.padding(horizontal = 16.dp, vertical = 12.dp),
-                        )
-                    }
+            Row(
+                Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+                    .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 48.dp),
+                horizontalArrangement = Arrangement.spacedBy(20.dp),
+            ) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    ProfileSection(actions)
+                    AppearanceSection(actions)
                 }
-                Column(
-                    Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()).padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 48.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp),
-                ) {
-                    when (cat) {
-                        0 -> ProfileSection(actions)
-                        1 -> AppearanceSection(actions)
-                        2 -> ControlsSection(globalLayout) { editingPad = true }
-                        3 -> MusicSection(actions)
-                        4 -> EeveeSection()
-                        else -> LibrarySection(vm, actions)
-                    }
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    MusicSection(actions)
+                    ControlsSection(globalLayout) { editingPad = true }
+                    LibrarySection(vm, actions)
                 }
             }
         }
@@ -289,24 +272,6 @@ private fun folderLabel(uri: String): String = try {
 }
 
 @Composable
-private fun EeveeSection() {
-    val p = LocalPalette.current
-    Section("Eevee compañero") {
-        ToggleRow("Mostrar a Eevee dentro del juego", Settings.eeveeOn.value) { Settings.setEeveeOn(it) }
-        Text("Lado del margen", color = p.accent, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            FilterChip(selected = Settings.eeveeSide.intValue == 0, onClick = { Settings.setEeveeSide(0) }, label = { Text("Derecha") })
-            FilterChip(selected = Settings.eeveeSide.intValue == 1, onClick = { Settings.setEeveeSide(1) }, label = { Text("Izquierda") })
-        }
-        Text(
-            "Vive en el borde donde no hay pantalla y esquiva los controles. Tócalo para que reaccione. " +
-                "Si la pantalla ocupa todo, aparece chiquito en una esquina.",
-            color = p.dim, fontSize = 12.sp,
-        )
-    }
-}
-
-@Composable
 private fun LibrarySection(vm: LibraryViewModel, actions: LibraryActions) {
     val p = LocalPalette.current
     Section("Biblioteca") {
@@ -315,7 +280,7 @@ private fun LibrarySection(vm: LibraryViewModel, actions: LibraryActions) {
             OutlinedButton(onClick = actions.addFiles) { Text("Agregar archivos") }
             OutlinedButton(onClick = { vm.rescan() }) { Text("Volver a escanear") }
         }
-        Text("Acepta .gba, .zip y .7z (se descomprimen solo en la caché y se limpian al salir).", color = p.dim, fontSize = 12.sp)
+        Text("Acepta .gba, .gbc, .gb, .zip y .7z (se descomprimen solo en la caché y se limpian al salir).", color = p.dim, fontSize = 12.sp)
         Text("Esta app no incluye ROMs ni BIOS. Usa solo juegos que poseas legalmente.", color = p.dim, fontSize = 12.sp)
     }
 }
@@ -326,7 +291,11 @@ private fun LibrarySection(vm: LibraryViewModel, actions: LibraryActions) {
 private fun Section(title: String, content: @Composable () -> Unit) {
     val p = LocalPalette.current
     Column(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(p.panel.copy(alpha = 0.85f)).padding(14.dp),
+        Modifier.fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(p.panel.copy(alpha = 0.94f))
+            .border(1.dp, p.card, RoundedCornerShape(10.dp))
+            .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Text(title.uppercase(), color = p.accent, fontSize = 12.sp, fontWeight = FontWeight.Bold)

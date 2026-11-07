@@ -21,7 +21,7 @@ object VideoFilter {
 
 /** Modos de escala. */
 object VideoScale {
-    const val FIT = 0 // ajustar a pantalla manteniendo 3:2
+    const val FIT = 0 // ajustar a pantalla manteniendo la proporcion
     const val ORIGINAL = 1 // multiplo entero (pixeles perfectos)
     const val STRETCH = 2 // estirar a toda la pantalla
     const val FULL = 3 // llenar la pantalla recortando
@@ -46,8 +46,12 @@ class GbaGlView(context: Context) : GLSurfaceView(context) {
     }
 
     private inner class GlRenderer : GLSurfaceView.Renderer {
-        private val w = 240
-        private val h = 160
+        // Tamano actual de la imagen: GBA 240x160, GB/GBC 160x144 (lo informa el nativo).
+        private var w = 240
+        private var h = 160
+        private var texW = 0
+        private var texH = 0
+        private var uScanH = 0
         private var program = 0
         private var tex = 0
         private var aPos = 0
@@ -59,7 +63,7 @@ class GbaGlView(context: Context) : GLSurfaceView(context) {
         private var surfaceH = 1
         private var appliedFilter = -1
         private val pixels: ByteBuffer =
-            ByteBuffer.allocateDirect(w * h * 4).order(ByteOrder.nativeOrder())
+            ByteBuffer.allocateDirect(256 * 224 * 4).order(ByteOrder.nativeOrder())
         private val quad: FloatBuffer = ByteBuffer.allocateDirect(16 * 4)
             .order(ByteOrder.nativeOrder()).asFloatBuffer().apply {
                 // x, y, u, v  (v invertida: la fila 0 de la imagen va arriba)
@@ -85,9 +89,10 @@ class GbaGlView(context: Context) : GLSurfaceView(context) {
                 uniform sampler2D uTex;
                 uniform float uBright;
                 uniform float uScan;
+                uniform float uLines;
                 void main() {
                     vec3 c = texture2D(uTex, vUv).rgb * uBright;
-                    float f = fract(vUv.y * 160.0);
+                    float f = fract(vUv.y * uLines);
                     float d = abs(f - 0.5) * 2.0;
                     float line = 1.0 - uScan * 0.38 * d * d;
                     c *= line * (1.0 + uScan * 0.14);
@@ -100,6 +105,7 @@ class GbaGlView(context: Context) : GLSurfaceView(context) {
             uTex = GLES20.glGetUniformLocation(program, "uTex")
             uBright = GLES20.glGetUniformLocation(program, "uBright")
             uScan = GLES20.glGetUniformLocation(program, "uScan")
+            uScanH = GLES20.glGetUniformLocation(program, "uLines")
 
             val ids = IntArray(1)
             GLES20.glGenTextures(1, ids, 0)
@@ -107,11 +113,8 @@ class GbaGlView(context: Context) : GLSurfaceView(context) {
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, tex)
             GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE)
             GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE)
-            pixels.position(0)
-            GLES20.glTexImage2D(
-                GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA, w, h, 0,
-                GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, pixels,
-            )
+            texW = 0 // se (re)crea la textura al llegar el primer frame
+            texH = 0
             appliedFilter = -1 // fuerza aplicar el filtro (NEAREST/LINEAR) en el primer dibujo
             GLES20.glDisable(GLES20.GL_DEPTH_TEST)
             GLES20.glDisable(GLES20.GL_BLEND)
@@ -140,13 +143,26 @@ class GbaGlView(context: Context) : GLSurfaceView(context) {
             }
 
             pixels.position(0)
-            if (Native.copyFrame(pixels)) {
+            val dims = Native.copyFrame(pixels)
+            if (dims != 0) {
+                val nw = dims ushr 16
+                val nh = dims and 0xFFFF
                 pixels.position(0)
-                GLES20.glTexSubImage2D(
-                    GLES20.GL_TEXTURE_2D, 0, 0, 0, w, h,
-                    GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, pixels,
-                )
+                if (nw != texW || nh != texH) {
+                    // Cambio de tamano (otro nucleo): se redimensiona la textura.
+                    GLES20.glTexImage2D(
+                        GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA, nw, nh, 0,
+                        GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, pixels,
+                    )
+                    texW = nw; texH = nh; w = nw; h = nh
+                } else {
+                    GLES20.glTexSubImage2D(
+                        GLES20.GL_TEXTURE_2D, 0, 0, 0, nw, nh,
+                        GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, pixels,
+                    )
+                }
             }
+            if (texW == 0) return // aun no hay imagen
 
             // Rectangulo de destino segun el modo de escala.
             val sw = surfaceW.toFloat()
@@ -175,6 +191,7 @@ class GbaGlView(context: Context) : GLSurfaceView(context) {
             GLES20.glUseProgram(program)
             GLES20.glUniform1i(uTex, 0)
             GLES20.glUniform1f(uBright, brightness)
+            GLES20.glUniform1f(uScanH, h.toFloat())
             GLES20.glUniform1f(uScan, if (f == VideoFilter.CRT) 1f else 0f)
 
             quad.position(0)

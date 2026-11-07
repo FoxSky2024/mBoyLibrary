@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -130,22 +132,25 @@ fun LibraryApp(vm: LibraryViewModel, actions: LibraryActions, onPlay: (Game) -> 
 
     Box(Modifier.fillMaxSize()) {
         LibraryBackground()
-        when {
-            showSettings -> SettingsScreen(vm, actions, onBack = { showSettings = false })
-            detail != null -> GameDetail(
-                game = detail,
-                vm = vm,
-                actions = actions,
-                onBack = { Sfx.click(); detailId = null },
-                onPlay = { Sfx.enter(); onPlay(detail) },
-            )
-            else -> LibraryHome(
-                vm = vm,
-                actions = actions,
-                onOpen = { Sfx.click(); detailId = it.id },
-                onPlay = { Sfx.enter(); onPlay(it) },
-                onSettings = { Sfx.click(); showSettings = true },
-            )
+        // El contenido respeta barra de estado, notch y barra de navegacion (el fondo ocupa todo).
+        Box(Modifier.fillMaxSize().safeDrawingPadding()) {
+            when {
+                showSettings -> SettingsScreen(vm, actions, onBack = { showSettings = false })
+                detail != null -> GameDetail(
+                    game = detail,
+                    vm = vm,
+                    actions = actions,
+                    onBack = { Sfx.click(); detailId = null },
+                    onPlay = { Sfx.enter(); onPlay(detail) },
+                )
+                else -> LibraryHome(
+                    vm = vm,
+                    actions = actions,
+                    onOpen = { Sfx.click(); detailId = it.id },
+                    onPlay = { Sfx.enter(); onPlay(it) },
+                    onSettings = { Sfx.click(); showSettings = true },
+                )
+            }
         }
         // Vinilo abajo a la derecha (biblioteca y ajustes; nunca dentro del juego)
         VinylOverlay(Modifier.align(Alignment.BottomEnd))
@@ -247,15 +252,15 @@ private fun TopBar(
     var sortMenu by remember { mutableStateOf(false) }
     var addMenu by remember { mutableStateOf(false) }
     Row(
-        Modifier.fillMaxWidth().height(56.dp).background(p.panel.copy(alpha = 0.96f)).padding(horizontal = 16.dp),
+        Modifier.fillMaxWidth().height(56.dp).background(p.panel.copy(alpha = 0.97f)).padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text("◆", color = p.accent, fontSize = 22.sp)
-        Text(Settings.appName.value, color = p.text, fontWeight = FontWeight.Black, fontSize = 18.sp, maxLines = 1)
+        Text(Settings.appName.value, color = p.text, fontWeight = FontWeight.Black, fontSize = 18.sp, maxLines = 1, softWrap = false, modifier = Modifier.widthIn(max = 150.dp), overflow = TextOverflow.Ellipsis)
 
         Box(
-            Modifier.weight(1f).height(36.dp).clip(RoundedCornerShape(18.dp)).background(p.bg.copy(alpha = 0.8f)).padding(horizontal = 14.dp),
+            Modifier.weight(1f).widthIn(min = 100.dp).height(36.dp).clip(RoundedCornerShape(18.dp)).background(p.bg.copy(alpha = 0.8f)).padding(horizontal = 14.dp),
             contentAlignment = Alignment.CenterStart,
         ) {
             BasicTextField(
@@ -275,7 +280,7 @@ private fun TopBar(
         }
 
         Box {
-            Text("Orden: ${sort.label} ▾", color = p.text, fontSize = 13.sp, modifier = Modifier.clickable { sortMenu = true }.padding(6.dp))
+            Text("Orden: ${sort.label} ▾", color = p.text, fontSize = 13.sp, maxLines = 1, softWrap = false, modifier = Modifier.clickable { sortMenu = true }.padding(6.dp))
             DropdownMenu(expanded = sortMenu, onDismissRequest = { sortMenu = false }) {
                 SortMode.entries.forEach { m ->
                     DropdownMenuItem(text = { Text(m.label) }, onClick = { onSort(m); sortMenu = false })
@@ -284,22 +289,22 @@ private fun TopBar(
         }
 
         Box {
-            Text("＋", color = p.accent, fontSize = 24.sp, modifier = Modifier.clickable { Sfx.click(); addMenu = true }.padding(horizontal = 8.dp))
+            Text("＋", color = p.accent, fontSize = 24.sp, maxLines = 1, modifier = Modifier.clickable { Sfx.click(); addMenu = true }.padding(horizontal = 10.dp, vertical = 4.dp))
             DropdownMenu(expanded = addMenu, onDismissRequest = { addMenu = false }) {
                 DropdownMenuItem(text = { Text("Agregar carpeta de ROMs") }, onClick = { addMenu = false; actions.addFolder() })
-                DropdownMenuItem(text = { Text("Agregar archivos .gba") }, onClick = { addMenu = false; actions.addFiles() })
+                DropdownMenuItem(text = { Text("Agregar archivos (.gba .gbc .gb .zip .7z)") }, onClick = { addMenu = false; actions.addFiles() })
                 DropdownMenuItem(text = { Text("Volver a escanear carpetas") }, onClick = { addMenu = false; onRescan() })
             }
         }
 
         Row(
-            Modifier.clip(RoundedCornerShape(20.dp)).clickable(onClick = onSettings).padding(4.dp),
+            Modifier.clip(RoundedCornerShape(24.dp)).clickable(onClick = onSettings).padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text(Settings.profileName.value, color = p.text, fontSize = 13.sp, maxLines = 1)
+            Text(Settings.profileName.value, color = p.text, fontSize = 13.sp, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 90.dp))
             Avatar(36)
-            Text("⚙", color = p.dim, fontSize = 18.sp)
+            Text("⚙", color = p.dim, fontSize = 18.sp, maxLines = 1)
         }
     }
 }
@@ -369,7 +374,7 @@ private fun EmptyLibrary(actions: LibraryActions) {
         Text("Tu biblioteca está vacía", color = p.text, fontSize = 22.sp, fontWeight = FontWeight.Bold)
         Text("Agrega la carpeta donde guardas tus ROMs de GBA (solo juegos que poseas).", color = p.dim, modifier = Modifier.padding(top = 6.dp, bottom = 18.dp))
         Button(onClick = actions.addFolder, colors = ButtonDefaults.buttonColors(containerColor = p.play)) { Text("Agregar carpeta de ROMs", color = Color.White) }
-        Button(onClick = actions.addFiles, colors = ButtonDefaults.buttonColors(containerColor = p.card), modifier = Modifier.padding(top = 8.dp)) { Text("Agregar archivos .gba", color = p.text) }
+        Button(onClick = actions.addFiles, colors = ButtonDefaults.buttonColors(containerColor = p.card), modifier = Modifier.padding(top = 8.dp)) { Text("Agregar archivos (.gba .gbc .gb .zip .7z)", color = p.text) }
     }
 }
 
@@ -389,7 +394,7 @@ private fun GameGrid(
         if (list.isEmpty()) all.sortedByDescending { it.addedAt }.take(6) else list.take(12)
     }
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = 136.dp),
+        columns = GridCells.Adaptive(minSize = 150.dp),
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         horizontalArrangement = Arrangement.spacedBy(14.dp),
@@ -424,7 +429,7 @@ private fun FeatureCard(g: Game, onOpen: (Game) -> Unit, onPlay: (Game) -> Unit)
         CoverImage(g, Modifier.fillMaxSize())
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xDD000000)))))
         Column(Modifier.align(Alignment.BottomStart).padding(12.dp).fillMaxWidth(0.72f)) {
-            Text(g.title, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            FitTitle(g.title, Color.White, FontWeight.Bold, maxSp = 15f, minSp = 10f)
             Text(if (g.lastPlayed > 0) "${formatPlayTime(g.playSeconds)} · ${formatAgo(g.lastPlayed)}" else "Sin jugar", color = Color(0xCCFFFFFF), fontSize = 11.sp)
         }
         Box(
@@ -446,17 +451,38 @@ private fun GameCard(g: Game, onOpen: (Game) -> Unit, onPlay: (Game) -> Unit) {
                 contentAlignment = Alignment.Center,
             ) { Text("▶", color = Color.White, fontSize = 14.sp) }
         }
-        Text(
-            g.title,
-            color = p.text,
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 13.sp,
-            maxLines = 2,
-            minLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(top = 6.dp),
-        )
+        FitTitle(g.title, p.text, FontWeight.SemiBold, maxSp = 13f, minSp = 9f, modifier = Modifier.padding(top = 6.dp).fillMaxWidth())
         Text(formatPlayTime(g.playSeconds), color = p.dim, fontSize = 11.sp)
         Text("Última vez: ${formatAgo(g.lastPlayed)}", color = p.dim, fontSize = 11.sp)
     }
+}
+
+/**
+ * Titulo completo en maximo 2 lineas: empieza en [maxSp] y achica la fuente (hasta [minSp])
+ * hasta que el texto quepa sin cortarse con "...".
+ */
+@Composable
+fun FitTitle(
+    text: String,
+    color: Color,
+    weight: FontWeight,
+    maxSp: Float,
+    minSp: Float,
+    modifier: Modifier = Modifier,
+) {
+    var size by remember(text) { mutableStateOf(maxSp) }
+    Text(
+        text,
+        color = color,
+        fontWeight = weight,
+        fontSize = size.sp,
+        lineHeight = (size * 1.15f).sp,
+        minLines = 2,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis,
+        modifier = modifier,
+        onTextLayout = { r ->
+            if (r.hasVisualOverflow && size > minSp) size = maxOf(minSp, size - 0.5f)
+        },
+    )
 }

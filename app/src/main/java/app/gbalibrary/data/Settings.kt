@@ -45,9 +45,6 @@ object Settings {
     val musicFolder = mutableStateOf("")
     val musicShuffle = mutableStateOf(false)
 
-    // Eevee companero (0 derecha, 1 izquierda)
-    val eeveeOn = mutableStateOf(true)
-    val eeveeSide = mutableIntStateOf(0)
 
     // Mando fisico
     val padAutoHide = mutableStateOf(true) // ocultar tactiles al conectar mando
@@ -82,8 +79,6 @@ object Settings {
         uiSounds.value = p.getBoolean("uiSounds", false)
         musicFolder.value = p.getString("musicFolder", "") ?: ""
         musicShuffle.value = p.getBoolean("musicShuffle", false)
-        eeveeOn.value = p.getBoolean("eeveeOn", true)
-        eeveeSide.intValue = p.getInt("eeveeSide", 0)
         padAutoHide.value = p.getBoolean("padAutoHide", true)
         padRumble.value = p.getBoolean("padRumble", true)
     }
@@ -120,8 +115,6 @@ object Settings {
 
     fun setMusicFolder(v: String) { musicFolder.value = v; edit { putString("musicFolder", v) } }
     fun setMusicShuffle(v: Boolean) { musicShuffle.value = v; edit { putBoolean("musicShuffle", v) } }
-    fun setEeveeOn(v: Boolean) { eeveeOn.value = v; edit { putBoolean("eeveeOn", v) } }
-    fun setEeveeSide(v: Int) { eeveeSide.intValue = v; edit { putInt("eeveeSide", v) } }
     fun setPadAutoHide(v: Boolean) { padAutoHide.value = v; edit { putBoolean("padAutoHide", v) } }
     fun setPadRumble(v: Boolean) { padRumble.value = v; edit { putBoolean("padRumble", v) } }
 
