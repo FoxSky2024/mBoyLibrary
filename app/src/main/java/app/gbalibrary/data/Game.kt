@@ -20,6 +20,8 @@ data class Game(
     val note: String = "",
     val hasCover: Boolean = false,
     val hasBackground: Boolean = false,
+    /** Nombre de la entrada dentro del .zip/.7z (vacio si la ROM es un .gba suelto). */
+    val entry: String = "",
 ) {
     fun toJson(): JSONObject = JSONObject().apply {
         put("id", id)
@@ -38,6 +40,7 @@ data class Game(
         put("note", note)
         put("hasCover", hasCover)
         put("hasBackground", hasBackground)
+        put("entry", entry)
     }
 
     companion object {
@@ -62,6 +65,7 @@ data class Game(
                 note = o.optString("note"),
                 hasCover = o.optBoolean("hasCover"),
                 hasBackground = o.optBoolean("hasBackground"),
+                entry = o.optString("entry"),
             )
         }
     }

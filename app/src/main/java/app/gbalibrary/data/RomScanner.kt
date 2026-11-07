@@ -29,8 +29,11 @@ object RomScanner {
                     walk(f, depth + 1)
                 } else {
                     val name = f.name ?: continue
-                    if (name.substringAfterLast('.', "").lowercase() in EXTENSIONS) {
+                    val ext = name.substringAfterLast('.', "").lowercase()
+                    if (ext in EXTENSIONS) {
                         fromUri(ctx, f.uri, name, f.length())?.let { out.add(it) }
+                    } else if (ext == "zip" || ext == "7z") {
+                        out.addAll(fromArchive(ctx, f.uri))
                     }
                 }
             }
@@ -40,7 +43,44 @@ object RomScanner {
     }
 
     suspend fun fromUris(ctx: Context, uris: List<Uri>): List<Game> = withContext(Dispatchers.IO) {
-        uris.mapNotNull { fromUri(ctx, it) }
+        uris.flatMap { u ->
+            if (Archive.kind(ctx, u) != Archive.Kind.NONE) fromArchive(ctx, u)
+            else listOfNotNull(fromUri(ctx, u))
+        }
+    }
+
+    /** Todas las ROMs de un .zip/.7z (sin selector; para escaneo de carpetas). */
+    fun fromArchive(ctx: Context, uri: Uri): List<Game> =
+        Archive.listRoms(ctx, uri).mapNotNull { fromArchiveEntry(ctx, uri, it.name) }
+
+    /** Identifica una ROM concreta dentro de un archivo: se descomprime a cache, se lee y se borra. */
+    fun fromArchiveEntry(ctx: Context, uri: Uri, entry: String): Game? {
+        val f = Archive.extractToCache(ctx, uri, entry) ?: return null
+        return try {
+            val head = ByteArray(1 shl 20)
+            val read = f.inputStream().use { readFully(it, head) }
+            if (read < 0xC0) return null
+            val size = f.length()
+            val md = MessageDigest.getInstance("SHA-1")
+            md.update(head, 0, read)
+            md.update(size.toString().toByteArray())
+            val id = md.digest().joinToString("") { "%02x".format(it) }
+            val info = RomHeader.parse(head, read)
+            val shown = entry.substringAfterLast('/').substringAfterLast('\\')
+            Game(
+                id = id,
+                title = RomHeader.cleanTitle(shown).ifBlank { info?.title ?: shown },
+                headerTitle = info?.title ?: "",
+                code = info?.code ?: "",
+                uri = uri.toString(),
+                fileName = shown,
+                sizeBytes = size,
+                addedAt = System.currentTimeMillis(),
+                entry = entry,
+            )
+        } finally {
+            f.delete()
+        }
     }
 
     /** Lee solo la cabecera y 1 MB para identificar la ROM; no carga el archivo entero. */

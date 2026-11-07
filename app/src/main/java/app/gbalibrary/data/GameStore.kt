@@ -58,7 +58,7 @@ class GameStore private constructor(private val ctx: Context) {
                     byId[g.id] = g
                     added++
                 } else {
-                    byId[g.id] = old.copy(uri = g.uri, fileName = g.fileName, sizeBytes = g.sizeBytes)
+                    byId[g.id] = old.copy(uri = g.uri, fileName = g.fileName, sizeBytes = g.sizeBytes, entry = g.entry)
                 }
             }
             byId.values.toList()

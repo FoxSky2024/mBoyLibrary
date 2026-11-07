@@ -42,6 +42,16 @@ object Settings {
     val musicMuted = mutableStateOf(false)
     val musicVolume = mutableFloatStateOf(0.5f)
     val uiSounds = mutableStateOf(false)
+    val musicFolder = mutableStateOf("")
+    val musicShuffle = mutableStateOf(false)
+
+    // Eevee companero (0 derecha, 1 izquierda)
+    val eeveeOn = mutableStateOf(true)
+    val eeveeSide = mutableIntStateOf(0)
+
+    // Mando fisico
+    val padAutoHide = mutableStateOf(true) // ocultar tactiles al conectar mando
+    val padRumble = mutableStateOf(true)
 
     fun init(ctx: Context) {
         if (sp != null) return
@@ -70,6 +80,12 @@ object Settings {
         musicMuted.value = p.getBoolean("musicMuted", false)
         musicVolume.floatValue = p.getFloat("musicVolume", 0.5f)
         uiSounds.value = p.getBoolean("uiSounds", false)
+        musicFolder.value = p.getString("musicFolder", "") ?: ""
+        musicShuffle.value = p.getBoolean("musicShuffle", false)
+        eeveeOn.value = p.getBoolean("eeveeOn", true)
+        eeveeSide.intValue = p.getInt("eeveeSide", 0)
+        padAutoHide.value = p.getBoolean("padAutoHide", true)
+        padRumble.value = p.getBoolean("padRumble", true)
     }
 
     // ---- Guardado (cada setter actualiza el estado y persiste) ----
@@ -101,6 +117,16 @@ object Settings {
     fun setMusicMuted(v: Boolean) { musicMuted.value = v; edit { putBoolean("musicMuted", v) } }
     fun setMusicVolume(v: Float) { musicVolume.floatValue = v; edit { putFloat("musicVolume", v) } }
     fun setUiSounds(v: Boolean) { uiSounds.value = v; edit { putBoolean("uiSounds", v) } }
+
+    fun setMusicFolder(v: String) { musicFolder.value = v; edit { putString("musicFolder", v) } }
+    fun setMusicShuffle(v: Boolean) { musicShuffle.value = v; edit { putBoolean("musicShuffle", v) } }
+    fun setEeveeOn(v: Boolean) { eeveeOn.value = v; edit { putBoolean("eeveeOn", v) } }
+    fun setEeveeSide(v: Int) { eeveeSide.intValue = v; edit { putInt("eeveeSide", v) } }
+    fun setPadAutoHide(v: Boolean) { padAutoHide.value = v; edit { putBoolean("padAutoHide", v) } }
+    fun setPadRumble(v: Boolean) { padRumble.value = v; edit { putBoolean("padRumble", v) } }
+
+    fun loadRaw(key: String): String? = sp?.getString(key, null)
+    fun saveRaw(key: String, data: String) = edit { putString(key, data) }
 
     // ---- Layout de controles (posiciones) como texto "id:x:y;id:x:y" ----
 

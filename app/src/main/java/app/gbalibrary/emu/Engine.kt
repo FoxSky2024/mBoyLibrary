@@ -5,6 +5,7 @@ import android.media.AudioFormat
 import android.media.AudioTrack
 import android.os.Build
 import android.util.Log
+import app.gbalibrary.data.SaveType
 import java.io.File
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicIntegerArray
@@ -23,14 +24,20 @@ class Engine(
     companion object {
         const val SAMPLE_RATE = 44100
         const val SOURCE_TOUCH = 0
-        const val SOURCE_HARDWARE = 1
+        const val SOURCE_HARDWARE = 1 // mando 1
+        const val SOURCE_HARDWARE2 = 2 // mando 2
+        const val SOURCE_KEYBOARD = 3
+        /** Cada control tactil usa su propia ranura (4..63) para que dos botones A no se pisen. */
+        const val SOURCE_AXIS = 4 // stick izquierdo / cruceta (hat) del mando
+        const val SOURCE_WIDGET_BASE = 5
+        const val SOURCE_COUNT = 64
         private const val FRAME_NANOS = 16_743_000L // 59.7275 fps
 
         // mGBA tiene un unico nucleo global: un solo Engine puede usarlo a la vez.
         private val coreLock = ReentrantLock()
     }
 
-    private val keysBySource = AtomicIntegerArray(2)
+    private val keysBySource = AtomicIntegerArray(SOURCE_COUNT)
     private val commands = ConcurrentLinkedQueue<() -> Unit>()
 
     @Volatile
@@ -76,9 +83,18 @@ class Engine(
     }
 
     fun releaseAll() {
-        keysBySource.set(SOURCE_TOUCH, 0)
-        keysBySource.set(SOURCE_HARDWARE, 0)
+        for (i in 0 until SOURCE_COUNT) keysBySource.set(i, 0)
     }
+
+    private fun allKeys(): Int {
+        var k = 0
+        for (i in 0 until SOURCE_COUNT) k = k or keysBySource.get(i)
+        return k
+    }
+
+    /** Tipo de guardado detectado en la ROM cargada (ver SaveType). */
+    @Volatile
+    var saveType = 0
 
     // ---- Comandos que se ejecutan en el hilo de emulacion ----
 
@@ -146,7 +162,9 @@ class Engine(
                 onError("No se pudo leer la ROM")
                 return
             }
-            if (!Native.load(rom, savePath)) {
+            saveType = SaveType.detect(rom)
+            Log.i("Engine", "Tipo de guardado detectado: ${SaveType.label(saveType)}")
+            if (!Native.load(rom, savePath, saveType)) {
                 onError("mGBA no pudo cargar esta ROM")
                 return
             }
@@ -185,9 +203,16 @@ class Engine(
                     playing = true
                 }
 
-                Native.setKeys(keysBySource.get(SOURCE_TOUCH) or keysBySource.get(SOURCE_HARDWARE))
                 val sp = speed
                 frameCounter++
+                // Turbo A / B: alterna el boton cada 2 cuadros mientras se mantiene pulsado.
+                var keys = allKeys()
+                if (keys and (GbaKey.TURBO_A or GbaKey.TURBO_B) != 0) {
+                    val on = (frameCounter / 2) % 2L == 0L
+                    if (on && keys and GbaKey.TURBO_A != 0) keys = keys or GbaKey.A
+                    if (on && keys and GbaKey.TURBO_B != 0) keys = keys or GbaKey.B
+                }
+                Native.setKeys(keys and GbaKey.GBA_MASK)
                 val render = sp == 1 || frameCounter % sp == 0L
                 val frames = Native.step(audio, render)
 

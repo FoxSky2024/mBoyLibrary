@@ -78,6 +78,7 @@ class LibraryActions(
     val pickAvatar: () -> Unit,
     val pickLibraryBackground: () -> Unit,
     val pickMusic: () -> Unit,
+    val pickMusicFolder: () -> Unit,
 )
 
 @Composable
@@ -92,8 +93,39 @@ fun LibraryApp(vm: LibraryViewModel, actions: LibraryActions, onPlay: (Game) -> 
         if (showSettings) showSettings = false else detailId = null
     }
 
-    LaunchedEffect(Settings.musicOn.value, Settings.musicUri.value, Settings.musicMuted.value, Settings.musicVolume.floatValue) {
+    LaunchedEffect(
+        Settings.musicOn.value, Settings.musicUri.value, Settings.musicFolder.value,
+        Settings.musicShuffle.value, Settings.musicMuted.value, Settings.musicVolume.floatValue,
+    ) {
         Music.sync(ctx)
+    }
+
+    // .zip/.7z: abrir el juego recien descomprimido y selector si trae varios .gba
+    val playReq by vm.playRequest.collectAsState()
+    LaunchedEffect(playReq) {
+        playReq?.let { vm.playRequest.value = null; onPlay(it) }
+    }
+    val pick by vm.archivePick.collectAsState()
+    pick?.let { pk ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { vm.chooseEntry(pk, null) },
+            title = { Text("Elige el juego de ${pk.name}", maxLines = 2) },
+            text = {
+                androidx.compose.foundation.layout.Column(
+                    Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState()),
+                ) {
+                    pk.entries.forEach { e ->
+                        Text(
+                            e.display,
+                            maxLines = 2,
+                            modifier = Modifier.fillMaxWidth().clickable { vm.chooseEntry(pk, e) }.padding(vertical = 12.dp, horizontal = 4.dp),
+                        )
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = { androidx.compose.material3.TextButton(onClick = { vm.chooseEntry(pk, null) }) { Text("Cancelar") } },
+        )
     }
 
     Box(Modifier.fillMaxSize()) {
@@ -115,6 +147,8 @@ fun LibraryApp(vm: LibraryViewModel, actions: LibraryActions, onPlay: (Game) -> 
                 onSettings = { Sfx.click(); showSettings = true },
             )
         }
+        // Vinilo abajo a la derecha (biblioteca y ajustes; nunca dentro del juego)
+        VinylOverlay(Modifier.align(Alignment.BottomEnd))
     }
 }
 

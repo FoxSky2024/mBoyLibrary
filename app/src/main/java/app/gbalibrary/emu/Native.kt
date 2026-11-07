@@ -8,7 +8,8 @@ object Native {
         System.loadLibrary("gbalib")
     }
 
-    external fun load(rom: ByteArray, savePath: String): Boolean
+    /** [saveType]: 0 auto, 1 SRAM, 2 FLASH 64K, 3 FLASH 128K, 4 EEPROM. */
+    external fun load(rom: ByteArray, savePath: String, saveType: Int): Boolean
     external fun unload()
     external fun reset()
     external fun setKeys(keys: Int)
@@ -35,4 +36,11 @@ object GbaKey {
     const val R = 256
     const val L = 512
     const val DIRECTIONS = RIGHT or LEFT or UP or DOWN
+
+    // Acciones extra (no existen en la GBA; el motor las resuelve antes de llamar a mGBA)
+    const val TURBO_A = 1 shl 10
+    const val TURBO_B = 1 shl 11
+    const val MENU = 1 shl 12 // solo mando fisico
+    const val QUICK = 1 shl 13 // solo mando fisico
+    const val GBA_MASK = 0x3FF
 }

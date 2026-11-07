@@ -7,7 +7,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import android.view.KeyEvent
+import android.view.MotionEvent
+import app.gbalibrary.data.Archive
 import app.gbalibrary.data.Settings
+import app.gbalibrary.input.PadInput
 import app.gbalibrary.ui.GbaTheme
 import app.gbalibrary.ui.LibraryActions
 import app.gbalibrary.ui.LibraryApp
@@ -75,9 +79,20 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+    private val pickMusicFolder =
+        registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+            if (uri != null) {
+                keep(uri)
+                Settings.setMusicFolder(uri.toString())
+                Settings.setMusicOn(true)
+            }
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Settings.init(this)
+        PadInput.init(this)
+        Archive.clearCache(this) // restos de una sesion anterior
         val actions = LibraryActions(
             addFolder = { pickFolder.launch(null) },
             addFiles = { pickFiles.launch(arrayOf("*/*")) },
@@ -86,6 +101,7 @@ class MainActivity : ComponentActivity() {
             pickAvatar = { pickAvatarImage.launch(arrayOf("image/*")) },
             pickLibraryBackground = { pickLibraryBgImage.launch(arrayOf("image/*")) },
             pickMusic = { pickMusicFile.launch(arrayOf("audio/*")) },
+            pickMusicFolder = { pickMusicFolder.launch(null) },
         )
         setContent {
             GbaTheme {
@@ -116,6 +132,25 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        if (isFinishing) Music.release()
+        if (isFinishing) {
+            Music.release()
+            Archive.clearCache(this) // limpia la cache de ROMs descomprimidas al salir
+        }
+    }
+
+    // Ajustes > Mando: captura de botones (remapear) y modo "Probar mando".
+    override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
+        if (PadInput.feedKey(keyCode, true)) return true
+        return super.onKeyDown(keyCode, event)
+    }
+
+    override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
+        if (PadInput.feedKey(keyCode, false)) return true
+        return super.onKeyUp(keyCode, event)
+    }
+
+    override fun onGenericMotionEvent(event: MotionEvent): Boolean {
+        if (PadInput.isGamepad(event.device) && PadInput.feedMotion(event)) return true
+        return super.onGenericMotionEvent(event)
     }
 }

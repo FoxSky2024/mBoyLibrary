@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import app.gbalibrary.emu.Engine
 import app.gbalibrary.emu.GbaKey
 import kotlin.math.abs
+import kotlin.math.hypot
 
 private val PadIdle = Color(0x44FFFFFF)
 private val PadBorder = Color(0x66FFFFFF)
@@ -40,11 +41,12 @@ private val PadBorder = Color(0x66FFFFFF)
 fun PadButton(
     label: String,
     mask: Int,
-    engine: Engine,
+    engine: Engine?,
     enabled: Boolean,
     modifier: Modifier = Modifier,
     shape: Shape = CircleShape,
     fontSize: Int = 20,
+    source: Int = Engine.SOURCE_TOUCH,
 ) {
     var pressed by remember { mutableStateOf(false) }
     val active = LocalPalette.current.accent.copy(alpha = 0.75f)
@@ -54,15 +56,15 @@ fun PadButton(
             .clip(shape)
             .background(if (pressed) active else PadIdle)
             .border(2.dp, PadBorder, shape)
-            .pointerInput(mask, enabled) {
-                if (!enabled) return@pointerInput
+            .pointerInput(mask, enabled, source) {
+                if (!enabled || engine == null) return@pointerInput
                 awaitEachGesture {
                     awaitFirstDown(requireUnconsumed = false)
                     pressed = true
-                    engine.setKey(Engine.SOURCE_TOUCH, mask, true)
+                    engine.setKey(source, mask, true)
                     waitForUpOrCancellation()
                     pressed = false
-                    engine.setKey(Engine.SOURCE_TOUCH, mask, false)
+                    engine.setKey(source, mask, false)
                 }
             },
         contentAlignment = Alignment.Center,
@@ -73,12 +75,12 @@ fun PadButton(
 
 /** Cruceta de 8 direcciones: se desliza el dedo y cambia de direccion sin soltar. */
 @Composable
-fun DPad(engine: Engine, enabled: Boolean, modifier: Modifier = Modifier) {
+fun DPad(engine: Engine?, enabled: Boolean, modifier: Modifier = Modifier, source: Int = Engine.SOURCE_TOUCH) {
     var dirs by remember { mutableIntStateOf(0) }
     val activeColor = LocalPalette.current.accent.copy(alpha = 0.75f)
     Box(
-        modifier = modifier.fillMaxSize().pointerInput(enabled) {
-            if (!enabled) return@pointerInput
+        modifier = modifier.fillMaxSize().pointerInput(enabled, source) {
+            if (!enabled || engine == null) return@pointerInput
             awaitEachGesture {
                 val down = awaitFirstDown(requireUnconsumed = false)
                 val cx = size.width / 2f
@@ -105,7 +107,7 @@ fun DPad(engine: Engine, enabled: Boolean, modifier: Modifier = Modifier) {
                     if (m != last) {
                         last = m
                         dirs = m
-                        engine.setDirections(Engine.SOURCE_TOUCH, m)
+                        engine.setDirections(source, m)
                     }
                 }
 
@@ -136,6 +138,75 @@ fun DPad(engine: Engine, enabled: Boolean, modifier: Modifier = Modifier) {
             highlight(GbaKey.DOWN, Offset(t, 2 * t))
             highlight(GbaKey.LEFT, Offset(0f, t))
             highlight(GbaKey.RIGHT, Offset(2 * t, t))
+            drawCircle(Color(0x33000000), radius = t * 0.28f, center = Offset(w / 2f, w / 2f))
+        }
+    }
+}
+
+/**
+ * Joystick analogico virtual: se arrastra dentro de la base y simula Arriba/Abajo/Izquierda/Derecha
+ * (con diagonales). [deadzone] es la fraccion del radio por debajo de la cual no se registra nada.
+ */
+@Composable
+fun Stick(engine: Engine?, enabled: Boolean, deadzone: Float, modifier: Modifier = Modifier, source: Int = Engine.SOURCE_TOUCH) {
+    var knob by remember { mutableStateOf(Offset.Zero) } // -1..1
+    var dirs by remember { mutableIntStateOf(0) }
+    val activeColor = LocalPalette.current.accent.copy(alpha = 0.85f)
+    Box(
+        modifier = modifier.fillMaxSize().pointerInput(enabled, source, deadzone) {
+            if (!enabled || engine == null) return@pointerInput
+            awaitEachGesture {
+                val down = awaitFirstDown(requireUnconsumed = false)
+                val cx = size.width / 2f
+                val cy = size.height / 2f
+                val r = size.width / 2f
+
+                var last = -1
+                fun update(p: Offset) {
+                    var dx = (p.x - cx) / r
+                    var dy = (p.y - cy) / r
+                    val mag = hypot(dx, dy)
+                    if (mag > 1f) { dx /= mag; dy /= mag }
+                    knob = Offset(dx, dy)
+                    var m = 0
+                    if (hypot(dx, dy) >= deadzone) {
+                        val ax = abs(dx)
+                        val ay = abs(dy)
+                        if (ax >= ay * 0.45f) m = m or (if (dx > 0) GbaKey.RIGHT else GbaKey.LEFT)
+                        if (ay >= ax * 0.45f) m = m or (if (dy > 0) GbaKey.DOWN else GbaKey.UP)
+                    }
+                    if (m != last) {
+                        last = m
+                        dirs = m
+                        engine.setDirections(source, m)
+                    }
+                }
+
+                update(down.position)
+                while (true) {
+                    val event = awaitPointerEvent()
+                    val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                    if (!change.pressed) break
+                    update(change.position)
+                    change.consume()
+                }
+                knob = Offset.Zero
+                dirs = 0
+                engine.setDirections(source, 0)
+            }
+        },
+    ) {
+        Canvas(Modifier.fillMaxSize()) {
+            val r = size.width / 2f
+            val c = Offset(r, r)
+            drawCircle(Color(0x33FFFFFF), radius = r, center = c)
+            drawCircle(PadBorder, radius = r - 1.5f, center = c, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3f))
+            // zona muerta
+            drawCircle(Color(0x22FFFFFF), radius = r * deadzone, center = c)
+            val kr = r * 0.38f
+            val kc = Offset(c.x + knob.x * (r - kr), c.y + knob.y * (r - kr))
+            drawCircle(if (dirs != 0) activeColor else Color(0x88FFFFFF), radius = kr, center = kc)
+            drawCircle(PadBorder, radius = kr, center = kc, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3f))
         }
     }
 }

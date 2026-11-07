@@ -59,13 +59,17 @@ import app.gbalibrary.data.Settings
 import app.gbalibrary.emu.Engine
 import app.gbalibrary.emu.GbaGlView
 import app.gbalibrary.emu.GbaKey
-import app.gbalibrary.ui.Ctl
 import app.gbalibrary.ui.ControlLayout
-import app.gbalibrary.ui.DPad
 import app.gbalibrary.ui.GameMenu
 import app.gbalibrary.ui.GbaTheme
 import app.gbalibrary.ui.MenuActions
-import app.gbalibrary.ui.PadButton
+import app.gbalibrary.ui.ControlsCanvas
+import app.gbalibrary.ui.ControlsEditorPanel
+import app.gbalibrary.ui.EeveeCompanion
+import app.gbalibrary.ui.EeveeSay
+import app.gbalibrary.ui.EeveeState
+import app.gbalibrary.data.Archive
+import app.gbalibrary.input.PadInput
 import kotlinx.coroutines.delay
 import java.io.File
 import kotlin.math.roundToInt
@@ -80,6 +84,10 @@ class EmulatorActivity : ComponentActivity() {
     private lateinit var game: Game
     private lateinit var store: GameStore
     private val layout = ControlLayout()
+    private var layoutScope = "global" // de donde se cargo el layout (y donde se guarda al terminar)
+    private val eevee = EeveeState()
+    private val forceTouch = mutableStateOf(false) // mostrar tactiles aunque haya mando
+    private val trigHeld = HashSet<Int>()
 
     private var resumedAt = 0L
     private var activityResumed = false
@@ -110,14 +118,22 @@ class EmulatorActivity : ComponentActivity() {
         File(filesDir, "saves").mkdirs()
         File(filesDir, "states").mkdirs()
 
-        layout.load("global")
-        if (Settings.perGameLayout.value && Settings.loadLayout(game.id) != null) layout.load(game.id)
+        PadInput.init(this)
+        // Layout propio del juego si existe; si no, el global.
+        layoutScope = if (Settings.loadLayout(game.id) != null) game.id else "global"
+        layout.load(layoutScope)
 
         val romUri = Uri.parse(game.uri)
         val eng = Engine(
             romProvider = {
                 try {
-                    contentResolver.openInputStream(romUri)?.use { it.readBytes() }
+                    if (game.entry.isNotEmpty()) {
+                        // ROM dentro de un .zip/.7z: se descomprime a la cache, se lee y se borra.
+                        val f = Archive.extractToCache(this, romUri, game.entry)
+                        try { f?.readBytes() } finally { f?.delete() }
+                    } else {
+                        contentResolver.openInputStream(romUri)?.use { it.readBytes() }
+                    }
                 } catch (e: Exception) {
                     null
                 }
@@ -151,11 +167,15 @@ class EmulatorActivity : ComponentActivity() {
 
     private fun statePath(slot: String) = File(filesDir, "states/${game.id}.$slot.ss").path
 
-    private fun layoutScope() = if (Settings.perGameLayout.value) game.id else "global"
-
     private fun setMenu(open: Boolean) {
         menuOpen.value = open
         syncPause()
+        if (open) eevee.say(EeveeSay.PAUSE)
+    }
+
+    private fun padShown(): Boolean {
+        val hidden = Settings.padAutoHide.value && PadInput.connected.value && !forceTouch.value
+        return Settings.padVisible.value && !hidden
     }
 
     private fun syncPause() {
@@ -173,7 +193,7 @@ class EmulatorActivity : ComponentActivity() {
     }
 
     private fun finishEditing() {
-        layout.save(layoutScope())
+        layout.save(layoutScope)
         editing.value = false
         syncPause()
         flash("Layout guardado")
@@ -218,6 +238,7 @@ class EmulatorActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         engine?.shutdown()
+        Archive.clearCache(this) // borra lo descomprimido al salir del juego
     }
 
     private fun commitPlayTime() {
@@ -232,6 +253,10 @@ class EmulatorActivity : ComponentActivity() {
     private fun doSave(slot: String) {
         engine?.saveState(statePath(slot)) { ok ->
             flash(if (ok) "Estado guardado" else "No se pudo guardar")
+            if (ok) runOnUiThread {
+                eevee.say(EeveeSay.SAVED)
+                PadInput.rumble(80)
+            }
         }
     }
 
@@ -278,45 +303,74 @@ class EmulatorActivity : ComponentActivity() {
 
     // ---- Mando fisico y teclado ----
 
+    /** Teclado fisico (el mando usa los perfiles de PadInput). */
     private fun keyMask(code: Int): Int = when (code) {
         KeyEvent.KEYCODE_DPAD_UP -> GbaKey.UP
         KeyEvent.KEYCODE_DPAD_DOWN -> GbaKey.DOWN
         KeyEvent.KEYCODE_DPAD_LEFT -> GbaKey.LEFT
         KeyEvent.KEYCODE_DPAD_RIGHT -> GbaKey.RIGHT
-        KeyEvent.KEYCODE_BUTTON_B, KeyEvent.KEYCODE_BUTTON_Y, KeyEvent.KEYCODE_X -> GbaKey.A
-        KeyEvent.KEYCODE_BUTTON_A, KeyEvent.KEYCODE_BUTTON_X, KeyEvent.KEYCODE_Z -> GbaKey.B
-        KeyEvent.KEYCODE_BUTTON_L1, KeyEvent.KEYCODE_A -> GbaKey.L
-        KeyEvent.KEYCODE_BUTTON_R1, KeyEvent.KEYCODE_S -> GbaKey.R
-        KeyEvent.KEYCODE_BUTTON_START, KeyEvent.KEYCODE_ENTER -> GbaKey.START
-        KeyEvent.KEYCODE_BUTTON_SELECT, KeyEvent.KEYCODE_DEL -> GbaKey.SELECT
+        KeyEvent.KEYCODE_X -> GbaKey.A
+        KeyEvent.KEYCODE_Z -> GbaKey.B
+        KeyEvent.KEYCODE_A -> GbaKey.L
+        KeyEvent.KEYCODE_S -> GbaKey.R
+        KeyEvent.KEYCODE_ENTER -> GbaKey.START
+        KeyEvent.KEYCODE_DEL -> GbaKey.SELECT
         else -> 0
     }
 
+    /** Boton de mando segun el perfil Mando 1 / Mando 2 (acciones, turbo, menu, guardado rapido). */
+    private fun applyPadKey(deviceId: Int, code: Int, down: Boolean, first: Boolean) {
+        val action = PadInput.actionFor(deviceId, code)
+        if (action == 0) return
+        if (action and GbaKey.MENU != 0) {
+            if (down && first) setMenu(!menuOpen.value)
+            return
+        }
+        if (action and GbaKey.QUICK != 0) {
+            if (down && first && !menuOpen.value) doSave("quick")
+            return
+        }
+        val src = if (PadInput.slotOf(deviceId) == 2) Engine.SOURCE_HARDWARE2 else Engine.SOURCE_HARDWARE
+        engine?.setKey(src, action and (GbaKey.GBA_MASK or GbaKey.TURBO_A or GbaKey.TURBO_B), down)
+    }
+
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
-        val mask = keyMask(keyCode)
-        if (mask != 0) {
-            engine?.setKey(Engine.SOURCE_HARDWARE, mask, true)
+        if (PadInput.isPadKey(event)) {
+            applyPadKey(event.deviceId, keyCode, true, event.repeatCount == 0)
             return true
         }
-        if (keyCode == KeyEvent.KEYCODE_BUTTON_MODE) {
-            setMenu(!menuOpen.value)
+        val mask = keyMask(keyCode)
+        if (mask != 0) {
+            engine?.setKey(Engine.SOURCE_KEYBOARD, mask, true)
             return true
         }
         return super.onKeyDown(keyCode, event)
     }
 
     override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
+        if (PadInput.isPadKey(event)) {
+            applyPadKey(event.deviceId, keyCode, false, false)
+            return true
+        }
         val mask = keyMask(keyCode)
         if (mask != 0) {
-            engine?.setKey(Engine.SOURCE_HARDWARE, mask, false)
+            engine?.setKey(Engine.SOURCE_KEYBOARD, mask, false)
             return true
         }
         return super.onKeyUp(keyCode, event)
     }
 
+    private fun trigger(deviceId: Int, code: Int, on: Boolean) {
+        val was = code in trigHeld
+        if (on == was) return
+        if (on) trigHeld.add(code) else trigHeld.remove(code)
+        applyPadKey(deviceId, code, on, true)
+    }
+
     override fun onGenericMotionEvent(event: MotionEvent): Boolean {
         val isJoystick = (event.source and InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK
         if (isJoystick && event.action == MotionEvent.ACTION_MOVE) {
+            // Stick izquierdo (y hat) = D-Pad, siempre.
             var x = event.getAxisValue(MotionEvent.AXIS_HAT_X)
             var y = event.getAxisValue(MotionEvent.AXIS_HAT_Y)
             if (x == 0f && y == 0f) {
@@ -330,8 +384,13 @@ class EmulatorActivity : ComponentActivity() {
             if (y < -0.5f) dirs = dirs or GbaKey.UP
             if (dirs != hardwareDirs) {
                 hardwareDirs = dirs
-                engine?.setDirections(Engine.SOURCE_HARDWARE, dirs)
+                engine?.setDirections(Engine.SOURCE_AXIS, dirs)
             }
+            // Gatillos analogicos -> LT / RT segun el perfil.
+            val lt = maxOf(event.getAxisValue(MotionEvent.AXIS_LTRIGGER), event.getAxisValue(MotionEvent.AXIS_BRAKE))
+            val rt = maxOf(event.getAxisValue(MotionEvent.AXIS_RTRIGGER), event.getAxisValue(MotionEvent.AXIS_GAS))
+            trigger(event.deviceId, KeyEvent.KEYCODE_BUTTON_L2, lt > 0.5f)
+            trigger(event.deviceId, KeyEvent.KEYCODE_BUTTON_R2, rt > 0.5f)
             return true
         }
         return super.onGenericMotionEvent(event)
@@ -344,6 +403,10 @@ class EmulatorActivity : ComponentActivity() {
         LaunchedEffect(Settings.volume.intValue, Settings.muted.value) {
             eng.volume = Settings.volume.intValue
             eng.muted = Settings.muted.value
+        }
+        LaunchedEffect(Unit) {
+            delay(900)
+            eevee.say(EeveeSay.ENTER)
         }
         var fps by remember { mutableIntStateOf(0) }
         LaunchedEffect(Settings.showFps.value) {
@@ -363,6 +426,8 @@ class EmulatorActivity : ComponentActivity() {
                     v.brightness = Settings.brightness.floatValue
                 },
             )
+
+            EeveeCompanion(eevee, layout, padShown() || editing.value, paused = menuOpen.value || editing.value)
 
             Controls(eng)
 
@@ -395,25 +460,24 @@ class EmulatorActivity : ComponentActivity() {
             }
 
             if (editing.value) {
-                Row(
-                    Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = 8.dp)
-                        .background(Color(0xDD000000), RoundedCornerShape(10.dp))
-                        .padding(8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text("Arrastra los botones", color = Color.White)
-                    OutlinedButton(onClick = { layout.reset() }) { Text("Restablecer") }
-                    Button(onClick = { finishEditing() }) { Text("Listo") }
-                }
+                ControlsEditorPanel(
+                    layout = layout,
+                    gameName = game.title,
+                    onSaveGlobal = { layout.save("global"); layoutScope = "global"; flash("Layout global guardado") },
+                    onSaveGame = { layout.save(game.id); layoutScope = game.id; flash("Layout guardado para este juego") },
+                    onReset = { layout.reset() },
+                    onDone = { finishEditing() },
+                    modifier = Modifier.align(Alignment.TopCenter).padding(top = 6.dp),
+                )
             }
 
             if (menuOpen.value) {
                 GameMenu(
                     title = game.title,
                     speed = speed.intValue,
+                    layout = layout,
+                    padConnected = PadInput.connected.value,
+                    forceTouch = forceTouch.value,
                     actions = MenuActions(
                         close = { setMenu(false) },
                         save = { doSave(it) },
@@ -422,22 +486,24 @@ class EmulatorActivity : ComponentActivity() {
                             eng.reset()
                             setMenu(false)
                             flash("Juego reiniciado")
+                            eevee.say(EeveeSay.OOPS.random())
                         },
                         screenshot = { doScreenshot() },
                         exit = { finish() },
                         editControls = { startEditing() },
-                        saveLayout = {
-                            layout.save(layoutScope())
-                            flash("Layout guardado")
-                        },
+                        saveGameLayout = { layout.save(game.id); layoutScope = game.id; flash("Layout guardado para este juego") },
+                        saveGlobalLayout = { layout.save("global"); layoutScope = "global"; flash("Layout global guardado") },
                         resetLayout = {
                             layout.reset()
-                            layout.save(layoutScope())
+                            layout.save(layoutScope)
                             flash("Layout restablecido")
                         },
+                        persistLayout = { layout.save(layoutScope) },
+                        setForceTouch = { forceTouch.value = it },
                         setSpeed = {
                             speed.intValue = it
                             eng.speed = it
+                            if (it >= 2) eevee.say(EeveeSay.FAST)
                         },
                     ),
                 )
@@ -447,86 +513,13 @@ class EmulatorActivity : ComponentActivity() {
 
     @Composable
     private fun Controls(eng: Engine) {
-        val isEditing = editing.value
-        val show = Settings.padVisible.value || isEditing
-        val k = Settings.padSize.floatValue
-        val a = Settings.padOpacity.floatValue
-        val live = !isEditing
-        BoxWithConstraints(Modifier.fillMaxSize()) {
-            val sw = constraints.maxWidth.toFloat()
-            val sh = constraints.maxHeight.toFloat()
-
-            // El boton de menu siempre esta visible (translucido).
-            Placed(Ctl.MENU, 44, 44, sw, sh, k, maxOf(a, 0.45f), isEditing) {
-                Box(
-                    Modifier.fillMaxSize().clip(CircleShape).background(Color(0x66000000))
-                        .clickable(enabled = live) { setMenu(true) },
-                    contentAlignment = Alignment.Center,
-                ) { Text("☰", color = Color.White) }
-            }
-            if (show) {
-                Placed(Ctl.QUICK, 44, 44, sw, sh, k, a, isEditing) {
-                    Box(
-                        Modifier.fillMaxSize().clip(CircleShape).background(Color(0x66000000))
-                            .clickable(enabled = live) { doSave("quick") },
-                        contentAlignment = Alignment.Center,
-                    ) { Text("⚡", color = Color.White) }
-                }
-                Placed(Ctl.DPAD, 150, 150, sw, sh, k, a, isEditing) { DPad(eng, live) }
-                Placed(Ctl.A, 72, 72, sw, sh, k, a, isEditing) { PadButton("A", GbaKey.A, eng, live) }
-                Placed(Ctl.B, 72, 72, sw, sh, k, a, isEditing) { PadButton("B", GbaKey.B, eng, live) }
-                Placed(Ctl.L, 96, 46, sw, sh, k, a, isEditing) {
-                    PadButton("L", GbaKey.L, eng, live, shape = RoundedCornerShape(14.dp))
-                }
-                Placed(Ctl.R, 96, 46, sw, sh, k, a, isEditing) {
-                    PadButton("R", GbaKey.R, eng, live, shape = RoundedCornerShape(14.dp))
-                }
-                Placed(Ctl.SELECT, 84, 34, sw, sh, k, a, isEditing) {
-                    PadButton("SELECT", GbaKey.SELECT, eng, live, shape = RoundedCornerShape(17.dp), fontSize = 11)
-                }
-                Placed(Ctl.START, 84, 34, sw, sh, k, a, isEditing) {
-                    PadButton("START", GbaKey.START, eng, live, shape = RoundedCornerShape(17.dp), fontSize = 11)
-                }
-            }
-        }
-    }
-
-    @Composable
-    private fun Placed(
-        id: String,
-        wDp: Int,
-        hDp: Int,
-        sw: Float,
-        sh: Float,
-        k: Float,
-        alpha: Float,
-        isEditing: Boolean,
-        content: @Composable () -> Unit,
-    ) {
-        val d = LocalDensity.current
-        val wPx = with(d) { (wDp * k).dp.toPx() }
-        val hPx = with(d) { (hDp * k).dp.toPx() }
-        val c = layout.pos[id] ?: return
-        Box(
-            Modifier
-                .offset { IntOffset((c.x * sw - wPx / 2f).roundToInt(), (c.y * sh - hPx / 2f).roundToInt()) }
-                .size((wDp * k).dp, (hDp * k).dp)
-                .alpha(alpha),
-        ) {
-            content()
-            if (isEditing) {
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .border(2.dp, Color(0xFFFFEB3B), RoundedCornerShape(8.dp))
-                        .pointerInput(id) {
-                            detectDragGestures { change, drag ->
-                                change.consume()
-                                layout.move(id, drag.x / sw, drag.y / sh)
-                            }
-                        },
-                )
-            }
-        }
+        ControlsCanvas(
+            layout = layout,
+            engine = eng,
+            editing = editing.value,
+            showPad = padShown(),
+            onMenu = { setMenu(true) },
+            onQuick = { doSave("quick") },
+        )
     }
 }

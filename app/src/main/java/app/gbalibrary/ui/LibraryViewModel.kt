@@ -5,6 +5,8 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.documentfile.provider.DocumentFile
+import app.gbalibrary.data.Archive
 import app.gbalibrary.data.Covers
 import app.gbalibrary.data.Game
 import app.gbalibrary.data.Settings
@@ -19,6 +21,9 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
+/** Un .zip/.7z con varios .gba: el usuario elige cual abrir. */
+class ArchivePick(val uri: Uri, val name: String, val entries: List<Archive.Entry>, val autoPlay: Boolean)
 
 const val CAT_ALL = "__all__"
 const val CAT_FAV = "__fav__"
@@ -43,6 +48,13 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
     val category = MutableStateFlow(CAT_ALL)
     val scanning = MutableStateFlow(false)
     val message = MutableStateFlow<String?>(null)
+
+    /** Selector de ROM cuando un archivo comprimido trae varios .gba. */
+    val archivePick = MutableStateFlow<ArchivePick?>(null)
+    private val pickQueue = ArrayList<ArchivePick>()
+
+    /** Juego que se debe abrir ya (por ejemplo, el .gba de un .zip recien elegido). */
+    val playRequest = MutableStateFlow<Game?>(null)
 
     val visible: StateFlow<List<Game>> =
         combine(store.games, query, sort, category) { list, q, s, c ->
@@ -95,13 +107,68 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
     fun addFiles(uris: List<Uri>) {
         viewModelScope.launch {
             scanning.value = true
-            val found = RomScanner.fromUris(appContext, uris)
+            val single = uris.size == 1
+            val found = ArrayList<Game>()
+            val queue = ArrayList<ArchivePick>()
+            var fromArchive = false
+            var emptyArchives = 0
+            withContext(Dispatchers.IO) {
+                for (u in uris) {
+                    if (Archive.kind(appContext, u) != Archive.Kind.NONE) {
+                        val entries = Archive.listRoms(appContext, u)
+                        when {
+                            entries.isEmpty() -> emptyArchives++
+                            entries.size == 1 -> {
+                                fromArchive = true
+                                RomScanner.fromArchiveEntry(appContext, u, entries[0].name)?.let { found.add(it) }
+                            }
+                            else -> {
+                                val name = try { DocumentFile.fromSingleUri(appContext, u)?.name } catch (e: Exception) { null }
+                                queue.add(ArchivePick(u, name ?: "archivo comprimido", entries, single))
+                            }
+                        }
+                    } else {
+                        RomScanner.fromUri(appContext, u)?.let { found.add(it) }
+                    }
+                }
+            }
             val added = store.addScanned(found)
             scanning.value = false
-            message.value = when {
-                found.isEmpty() -> "Ninguno de los archivos parece una ROM de GBA"
-                else -> "$added juego(s) nuevo(s)"
+            pickQueue.addAll(queue)
+            showNextPick()
+            when {
+                queue.isNotEmpty() -> message.value = if (found.isEmpty()) "Elige cual .gba abrir" else "$added juego(s) nuevo(s). Elige cual .gba abrir"
+                found.isEmpty() -> message.value =
+                    if (emptyArchives > 0) "El archivo comprimido no trae ningun .gba" else "Ninguno de los archivos parece una ROM de GBA"
+                else -> message.value = "$added juego(s) nuevo(s)"
             }
+            // Un solo .zip/.7z con un solo .gba: se abre directamente.
+            if (single && fromArchive && found.size == 1) playRequest.value = store.get(found[0].id)
+        }
+    }
+
+    private fun showNextPick() {
+        if (archivePick.value == null && pickQueue.isNotEmpty()) archivePick.value = pickQueue.removeAt(0)
+    }
+
+    /** [entry] = null cancela esa seleccion. */
+    fun chooseEntry(pick: ArchivePick, entry: Archive.Entry?) {
+        archivePick.value = null
+        if (entry == null) {
+            showNextPick()
+            return
+        }
+        viewModelScope.launch {
+            scanning.value = true
+            val game = withContext(Dispatchers.IO) { RomScanner.fromArchiveEntry(appContext, pick.uri, entry.name) }
+            if (game != null) {
+                store.addScanned(listOf(game))
+                if (pick.autoPlay) playRequest.value = store.get(game.id)
+            } else {
+                message.value = "No se pudo descomprimir esa ROM"
+            }
+            scanning.value = false
+            showNextPick()
         }
     }
 

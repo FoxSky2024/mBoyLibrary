@@ -48,15 +48,18 @@ class MenuActions(
     val screenshot: () -> Unit,
     val exit: () -> Unit,
     val editControls: () -> Unit,
-    val saveLayout: () -> Unit,
+    val saveGameLayout: () -> Unit,
+    val saveGlobalLayout: () -> Unit,
     val resetLayout: () -> Unit,
+    val persistLayout: () -> Unit,
+    val setForceTouch: (Boolean) -> Unit,
     val setSpeed: (Int) -> Unit,
 )
 
 private val TABS = listOf("VIDEO", "AUDIO", "CONTROLES", "JUEGO", "SALIR")
 
 @Composable
-fun GameMenu(title: String, speed: Int, actions: MenuActions) {
+fun GameMenu(title: String, speed: Int, layout: ControlLayout, padConnected: Boolean, forceTouch: Boolean, actions: MenuActions) {
     val p = LocalPalette.current
     var tab by remember { mutableIntStateOf(0) }
     Box(
@@ -103,7 +106,7 @@ fun GameMenu(title: String, speed: Int, actions: MenuActions) {
                 when (tab) {
                     0 -> VideoTab()
                     1 -> AudioTab()
-                    2 -> ControlsTab(actions)
+                    2 -> ControlsTab(layout, padConnected, forceTouch, actions)
                     3 -> GameTab(speed, actions)
                     else -> ExitTab(actions)
                 }
@@ -179,15 +182,31 @@ private fun AudioTab() {
     Text("Latencia: fija (~70 ms) para evitar cortes.", color = LocalPalette.current.dim)
 }
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
-private fun ControlsTab(a: MenuActions) {
+private fun ControlsTab(layout: ControlLayout, padConnected: Boolean, forceTouch: Boolean, a: MenuActions) {
     SwitchRow("Mostrar botones tactiles", Settings.padVisible.value) { Settings.setPadVisible(it) }
-    SliderRow("Tamano de botones", Settings.padSize.floatValue, 0.6f..1.6f, "${(Settings.padSize.floatValue * 100).toInt()}%") { Settings.setPadSize(it) }
-    SliderRow("Opacidad", Settings.padOpacity.floatValue, 0.15f..1f, "${(Settings.padOpacity.floatValue * 100).toInt()}%") { Settings.setPadOpacity(it) }
-    SwitchRow("Layout propio para este juego", Settings.perGameLayout.value) { Settings.setPerGameLayout(it) }
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Button(onClick = a.editControls) { Text("Editar posicion") }
-        OutlinedButton(onClick = a.saveLayout) { Text("Guardar layout") }
+    if (padConnected) {
+        SwitchRow("Mostrar tactiles aunque haya mando", forceTouch) { a.setForceTouch(it) }
+    }
+    SliderRow("Tamano general", Settings.padSize.floatValue, 0.6f..1.6f, "${(Settings.padSize.floatValue * 100).toInt()}%") { Settings.setPadSize(it) }
+    SliderRow("Opacidad general", Settings.padOpacity.floatValue, 0.15f..1f, "${(Settings.padOpacity.floatValue * 100).toInt()}%") { Settings.setPadOpacity(it) }
+    Label("Tipo de movimiento")
+    Chips(listOf("Cruceta clasica", "Joystick analogico"), layout.moveType) {
+        layout.moveType = it
+        a.persistLayout()
+    }
+    if (layout.moveType == MoveType.STICK) {
+        SliderRow("Zona muerta", layout.deadzone, 0.05f..0.7f, "${(layout.deadzone * 100).toInt()}%") { layout.deadzone = it }
+        OutlinedButton(onClick = a.persistLayout) { Text("Aplicar zona muerta") }
+    }
+    androidx.compose.foundation.layout.FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Button(onClick = a.editControls) { Text("Editar controles") }
+        OutlinedButton(onClick = a.saveGameLayout) { Text("Guardar para este juego") }
+        OutlinedButton(onClick = a.saveGlobalLayout) { Text("Guardar global") }
         OutlinedButton(onClick = a.resetLayout) { Text("Restablecer") }
     }
 }
