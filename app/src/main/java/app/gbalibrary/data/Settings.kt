@@ -49,6 +49,9 @@ object Settings {
     // Mando fisico
     val padAutoHide = mutableStateOf(true) // ocultar tactiles al conectar mando
     val padRumble = mutableStateOf(true)
+n    // Eevee compañero
+    val eveeOn = mutableStateOf(true)
+    val eveeSide = mutableIntStateOf(0)
 
     fun init(ctx: Context) {
         if (sp != null) return
@@ -81,6 +84,8 @@ object Settings {
         musicShuffle.value = p.getBoolean("musicShuffle", false)
         padAutoHide.value = p.getBoolean("padAutoHide", true)
         padRumble.value = p.getBoolean("padRumble", true)
+        eveeOn.value = p.getBoolean("eveeOn", true)
+        eveeSide.intValue = p.getInt("eveeSide", 0)
     }
 
     // ---- Guardado (cada setter actualiza el estado y persiste) ----
@@ -117,6 +122,8 @@ object Settings {
     fun setMusicShuffle(v: Boolean) { musicShuffle.value = v; edit { putBoolean("musicShuffle", v) } }
     fun setPadAutoHide(v: Boolean) { padAutoHide.value = v; edit { putBoolean("padAutoHide", v) } }
     fun setPadRumble(v: Boolean) { padRumble.value = v; edit { putBoolean("padRumble", v) } }
+    fun setEveeOn(v: Boolean) { eveeOn.value = v; edit { putBoolean("eveeOn", v) } }
+    fun setEveeSide(v: Int) { eveeSide.intValue = v; edit { putInt("eveeSide", v) } }
 
     fun loadRaw(key: String): String? = sp?.getString(key, null)
     fun saveRaw(key: String, data: String) = edit { putString(key, data) }
