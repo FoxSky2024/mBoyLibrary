@@ -1,4 +1,4 @@
-# GBA Library (beta 0.2)
+# GBA Library (0.2.1)
 
 Emulador de Game Boy Advance para Android (nucleo [mGBA](https://mgba.io/)) con la biblioteca
 organizada como la de Steam: cuadricula con portadas, favoritos, colecciones, orden por tiempo

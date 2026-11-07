@@ -2,7 +2,9 @@
 
 > Punto de retomada. Si la sesion se corta, abre una conversacion nueva, adjunta este proyecto y di: **"lee PROGRESS.md y continua exactamente en 'Siguiente paso'"**.
 
-## Estado: BETA 0.2 — codigo escrito, NO compilado ni probado en este entorno
+## Estado: 0.2.1 — codigo escrito, NO compilado ni probado (ver CHANGELOG.md)
+
+0.2.1 agrega zip/7z, editor de controles, mando, vinilo+playlist, Eevee, Ajustes nuevos y guardado por ROM. Primer paso: build en GitHub Actions y pegar errores.
 
 Esta version se escribio sin Android SDK (no se pudo compilar localmente). Se reviso a mano (llaves, nombres JNI, imports), pero la primera build en GitHub Actions puede mostrar algun error menor: pegar el log y se corrige.
 
