@@ -19,3 +19,15 @@ fun formatSize(bytes: Long): String = when {
     bytes < 1024 * 1024 -> "${bytes / 1024} KB"
     else -> String.format("%.1f MB", bytes / 1048576.0)
 }
+
+/** "hoy", "ayer", "hace 5 dias" o "Nunca". */
+fun formatAgo(ms: Long): String {
+    if (ms <= 0) return "Nunca"
+    val days = ((System.currentTimeMillis() - ms) / 86_400_000L).toInt()
+    return when {
+        days <= 0 -> "Hoy"
+        days == 1 -> "Ayer"
+        days < 30 -> "Hace $days dias"
+        else -> formatDate(ms)
+    }
+}

@@ -42,6 +42,17 @@ class Engine(
     @Volatile
     var speed = 1
 
+    /** Volumen 0..100 y silencio (se aplican al PCM antes de escribirlo al AudioTrack). */
+    @Volatile
+    var volume = 100
+
+    @Volatile
+    var muted = false
+
+    /** Cuadros por segundo reales de emulacion (se actualiza cada segundo). */
+    @Volatile
+    var fps = 0
+
     fun start() {
         Thread({ loop() }, "gba-emu").start()
     }
@@ -87,20 +98,15 @@ class Engine(
 
     fun autoSave() = post { Native.saveState(autoStatePath) }
 
-    /** Guarda el estado automatico, entrega una captura (para la portada) y detiene el hilo. */
-    fun shutdown(onScreenshot: (IntArray?) -> Unit) = post {
+    /** Guarda el estado automatico y detiene el hilo. */
+    fun shutdown() = post {
         Native.saveState(autoStatePath)
-        val pixels = try {
-            Native.screenshot()
-        } catch (t: Throwable) {
-            null
-        }
-        try {
-            onScreenshot(pixels)
-        } catch (t: Throwable) {
-            Log.w("Engine", "onScreenshot fallo", t)
-        }
         running = false
+    }
+
+    /** Captura del ultimo frame (ARGB) pedida desde la UI. */
+    fun screenshot(done: (IntArray?) -> Unit) = post {
+        done(try { Native.screenshot() } catch (t: Throwable) { null })
     }
 
     // ---- Bucle principal ----
@@ -121,12 +127,14 @@ class Engine(
         val builder = AudioTrack.Builder()
             .setAudioAttributes(attrs)
             .setAudioFormat(format)
-            .setBufferSizeInBytes(maxOf(minBytes, 16384))
+            .setBufferSizeInBytes(maxOf(minBytes, 12288))
             .setTransferMode(AudioTrack.MODE_STREAM)
         if (Build.VERSION.SDK_INT >= 26) {
             builder.setPerformanceMode(AudioTrack.PERFORMANCE_MODE_LOW_LATENCY)
         }
-        return builder.build()
+        val track = builder.build()
+        track.setVolume(1.0f)
+        return track
     }
 
     private fun loop() {
@@ -153,6 +161,8 @@ class Engine(
             val audio = ShortArray(4096)
             var next = System.nanoTime()
             var frameCounter = 0L
+            var fpsCount = 0
+            var fpsStamp = System.nanoTime()
 
             while (true) {
                 while (true) {
@@ -181,8 +191,24 @@ class Engine(
                 val render = sp == 1 || frameCounter % sp == 0L
                 val frames = Native.step(audio, render)
 
+                fpsCount++
+                val nowNs = System.nanoTime()
+                if (nowNs - fpsStamp >= 1_000_000_000L) {
+                    fps = fpsCount
+                    fpsCount = 0
+                    fpsStamp = nowNs
+                }
+
                 if (sp == 1) {
-                    if (frames > 0) t.write(audio, 0, frames * 2, AudioTrack.WRITE_BLOCKING)
+                    if (frames > 0) {
+                        val gain = if (muted) 0 else volume.coerceIn(0, 100)
+                        if (gain < 100) {
+                            for (i in 0 until frames * 2) {
+                                audio[i] = ((audio[i] * gain) / 100).toShort()
+                            }
+                        }
+                        t.write(audio, 0, frames * 2, AudioTrack.WRITE_BLOCKING)
+                    }
                     next = System.nanoTime()
                 } else {
                     next += FRAME_NANOS / sp

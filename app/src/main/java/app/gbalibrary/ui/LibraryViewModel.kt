@@ -5,7 +5,9 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import app.gbalibrary.data.Covers
 import app.gbalibrary.data.Game
+import app.gbalibrary.data.Settings
 import app.gbalibrary.data.GameStore
 import app.gbalibrary.data.RomScanner
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,11 +16,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 const val CAT_ALL = "__all__"
 const val CAT_FAV = "__fav__"
 const val CAT_RECENT = "__recent__"
+const val CAT_TOP = "__top__"
 
 enum class SortMode(val label: String) {
     NAME("Nombre"),
@@ -45,12 +50,14 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
                 CAT_ALL -> list
                 CAT_FAV -> list.filter { it.favorite }
                 CAT_RECENT -> list.filter { it.lastPlayed > 0 }
+                CAT_TOP -> list.filter { it.playSeconds > 0 }
                 else -> list.filter { c in it.collections }
             }
             val needle = q.trim()
             val filtered = if (needle.isEmpty()) base else base.filter { it.title.contains(needle, ignoreCase = true) }
             when {
                 c == CAT_RECENT -> filtered.sortedByDescending { it.lastPlayed }
+                c == CAT_TOP -> filtered.sortedByDescending { it.playSeconds }
                 s == SortMode.NAME -> filtered.sortedBy { it.title.lowercase() }
                 s == SortMode.RECENT -> filtered.sortedWith(
                     compareByDescending<Game> { it.lastPlayed }.thenBy { it.title.lowercase() }
@@ -127,7 +134,57 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
     fun setInCollection(id: String, name: String, inCollection: Boolean) =
         store.setInCollection(id, name.trim(), inCollection)
 
-    fun remove(id: String) = store.remove(id)
+    fun remove(id: String) {
+        Covers.deleteFor(appContext, id)
+        store.remove(id)
+    }
+
+    fun setNote(id: String, note: String) = store.setNote(id, note)
+
+    // ---- Imagenes personalizadas (se copian reducidas a la app) ----
+
+    fun importCover(id: String, uri: Uri) {
+        viewModelScope.launch {
+            val ok = withContext(Dispatchers.IO) { Covers.import(appContext, uri, Covers.coverFile(appContext, id), 900) }
+            if (ok) store.setCover(id, true) else message.value = "No se pudo usar esa imagen"
+        }
+    }
+
+    fun clearCover(id: String) {
+        Covers.coverFile(appContext, id).delete()
+        store.setCover(id, false)
+    }
+
+    fun importGameBackground(id: String, uri: Uri) {
+        viewModelScope.launch {
+            val ok = withContext(Dispatchers.IO) { Covers.import(appContext, uri, Covers.backgroundFile(appContext, id), 1600) }
+            if (ok) store.setBackground(id, true) else message.value = "No se pudo usar esa imagen"
+        }
+    }
+
+    fun clearGameBackground(id: String) {
+        Covers.backgroundFile(appContext, id).delete()
+        store.setBackground(id, false)
+    }
+
+    fun importAvatar(uri: Uri) {
+        viewModelScope.launch {
+            val ok = withContext(Dispatchers.IO) { Covers.import(appContext, uri, Covers.avatarFile(appContext), 256) }
+            if (ok) Settings.bumpAvatar() else message.value = "No se pudo usar esa imagen"
+        }
+    }
+
+    fun importLibraryBackground(uri: Uri) {
+        viewModelScope.launch {
+            val ok = withContext(Dispatchers.IO) { Covers.import(appContext, uri, Covers.libraryBgFile(appContext), 1600) }
+            if (ok) {
+                Settings.bumpBg()
+                Settings.setBgMode(1)
+            } else {
+                message.value = "No se pudo usar esa imagen"
+            }
+        }
+    }
 
     companion object {
         private const val KEY_FOLDERS = "folders"

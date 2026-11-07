@@ -1,6 +1,6 @@
 package app.gbalibrary.emu
 
-import android.view.Surface
+import java.nio.ByteBuffer
 
 /** Puente JNI hacia libgbalib.so (ver cpp/native-lib.c). */
 object Native {
@@ -15,7 +15,8 @@ object Native {
 
     /** Ejecuta un frame y devuelve cuantos frames de audio estereo se escribieron en [audio]. */
     external fun step(audio: ShortArray, render: Boolean): Int
-    external fun setSurface(surface: Surface?)
+    /** Copia el ultimo frame (240x160 RGBA) al buffer directo. True si habia frame nuevo. */
+    external fun copyFrame(dst: ByteBuffer): Boolean
     external fun saveState(path: String): Boolean
     external fun loadState(path: String): Boolean
     external fun screenshot(): IntArray?

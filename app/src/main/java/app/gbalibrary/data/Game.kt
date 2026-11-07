@@ -17,6 +17,9 @@ data class Game(
     val favorite: Boolean = false,
     val collections: Set<String> = emptySet(),
     val coverStamp: Long = 0L,
+    val note: String = "",
+    val hasCover: Boolean = false,
+    val hasBackground: Boolean = false,
 ) {
     fun toJson(): JSONObject = JSONObject().apply {
         put("id", id)
@@ -32,6 +35,9 @@ data class Game(
         put("favorite", favorite)
         put("collections", JSONArray(collections.toList()))
         put("coverStamp", coverStamp)
+        put("note", note)
+        put("hasCover", hasCover)
+        put("hasBackground", hasBackground)
     }
 
     companion object {
@@ -53,6 +59,9 @@ data class Game(
                 favorite = o.optBoolean("favorite"),
                 collections = cols,
                 coverStamp = o.optLong("coverStamp"),
+                note = o.optString("note"),
+                hasCover = o.optBoolean("hasCover"),
+                hasBackground = o.optBoolean("hasBackground"),
             )
         }
     }

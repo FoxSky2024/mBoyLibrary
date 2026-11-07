@@ -8,9 +8,7 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -35,26 +33,29 @@ import app.gbalibrary.emu.GbaKey
 import kotlin.math.abs
 
 private val PadIdle = Color(0x44FFFFFF)
-private val PadActive = Color(0xAA66C0F4)
 private val PadBorder = Color(0x66FFFFFF)
 
-/** Boton redondo o redondeado (A, B, L, R, START, SELECT) con multitouch independiente. */
+/** Boton (A, B, L, R, START, SELECT, ...) que rellena su espacio, con multitouch independiente. */
 @Composable
 fun PadButton(
     label: String,
     mask: Int,
     engine: Engine,
+    enabled: Boolean,
     modifier: Modifier = Modifier,
     shape: Shape = CircleShape,
     fontSize: Int = 20,
 ) {
     var pressed by remember { mutableStateOf(false) }
+    val active = LocalPalette.current.accent.copy(alpha = 0.75f)
     Box(
         modifier = modifier
+            .fillMaxSize()
             .clip(shape)
-            .background(if (pressed) PadActive else PadIdle)
+            .background(if (pressed) active else PadIdle)
             .border(2.dp, PadBorder, shape)
-            .pointerInput(mask) {
+            .pointerInput(mask, enabled) {
+                if (!enabled) return@pointerInput
                 awaitEachGesture {
                     awaitFirstDown(requireUnconsumed = false)
                     pressed = true
@@ -70,44 +71,14 @@ fun PadButton(
     }
 }
 
-@Composable
-fun ShoulderButton(label: String, mask: Int, engine: Engine, modifier: Modifier = Modifier) {
-    PadButton(
-        label = label,
-        mask = mask,
-        engine = engine,
-        modifier = modifier.size(width = 96.dp, height = 46.dp),
-        shape = RoundedCornerShape(14.dp),
-    )
-}
-
-@Composable
-fun MenuPill(label: String, mask: Int, engine: Engine, modifier: Modifier = Modifier) {
-    PadButton(
-        label = label,
-        mask = mask,
-        engine = engine,
-        modifier = modifier.size(width = 78.dp, height = 32.dp),
-        shape = RoundedCornerShape(16.dp),
-        fontSize = 11,
-    )
-}
-
-/** A arriba a la derecha, B abajo a la izquierda, como en la consola. */
-@Composable
-fun ABCluster(engine: Engine, modifier: Modifier = Modifier) {
-    Box(modifier.size(width = 170.dp, height = 130.dp)) {
-        PadButton("B", GbaKey.B, engine, Modifier.align(Alignment.BottomStart).size(72.dp))
-        PadButton("A", GbaKey.A, engine, Modifier.align(Alignment.TopEnd).size(72.dp))
-    }
-}
-
 /** Cruceta de 8 direcciones: se desliza el dedo y cambia de direccion sin soltar. */
 @Composable
-fun DPad(engine: Engine, modifier: Modifier = Modifier) {
+fun DPad(engine: Engine, enabled: Boolean, modifier: Modifier = Modifier) {
     var dirs by remember { mutableIntStateOf(0) }
+    val activeColor = LocalPalette.current.accent.copy(alpha = 0.75f)
     Box(
-        modifier = modifier.pointerInput(Unit) {
+        modifier = modifier.fillMaxSize().pointerInput(enabled) {
+            if (!enabled) return@pointerInput
             awaitEachGesture {
                 val down = awaitFirstDown(requireUnconsumed = false)
                 val cx = size.width / 2f
@@ -159,7 +130,7 @@ fun DPad(engine: Engine, modifier: Modifier = Modifier) {
             drawRoundRect(PadIdle, topLeft = Offset(0f, t), size = Size(w, t), cornerRadius = corner)
 
             fun highlight(bit: Int, topLeft: Offset) {
-                if ((dirs and bit) != 0) drawRect(PadActive, topLeft = topLeft, size = Size(t, t))
+                if ((dirs and bit) != 0) drawRect(activeColor, topLeft = topLeft, size = Size(t, t))
             }
             highlight(GbaKey.UP, Offset(t, 0f))
             highlight(GbaKey.DOWN, Offset(t, 2 * t))

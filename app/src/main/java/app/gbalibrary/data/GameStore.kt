@@ -78,7 +78,13 @@ class GameStore private constructor(private val ctx: Context) {
         it.copy(playSeconds = it.playSeconds + seconds, lastPlayed = now)
     }
 
-    fun touchCover(id: String) = modify(id) { it.copy(coverStamp = System.currentTimeMillis()) }
+    fun setNote(id: String, note: String) = modify(id) { it.copy(note = note) }
+
+    fun setCover(id: String, has: Boolean) =
+        modify(id) { it.copy(hasCover = has, coverStamp = System.currentTimeMillis()) }
+
+    fun setBackground(id: String, has: Boolean) =
+        modify(id) { it.copy(hasBackground = has, coverStamp = System.currentTimeMillis()) }
 
     fun remove(id: String) = update { list -> list.filterNot { it.id == id } }
 

@@ -4,8 +4,6 @@
 
 #include <jni.h>
 #include <android/log.h>
-#include <android/native_window.h>
-#include <android/native_window_jni.h>
 #include <fcntl.h>
 #include <pthread.h>
 #include <stdbool.h>
@@ -29,8 +27,10 @@
 static struct mCore* gCore = NULL;
 static uint8_t* gRom = NULL;
 static uint32_t gVideo[VIDEO_W * VIDEO_H];
-static ANativeWindow* gWindow = NULL;
-static pthread_mutex_t gWindowLock = PTHREAD_MUTEX_INITIALIZER;
+// Copia estable del ultimo frame para el hilo de OpenGL (evita tearing).
+static uint32_t gFrame[VIDEO_W * VIDEO_H];
+static volatile int gFrameDirty = 0;
+static pthread_mutex_t gFrameLock = PTHREAD_MUTEX_INITIALIZER;
 
 static void unloadCore(void) {
     if (gCore) {
@@ -44,21 +44,11 @@ static void unloadCore(void) {
     }
 }
 
-static void drawFrame(void) {
-    pthread_mutex_lock(&gWindowLock);
-    if (gWindow) {
-        ANativeWindow_Buffer buf;
-        if (ANativeWindow_lock(gWindow, &buf, NULL) == 0) {
-            uint32_t* dst = (uint32_t*) buf.bits;
-            int w = buf.width < VIDEO_W ? buf.width : VIDEO_W;
-            int h = buf.height < VIDEO_H ? buf.height : VIDEO_H;
-            for (int y = 0; y < h; y++) {
-                memcpy(dst + (size_t) y * buf.stride, gVideo + (size_t) y * VIDEO_W, (size_t) w * 4);
-            }
-            ANativeWindow_unlockAndPost(gWindow);
-        }
-    }
-    pthread_mutex_unlock(&gWindowLock);
+static void publishFrame(void) {
+    pthread_mutex_lock(&gFrameLock);
+    memcpy(gFrame, gVideo, sizeof(gFrame));
+    gFrameDirty = 1;
+    pthread_mutex_unlock(&gFrameLock);
 }
 
 JNIEXPORT jboolean JNICALL
@@ -92,13 +82,17 @@ Java_app_gbalibrary_emu_Native_load(JNIEnv* env, jobject thiz, jbyteArray rom, j
     mCoreInitConfig(gCore, "gbalibrary");
     mCoreConfigSetIntValue(&gCore->config, "skipBios", 1);
     mCoreConfigSetIntValue(&gCore->config, "useBios", 0);
+    // CAUSA DEL "SIN SONIDO": mGBA toma el volumen de la configuracion y, si no
+    // existe, arranca en 0. Se fija el maximo (0x100) y se quita el mute.
+    mCoreConfigSetIntValue(&gCore->config, "volume", 0x100);
+    mCoreConfigSetIntValue(&gCore->config, "mute", 0);
     mCoreLoadConfig(gCore);
 
     memset(gVideo, 0, sizeof(gVideo));
+    memset(gFrame, 0, sizeof(gFrame));
+    gFrameDirty = 1;
     gCore->setVideoBuffer(gCore, (void*) gVideo, VIDEO_W);
-    gCore->setAudioBufferSize(gCore, 1024);
-    blip_set_rates(gCore->getAudioChannel(gCore, 0), gCore->frequency(gCore), SAMPLE_RATE);
-    blip_set_rates(gCore->getAudioChannel(gCore, 1), gCore->frequency(gCore), SAMPLE_RATE);
+    gCore->setAudioBufferSize(gCore, 2048);
 
     if (!gCore->loadROM(gCore, vf)) {
         LOGE("loadROM failed");
@@ -116,6 +110,9 @@ Java_app_gbalibrary_emu_Native_load(JNIEnv* env, jobject thiz, jbyteArray rom, j
     }
 
     gCore->reset(gCore);
+    // Tasa de muestreo de salida: despues de reset para que no se pierda.
+    blip_set_rates(gCore->getAudioChannel(gCore, 0), gCore->frequency(gCore), SAMPLE_RATE);
+    blip_set_rates(gCore->getAudioChannel(gCore, 1), gCore->frequency(gCore), SAMPLE_RATE);
     return JNI_TRUE;
 }
 
@@ -148,7 +145,7 @@ Java_app_gbalibrary_emu_Native_step(JNIEnv* env, jobject thiz, jshortArray audio
     if (!gCore) return 0;
 
     gCore->runFrame(gCore);
-    if (render) drawFrame();
+    if (render) publishFrame();
 
     jsize cap = (*env)->GetArrayLength(env, audio) / 2;
     blip_t* left = gCore->getAudioChannel(gCore, 0);
@@ -165,21 +162,23 @@ Java_app_gbalibrary_emu_Native_step(JNIEnv* env, jobject thiz, jshortArray audio
     return avail;
 }
 
-JNIEXPORT void JNICALL
-Java_app_gbalibrary_emu_Native_setSurface(JNIEnv* env, jobject thiz, jobject surface) {
+// Copia el ultimo frame (240x160, bytes R,G,B,X) al ByteBuffer directo `dst`.
+// Devuelve true solo si hay un frame nuevo desde la ultima llamada.
+JNIEXPORT jboolean JNICALL
+Java_app_gbalibrary_emu_Native_copyFrame(JNIEnv* env, jobject thiz, jobject dst) {
     (void) thiz;
-    pthread_mutex_lock(&gWindowLock);
-    if (gWindow) {
-        ANativeWindow_release(gWindow);
-        gWindow = NULL;
+    void* p = (*env)->GetDirectBufferAddress(env, dst);
+    jlong cap = (*env)->GetDirectBufferCapacity(env, dst);
+    if (!p || cap < (jlong) sizeof(gFrame)) return JNI_FALSE;
+    jboolean fresh = JNI_FALSE;
+    pthread_mutex_lock(&gFrameLock);
+    if (gFrameDirty) {
+        memcpy(p, gFrame, sizeof(gFrame));
+        gFrameDirty = 0;
+        fresh = JNI_TRUE;
     }
-    if (surface) {
-        gWindow = ANativeWindow_fromSurface(env, surface);
-        if (gWindow) {
-            ANativeWindow_setBuffersGeometry(gWindow, VIDEO_W, VIDEO_H, WINDOW_FORMAT_RGBX_8888);
-        }
-    }
-    pthread_mutex_unlock(&gWindowLock);
+    pthread_mutex_unlock(&gFrameLock);
+    return fresh;
 }
 
 JNIEXPORT jboolean JNICALL
