@@ -1,0 +1,522 @@
+build	Build release APK	﻿2026-11-07T13:58:38.4222724Z ##[group]Run chmod +x gradlew
+build	Build release APK	2026-11-07T13:58:38.4224745Z ^[[36;1mchmod +x gradlew^[[0m
+build	Build release APK	2026-11-07T13:58:38.4226519Z ^[[36;1m./gradlew :app:assembleRelease --no-daemon^[[0m
+build	Build release APK	2026-11-07T13:58:38.4295742Z shell: /usr/bin/bash -e {0}
+build	Build release APK	2026-11-07T13:58:38.4296942Z env:
+build	Build release APK	2026-11-07T13:58:38.4298290Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.21-9/x64
+build	Build release APK	2026-11-07T13:58:38.4300591Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.21-9/x64
+build	Build release APK	2026-11-07T13:58:38.4302364Z ##[endgroup]
+build	Build release APK	2026-11-07T13:58:40.3044058Z Downloading https://services.gradle.org/distributions/gradle-8.14.3-bin.zip
+build	Build release APK	2026-11-07T13:58:42.4646300Z .............10%.............20%.............30%.............40%.............50%.............60%.............70%.............80%.............90%..............100%
+build	Build release APK	2026-11-07T13:58:43.7550009Z 
+build	Build release APK	2026-11-07T13:58:43.7550994Z Welcome to Gradle 8.14.3!
+build	Build release APK	2026-11-07T13:58:43.7560850Z 
+build	Build release APK	2026-11-07T13:58:43.7561558Z Here are the highlights of this release:
+build	Build release APK	2026-11-07T13:58:43.7562481Z  - Java 24 support
+build	Build release APK	2026-11-07T13:58:43.7563130Z  - GraalVM Native Image toolchain selection
+build	Build release APK	2026-11-07T13:58:43.7563806Z  - Enhancements to test reporting
+build	Build release APK	2026-11-07T13:58:43.7564565Z  - Build Authoring improvements
+build	Build release APK	2026-11-07T13:58:43.7565124Z 
+build	Build release APK	2026-11-07T13:58:43.7565628Z For more details see https://docs.gradle.org/8.14.3/release-notes.html
+build	Build release APK	2026-11-07T13:58:43.7566267Z 
+build	Build release APK	2026-11-07T13:58:43.8537060Z To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.14.3/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+build	Build release APK	2026-11-07T13:58:45.2533817Z Daemon will be stopped at the end of the build 
+build	Build release APK	2026-11-07T13:59:33.4541619Z 
+build	Build release APK	2026-11-07T13:59:33.4544566Z > Configure project :app
+build	Build release APK	2026-11-07T13:59:33.4546084Z Checking the license for package NDK (Side by side) 27.2.12479018 in /usr/local/lib/android/sdk/licenses
+build	Build release APK	2026-11-07T13:59:33.4553925Z License for package NDK (Side by side) 27.2.12479018 accepted.
+build	Build release APK	2026-11-07T13:59:33.4563293Z Preparing "Install NDK (Side by side) 27.2.12479018 v.27.2.12479018".
+build	Build release APK	2026-11-07T13:59:52.7533227Z "Install NDK (Side by side) 27.2.12479018 v.27.2.12479018" ready.
+build	Build release APK	2026-11-07T13:59:52.7534141Z Installing NDK (Side by side) 27.2.12479018 in /usr/local/lib/android/sdk/ndk/27.2.12479018
+build	Build release APK	2026-11-07T13:59:52.7535577Z "Install NDK (Side by side) 27.2.12479018 v.27.2.12479018" complete.
+build	Build release APK	2026-11-07T13:59:53.1537860Z "Install NDK (Side by side) 27.2.12479018 v.27.2.12479018" finished.
+build	Build release APK	2026-11-07T13:59:54.5538055Z 
+build	Build release APK	2026-11-07T13:59:54.5539080Z > Task :app:buildKotlinToolingMetadata
+build	Build release APK	2026-11-07T13:59:54.5540013Z > Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+build	Build release APK	2026-11-07T13:59:54.5540735Z > Task :app:preBuild UP-TO-DATE
+build	Build release APK	2026-11-07T13:59:54.5565393Z > Task :app:preReleaseBuild UP-TO-DATE
+build	Build release APK	2026-11-07T14:00:00.2534003Z > Task :app:generateReleaseResValues
+build	Build release APK	2026-11-07T14:00:00.2534669Z > Task :app:checkReleaseAarMetadata
+build	Build release APK	2026-11-07T14:00:00.3556582Z > Task :app:mapReleaseSourceSetPaths
+build	Build release APK	2026-11-07T14:00:00.3560445Z > Task :app:generateReleaseResources
+build	Build release APK	2026-11-07T14:00:00.8537720Z > Task :app:packageReleaseResources
+build	Build release APK	2026-11-07T14:00:01.3533119Z > Task :app:mergeReleaseResources
+build	Build release APK	2026-11-07T14:00:02.2585830Z > Task :app:createReleaseCompatibleScreenManifests
+build	Build release APK	2026-11-07T14:00:02.2586852Z > Task :app:extractDeepLinksRelease
+build	Build release APK	2026-11-07T14:00:02.3542788Z > Task :app:parseReleaseLocalResources
+build	Build release APK	2026-11-07T14:00:02.6545501Z > Task :app:processReleaseMainManifest
+build	Build release APK	2026-11-07T14:00:02.7532867Z > Task :app:processReleaseManifest
+build	Build release APK	2026-11-07T14:00:02.7533240Z > Task :app:javaPreCompileRelease
+build	Build release APK	2026-11-07T14:00:02.7533479Z > Task :app:extractProguardFiles
+build	Build release APK	2026-11-07T14:00:04.6532353Z 
+build	Build release APK	2026-11-07T14:00:04.6533439Z > Task :app:configureCMakeRelWithDebInfo[arm64-v8a]
+build	Build release APK	2026-11-07T14:00:04.6555427Z Checking the license for package CMake 3.22.1 in /usr/local/lib/android/sdk/licenses
+build	Build release APK	2026-11-07T14:00:04.6558557Z License for package CMake 3.22.1 accepted.
+build	Build release APK	2026-11-07T14:00:04.6559228Z Preparing "Install CMake 3.22.1 v.3.22.1".
+build	Build release APK	2026-11-07T14:00:04.6560453Z "Install CMake 3.22.1 v.3.22.1" ready.
+build	Build release APK	2026-11-07T14:00:04.6561126Z Installing CMake 3.22.1 in /usr/local/lib/android/sdk/cmake/3.22.1
+build	Build release APK	2026-11-07T14:00:04.6561801Z "Install CMake 3.22.1 v.3.22.1" complete.
+build	Build release APK	2026-11-07T14:00:04.6562206Z "Install CMake 3.22.1 v.3.22.1" finished.
+build	Build release APK	2026-11-07T14:00:14.3533750Z 
+build	Build release APK	2026-11-07T14:00:14.3534501Z > Task :app:buildCMakeRelWithDebInfo[arm64-v8a]
+build	Build release APK	2026-11-07T14:00:14.3535311Z C/C++: ninja: Entering directory `/home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a'
+build	Build release APK	2026-11-07T14:00:14.3537014Z C/C++: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-ep/src/mgba_ep/src/gb/memory.c:295:63: warning: comparison of integers of different signs: 'int' and 'unsigned int' [-Wsign-compare]
+build	Build release APK	2026-11-07T14:00:14.3538513Z C/C++:   295 |                 } else if (cpu->tMultiplier * (cpu->pc - memory->cartBusPc) >= memory->cartBusDecay) {
+build	Build release APK	2026-11-07T14:00:14.3539266Z C/C++:       |                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ^  ~~~~~~~~~~~~~~~~~~~~
+build	Build release APK	2026-11-07T14:00:14.3539841Z C/C++: 1 warning generated.
+build	Build release APK	2026-11-07T14:00:14.5565773Z 
+build	Build release APK	2026-11-07T14:00:14.5569992Z C/C++: /usr/local/lib/android/sdk/ndk/27.2.12479018/toolchains/llvm/prebuilt/linux-x86_64/bin/clang --target=aarch64-none-linux-android24 --sysroot=/usr/local/lib/android/sdk/ndk/27.2.12479018/toolchains/llvm/prebuilt/linux-x86_64/sysroot -Dgbalib_EXPORTS -I/home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include -I/home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-ep/src/mgba_ep/include -I/home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-ep/src/mgba_ep-build/include -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security  -O2 -g -DNDEBUG -fPIC -O2 -Wall -MD -MT CMakeFiles/gbalib.dir/native-lib.c.o -MF CMakeFiles/gbalib.dir/native-lib.c.o.d -o CMakeFiles/gbalib.dir/native-lib.c.o -c /home/runner/work/mBoyLibrary/mBoyLibrary/app/src/main/cpp/native-lib.c
+build	Build release APK	2026-11-07T14:00:14.5575467Z C/C++: /home/runner/work/mBoyLibrary/mBoyLibrary/app/src/main/cpp/native-lib.c:57:12: error: no member named 'baseVideoSize' in 'struct mCore'
+build	Build release APK	2026-11-07T14:00:14.5576688Z FAILURE: Build failed with an exception.
+build	Build release APK	2026-11-07T14:00:14.5577095Z C/C++:    57 |     gCore->baseVideoSize(gCore, &w, &h);
+build	Build release APK	2026-11-07T14:00:14.5577407Z 
+build	Build release APK	2026-11-07T14:00:14.5577571Z C/C++:       |     ~~~~~  ^
+build	Build release APK	2026-11-07T14:00:14.5577876Z * What went wrong:
+build	Build release APK	2026-11-07T14:00:14.5578514Z C/C++: /home/runner/work/mBoyLibrary/mBoyLibrary/app/src/main/cpp/native-lib.c:134:12: error: no member named 'baseVideoSize' in 'struct mCore'
+build	Build release APK	2026-11-07T14:00:14.5579321Z Execution failed for task ':app:buildCMakeRelWithDebInfo[arm64-v8a]'.
+build	Build release APK	2026-11-07T14:00:14.5579809Z C/C++:   134 |     gCore->baseVideoSize(gCore, &w, &h);
+build	Build release APK	2026-11-07T14:00:14.5580674Z > com.android.ide.common.process.ProcessException: ninja: Entering directory `/home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a'
+build	Build release APK	2026-11-07T14:00:14.5581472Z C/C++:       |     ~~~~~  ^
+build	Build release APK	2026-11-07T14:00:14.5581794Z   [1/10] Creating directories for 'mgba_ep'
+build	Build release APK	2026-11-07T14:00:14.5582162Z C/C++: 2 errors generated.
+build	Build release APK	2026-11-07T14:00:14.5582526Z   [2/10] Performing download step (git clone) for 'mgba_ep'
+build	Build release APK	2026-11-07T14:00:14.5582846Z 
+build	Build release APK	2026-11-07T14:00:14.5583012Z   Cloning into 'mgba_ep'...
+build	Build release APK	2026-11-07T14:00:14.5584793Z > Task :app:buildCMakeRelWithDebInfo[arm64-v8a] FAILED
+build	Build release APK	2026-11-07T14:00:14.5585303Z   HEAD is now at 26b7884 CHANGES: Update for 0.10.5
+build	Build release APK	2026-11-07T14:00:14.5585766Z > Task :app:processReleaseManifestForPackage
+build	Build release APK	2026-11-07T14:00:14.5586230Z   [3/10] Performing update step for 'mgba_ep'
+build	Build release APK	2026-11-07T14:00:14.5586559Z 
+build	Build release APK	2026-11-07T14:00:14.5586766Z   [4/10] No patch step for 'mgba_ep'
+build	Build release APK	2026-11-07T14:00:14.5587595Z [Incubating] Problems report is available at: file:///home/runner/work/mBoyLibrary/mBoyLibrary/build/reports/problems/problems-report.html
+build	Build release APK	2026-11-07T14:00:14.5589897Z   [5/10] Performing configure step for 'mgba_ep'
+build	Build release APK	2026-11-07T14:00:14.5621834Z   -- The C compiler identification is Clang 18.0.3
+build	Build release APK	2026-11-07T14:00:14.5622488Z   -- The CXX compiler identification is Clang 18.0.3
+build	Build release APK	2026-11-07T14:00:14.5623116Z   -- Detecting C compiler ABI info
+build	Build release APK	2026-11-07T14:00:14.5623598Z   -- Detecting C compiler ABI info - done
+build	Build release APK	2026-11-07T14:00:14.5624599Z   -- Check for working C compiler: /usr/local/lib/android/sdk/ndk/27.2.12479018/toolchains/llvm/prebuilt/linux-x86_64/bin/clang - skipped
+build	Build release APK	2026-11-07T14:00:14.5625468Z   -- Detecting C compile features
+build	Build release APK	2026-11-07T14:00:14.5625921Z   -- Detecting C compile features - done
+build	Build release APK	2026-11-07T14:00:14.5626376Z   -- Detecting CXX compiler ABI info
+build	Build release APK	2026-11-07T14:00:14.5626847Z   -- Detecting CXX compiler ABI info - done
+build	Build release APK	2026-11-07T14:00:14.5627697Z   -- Check for working CXX compiler: /usr/local/lib/android/sdk/ndk/27.2.12479018/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++ - skipped
+build	Build release APK	2026-11-07T14:00:14.5628582Z   -- Detecting CXX compile features
+build	Build release APK	2026-11-07T14:00:14.5629094Z   -- Detecting CXX compile features - done
+build	Build release APK	2026-11-07T14:00:14.5629672Z   -- Found PkgConfig: /usr/bin/pkg-config (found version "2.5.1") 
+build	Build release APK	2026-11-07T14:00:14.5630211Z   -- Looking for strdup
+build	Build release APK	2026-11-07T14:00:14.5630609Z   -- Looking for strdup - found
+build	Build release APK	2026-11-07T14:00:14.5631005Z   -- Looking for strlcpy
+build	Build release APK	2026-11-07T14:00:14.5631427Z   -- Looking for strlcpy - found
+build	Build release APK	2026-11-07T14:00:14.5631827Z   -- Looking for strndup
+build	Build release APK	2026-11-07T14:00:14.5632232Z   -- Looking for strndup - found
+build	Build release APK	2026-11-07T14:00:14.5632666Z   -- Looking for vasprintf
+build	Build release APK	2026-11-07T14:00:14.5633056Z   -- Looking for vasprintf - found
+build	Build release APK	2026-11-07T14:00:14.5633493Z   -- Looking for freelocale
+build	Build release APK	2026-11-07T14:00:14.5633904Z   -- Looking for freelocale - found
+build	Build release APK	2026-11-07T14:00:14.5634520Z   -- Looking for newlocale
+build	Build release APK	2026-11-07T14:00:14.5634948Z   -- Looking for newlocale - found
+build	Build release APK	2026-11-07T14:00:14.5635369Z   -- Looking for setlocale
+build	Build release APK	2026-11-07T14:00:14.5635777Z   -- Looking for setlocale - found
+build	Build release APK	2026-11-07T14:00:14.5636236Z   -- Looking for snprintf_l
+build	Build release APK	2026-11-07T14:00:14.5636763Z   -- Looking for snprintf_l - not found
+build	Build release APK	2026-11-07T14:00:14.5637232Z   -- Looking for uselocale
+build	Build release APK	2026-11-07T14:00:14.5637650Z   -- Looking for uselocale - found
+build	Build release APK	2026-11-07T14:00:14.5638471Z   -- Looking for popcount32
+build	Build release APK	2026-11-07T14:00:14.5638900Z   -- Looking for popcount32 - not found
+build	Build release APK	2026-11-07T14:00:14.5639341Z   -- Looking for futimens
+build	Build release APK	2026-11-07T14:00:14.5639750Z   -- Looking for futimens - found
+build	Build release APK	2026-11-07T14:00:14.5640176Z   -- Looking for futimes
+build	Build release APK	2026-11-07T14:00:14.5640549Z   -- Looking for futimes - not found
+build	Build release APK	2026-11-07T14:00:14.5641067Z   -- Looking for localtime_r
+build	Build release APK	2026-11-07T14:00:14.5641639Z   -- Looking for localtime_r - found
+build	Build release APK	2026-11-07T14:00:14.5642077Z   -- Looking for include file xlocale.h
+build	Build release APK	2026-11-07T14:00:14.5642529Z   -- Looking for include file xlocale.h - found
+build	Build release APK	2026-11-07T14:00:14.5643020Z   -- Looking for include file pthread.h
+build	Build release APK	2026-11-07T14:00:14.5643495Z   -- Looking for include file pthread.h - found
+build	Build release APK	2026-11-07T14:00:14.5643949Z   -- Performing Test HAVE_PTHREAD
+build	Build release APK	2026-11-07T14:00:14.5644540Z   -- Performing Test HAVE_PTHREAD - Success
+build	Build release APK	2026-11-07T14:00:14.5644997Z   -- Looking for pthread_create
+build	Build release APK	2026-11-07T14:00:14.5645383Z   -- Looking for pthread_create - found
+build	Build release APK	2026-11-07T14:00:14.5645804Z   -- Looking for include file pthread_np.h
+build	Build release APK	2026-11-07T14:00:14.5646255Z   -- Looking for include file pthread_np.h - not found
+build	Build release APK	2026-11-07T14:00:14.5646701Z   -- Looking for pthread_setname_np
+build	Build release APK	2026-11-07T14:00:14.5647099Z   -- Looking for pthread_setname_np - found
+build	Build release APK	2026-11-07T14:00:14.5647518Z   -- Looking for pthread_set_name_np
+build	Build release APK	2026-11-07T14:00:14.5647948Z   -- Looking for pthread_set_name_np - not found
+build	Build release APK	2026-11-07T14:00:14.5648362Z   -- Looking for crc32
+build	Build release APK	2026-11-07T14:00:14.5648716Z   -- Looking for crc32 - not found
+build	Build release APK	2026-11-07T14:00:14.5649096Z   -- Configuring done
+build	Build release APK	2026-11-07T14:00:14.5649429Z   -- Generating done
+build	Build release APK	2026-11-07T14:00:14.5649958Z   CMake Warning:
+build	Build release APK	2026-11-07T14:00:14.5650364Z     Manually-specified variables were not used by the project:
+build	Build release APK	2026-11-07T14:00:14.5650820Z   
+build	Build release APK	2026-11-07T14:00:14.5651113Z       BUILD_HEADLESS
+build	Build release APK	2026-11-07T14:00:14.5651433Z       USE_7ZIP
+build	Build release APK	2026-11-07T14:00:14.5651741Z       USE_JSON_C
+build	Build release APK	2026-11-07T14:00:14.5652047Z   
+build	Build release APK	2026-11-07T14:00:14.5652338Z   
+build	Build release APK	2026-11-07T14:00:14.5653047Z   -- Build files have been written to: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-ep/src/mgba_ep-build
+build	Build release APK	2026-11-07T14:00:14.5653845Z   [6/10] Performing build step for 'mgba_ep'
+build	Build release APK	2026-11-07T14:00:14.5656345Z   [1/117] cd /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-ep/src/mgba_ep && /usr/local/lib/android/sdk/cmake/3.22.1/bin/cmake -DBINARY_NAME=mgba -DCONFIG_FILE=/home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-ep/src/mgba_ep/src/core/version.c.in -DOUT_FILE=/home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-ep/src/mgba_ep-build/version.c -P /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-ep/src/mgba_ep/version.cmake
+build	Build release APK	2026-11-07T14:00:14.5658821Z   [2/117] Building C object CMakeFiles/mgba.dir/src/core/core.c.o
+build	Build release APK	2026-11-07T14:00:14.5659382Z   [3/117] Building C object CMakeFiles/mgba.dir/src/core/directories.c.o
+build	Build release APK	2026-11-07T14:00:14.5659961Z   [4/117] Building C object CMakeFiles/mgba.dir/src/core/bitmap-cache.c.o
+build	Build release APK	2026-11-07T14:00:14.5660524Z   [5/117] Building C object CMakeFiles/mgba.dir/src/core/config.c.o
+build	Build release APK	2026-11-07T14:00:14.5661067Z   [6/117] Building C object CMakeFiles/mgba.dir/src/core/interface.c.o
+build	Build release APK	2026-11-07T14:00:14.5661613Z   [7/117] Building C object CMakeFiles/mgba.dir/src/core/library.c.o
+build	Build release APK	2026-11-07T14:00:14.5662173Z   [8/117] Building C object CMakeFiles/mgba.dir/src/core/lockstep.c.o
+build	Build release APK	2026-11-07T14:00:14.5662729Z   [9/117] Building C object CMakeFiles/mgba.dir/src/core/cache-set.c.o
+build	Build release APK	2026-11-07T14:00:14.5663287Z   [10/117] Building C object CMakeFiles/mgba.dir/src/core/cheats.c.o
+build	Build release APK	2026-11-07T14:00:14.5663823Z   [11/117] Building C object CMakeFiles/mgba.dir/src/core/log.c.o
+build	Build release APK	2026-11-07T14:00:14.5664456Z   [12/117] Building C object CMakeFiles/mgba.dir/src/core/rewind.c.o
+build	Build release APK	2026-11-07T14:00:14.5665897Z   [13/117] Building C object CMakeFiles/mgba.dir/src/core/map-cache.c.o
+build	Build release APK	2026-11-07T14:00:14.5666589Z   [14/117] Building C object CMakeFiles/mgba.dir/src/core/input.c.o
+build	Build release APK	2026-11-07T14:00:14.5735656Z   [15/117] Building C object CMakeFiles/mgba.dir/src/core/sync.c.o
+build	Build release APK	2026-11-07T14:00:14.5736810Z   [16/117] Building C object CMakeFiles/mgba.dir/src/core/serialize.c.o
+build	Build release APK	2026-11-07T14:00:14.5765360Z   [17/117] Building C object CMakeFiles/mgba.dir/src/core/tile-cache.c.o
+build	Build release APK	2026-11-07T14:00:14.5769060Z   [18/117] Building C object CMakeFiles/mgba.dir/src/core/thread.c.o
+build	Build release APK	2026-11-07T14:00:14.5806118Z   [19/117] Building C object CMakeFiles/mgba.dir/src/core/timing.c.o
+build	Build release APK	2026-11-07T14:00:14.5811515Z   [20/117] Building C object CMakeFiles/mgba.dir/src/sm83/sm83.c.o
+build	Build release APK	2026-11-07T14:00:14.5817761Z   [21/117] Building C object CMakeFiles/mgba.dir/src/core/mem-search.c.o
+build	Build release APK	2026-11-07T14:00:14.5850003Z   [22/117] Building C object CMakeFiles/mgba.dir/src/gb/cheats.c.o
+build	Build release APK	2026-11-07T14:00:14.5864978Z   [23/117] Building C object CMakeFiles/mgba.dir/src/gb/input.c.o
+build	Build release APK	2026-11-07T14:00:14.5875459Z 
+build	Build release APK	2026-11-07T14:00:14.5895220Z   [24/117] Building C object CMakeFiles/mgba.dir/src/sm83/decoder.c.o
+build	Build release APK	2026-11-07T14:00:14.5909396Z   [25/117] Building C object CMakeFiles/mgba.dir/src/gb/gb.c.o
+build	Build release APK	2026-11-07T14:00:14.5932427Z   [26/117] Building C object CMakeFiles/mgba.dir/src/gb/core.c.o
+build	Build release APK	2026-11-07T14:00:14.5985463Z   [27/117] Building C object CMakeFiles/mgba.dir/src/gb/io.c.o
+build	Build release APK	2026-11-07T14:00:14.5986244Z Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+build	Build release APK	2026-11-07T14:00:14.5991626Z   [28/117] Building C object CMakeFiles/mgba.dir/src/sm83/isa-sm83.c.o
+build	Build release APK	2026-11-07T14:00:14.5992294Z 
+build	Build release APK	2026-11-07T14:00:14.6045508Z   [29/117] Building C object CMakeFiles/mgba.dir/src/gb/renderers/cache-set.c.o
+build	Build release APK	2026-11-07T14:00:14.6065535Z You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+build	Build release APK	2026-11-07T14:00:14.6074968Z   [30/117] Building C object CMakeFiles/mgba.dir/src/gb/audio.c.o
+build	Build release APK	2026-11-07T14:00:14.6094672Z 
+build	Build release APK	2026-11-07T14:00:14.6095439Z For more on this, please refer to https://docs.gradle.org/8.14.3/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+build	Build release APK	2026-11-07T14:00:14.6096304Z 17 actionable tasks: 17 executed
+build	Build release APK	2026-11-07T14:00:14.6096886Z   [31/117] Building C object CMakeFiles/mgba.dir/src/gb/serialize.c.o
+build	Build release APK	2026-11-07T14:00:14.6104969Z   [32/117] Building C object CMakeFiles/mgba.dir/src/gb/timer.c.o
+build	Build release APK	2026-11-07T14:00:14.6124873Z   [33/117] Building C object CMakeFiles/mgba.dir/src/gb/sio.c.o
+build	Build release APK	2026-11-07T14:00:14.6142408Z   [34/117] Building C object CMakeFiles/mgba.dir/src/gb/overrides.c.o
+build	Build release APK	2026-11-07T14:00:14.6143070Z   [35/117] Building C object CMakeFiles/mgba.dir/src/gb/mbc.c.o
+build	Build release APK	2026-11-07T14:00:14.6143765Z   [36/117] Building C object CMakeFiles/mgba.dir/src/arm/decoder.c.o
+build	Build release APK	2026-11-07T14:00:14.6144517Z   [37/117] Building C object CMakeFiles/mgba.dir/src/arm/arm.c.o
+build	Build release APK	2026-11-07T14:00:14.6145163Z   [38/117] Building C object CMakeFiles/mgba.dir/src/gb/memory.c.o
+build	Build release APK	2026-11-07T14:00:14.6146511Z   /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-ep/src/mgba_ep/src/gb/memory.c:295:63: warning: comparison of integers of different signs: 'int' and 'unsigned int' [-Wsign-compare]
+build	Build release APK	2026-11-07T14:00:14.6166991Z     295 |                 } else if (cpu->tMultiplier * (cpu->pc - memory->cartBusPc) >= memory->cartBusDecay) {
+build	Build release APK	2026-11-07T14:00:14.6167833Z         |                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ^  ~~~~~~~~~~~~~~~~~~~~
+build	Build release APK	2026-11-07T14:00:14.6168584Z   1 warning generated.
+build	Build release APK	2026-11-07T14:00:14.6169152Z   [39/117] Building C object CMakeFiles/mgba.dir/src/gb/video.c.o
+build	Build release APK	2026-11-07T14:00:14.6169900Z   [40/117] Building C object CMakeFiles/mgba.dir/src/arm/decoder-thumb.c.o
+build	Build release APK	2026-11-07T14:00:14.6170715Z   [41/117] Building C object CMakeFiles/mgba.dir/src/gb/renderers/software.c.o
+build	Build release APK	2026-11-07T14:00:14.6171447Z   [42/117] Building C object CMakeFiles/mgba.dir/src/arm/isa-thumb.c.o
+build	Build release APK	2026-11-07T14:00:14.6172490Z   [43/117] Building C object CMakeFiles/mgba.dir/src/gba/audio.c.o
+build	Build release APK	2026-11-07T14:00:14.6173128Z   [44/117] Building C object CMakeFiles/mgba.dir/src/gba/bios.c.o
+build	Build release APK	2026-11-07T14:00:14.6173749Z   [45/117] Building C object CMakeFiles/mgba.dir/src/gba/cart/gpio.c.o
+build	Build release APK	2026-11-07T14:00:14.6174557Z   [46/117] Building C object CMakeFiles/mgba.dir/src/gba/cart/matrix.c.o
+build	Build release APK	2026-11-07T14:00:14.6175166Z   [47/117] Building C object CMakeFiles/mgba.dir/src/gba/cart/vfame.c.o
+build	Build release APK	2026-11-07T14:00:14.6175857Z   [48/117] Building C object CMakeFiles/mgba.dir/src/gba/cheats/gameshark.c.o
+build	Build release APK	2026-11-07T14:00:14.6176484Z   [49/117] Building C object CMakeFiles/mgba.dir/src/gba/cheats.c.o
+build	Build release APK	2026-11-07T14:00:14.6177150Z   [50/117] Building C object CMakeFiles/mgba.dir/src/gba/cheats/codebreaker.c.o
+build	Build release APK	2026-11-07T14:00:14.6177872Z   [51/117] Building C object CMakeFiles/mgba.dir/src/gba/cart/ereader.c.o
+build	Build release APK	2026-11-07T14:00:14.6178556Z   [52/117] Building C object CMakeFiles/mgba.dir/src/gba/dma.c.o
+build	Build release APK	2026-11-07T14:00:14.6179191Z   [53/117] Building C object CMakeFiles/mgba.dir/src/gba/cheats/parv3.c.o
+build	Build release APK	2026-11-07T14:00:14.6179884Z   [54/117] Building C object CMakeFiles/mgba.dir/src/gba/input.c.o
+build	Build release APK	2026-11-07T14:00:14.6180462Z   [55/117] Building C object CMakeFiles/mgba.dir/src/gba/hle-bios.c.o
+build	Build release APK	2026-11-07T14:00:14.6181113Z   [56/117] Building C object CMakeFiles/mgba.dir/src/arm/decoder-arm.c.o
+build	Build release APK	2026-11-07T14:00:14.6181711Z   [57/117] Building C object CMakeFiles/mgba.dir/src/gba/gba.c.o
+build	Build release APK	2026-11-07T14:00:14.6182306Z   [58/117] Building C object CMakeFiles/mgba.dir/src/gba/io.c.o
+build	Build release APK	2026-11-07T14:00:14.6182893Z   [59/117] Building C object CMakeFiles/mgba.dir/src/gba/core.c.o
+build	Build release APK	2026-11-07T14:00:14.6183554Z   [60/117] Building C object CMakeFiles/mgba.dir/src/gba/overrides.c.o
+build	Build release APK	2026-11-07T14:00:14.6184523Z   [61/117] Building C object CMakeFiles/mgba.dir/src/gba/renderers/gl.c.o
+build	Build release APK	2026-11-07T14:00:14.6206429Z   [62/117] Building C object CMakeFiles/mgba.dir/src/gba/renderers/common.c.o
+build	Build release APK	2026-11-07T14:00:14.6207204Z   [63/117] Building C object CMakeFiles/mgba.dir/src/gba/renderers/cache-set.c.o
+build	Build release APK	2026-11-07T14:00:14.6208026Z   [64/117] Building C object CMakeFiles/mgba.dir/src/gba/renderers/software-obj.c.o
+build	Build release APK	2026-11-07T14:00:14.6208777Z   [65/117] Building C object CMakeFiles/mgba.dir/src/gba/renderers/video-software.c.o
+build	Build release APK	2026-11-07T14:00:14.6209569Z   [66/117] Building C object CMakeFiles/mgba.dir/src/gba/renderers/software-bg.c.o
+build	Build release APK	2026-11-07T14:00:14.6210361Z   [67/117] Building C object CMakeFiles/mgba.dir/src/gba/sharkport.c.o
+build	Build release APK	2026-11-07T14:00:14.6211030Z   [68/117] Building C object CMakeFiles/mgba.dir/src/gba/memory.c.o
+build	Build release APK	2026-11-07T14:00:14.6211669Z   [69/117] Building C object CMakeFiles/mgba.dir/src/gba/serialize.c.o
+build	Build release APK	2026-11-07T14:00:14.6212376Z   [70/117] Building C object CMakeFiles/mgba.dir/src/gba/savedata.c.o
+build	Build release APK	2026-11-07T14:00:14.6212984Z   [71/117] Building C object CMakeFiles/mgba.dir/src/gba/sio.c.o
+build	Build release APK	2026-11-07T14:00:14.6213652Z   [72/117] Building C object CMakeFiles/mgba.dir/src/gba/sio/gbp.c.o
+build	Build release APK	2026-11-07T14:00:14.6214292Z   [73/117] Building C object CMakeFiles/mgba.dir/src/gba/sio/joybus.c.o
+build	Build release APK	2026-11-07T14:00:14.6220281Z   [74/117] Building C object CMakeFiles/mgba.dir/src/util/circle-buffer.c.o
+build	Build release APK	2026-11-07T14:00:14.6230921Z   [75/117] Building C object CMakeFiles/mgba.dir/src/util/configuration.c.o
+build	Build release APK	2026-11-07T14:00:14.6231734Z   [76/117] Building C object CMakeFiles/mgba.dir/src/gba/timer.c.o
+build	Build release APK	2026-11-07T14:00:14.6234919Z   [77/117] Building C object CMakeFiles/mgba.dir/src/util/crc32.c.o
+build	Build release APK	2026-11-07T14:00:14.6247501Z   [78/117] Building C object CMakeFiles/mgba.dir/src/util/hash.c.o
+build	Build release APK	2026-11-07T14:00:14.6248186Z   [79/117] Building C object CMakeFiles/mgba.dir/src/util/formatting.c.o
+build	Build release APK	2026-11-07T14:00:14.6248910Z   [80/117] Building C object CMakeFiles/mgba.dir/src/util/gbk-table.c.o
+build	Build release APK	2026-11-07T14:00:14.6249548Z   [81/117] Building C object CMakeFiles/mgba.dir/src/util/vfs.c.o
+build	Build release APK	2026-11-07T14:00:14.6250179Z   [82/117] Building C object CMakeFiles/mgba.dir/src/gba/video.c.o
+build	Build release APK	2026-11-07T14:00:14.6250779Z   [83/117] Building C object CMakeFiles/mgba.dir/src/util/elf-read.c.o
+build	Build release APK	2026-11-07T14:00:14.6251700Z   [84/117] Building C object CMakeFiles/mgba.dir/src/util/export.c.o
+build	Build release APK	2026-11-07T14:00:14.6252329Z   [85/117] Building C object CMakeFiles/mgba.dir/src/util/convolve.c.o
+build	Build release APK	2026-11-07T14:00:14.6252963Z   [86/117] Building C object CMakeFiles/mgba.dir/src/util/patch.c.o
+build	Build release APK	2026-11-07T14:00:14.6253553Z   [87/117] Building C object CMakeFiles/mgba.dir/src/util/string.c.o
+build	Build release APK	2026-11-07T14:00:14.6254198Z   [88/117] Building C object CMakeFiles/mgba.dir/src/util/table.c.o
+build	Build release APK	2026-11-07T14:00:14.6258138Z   [89/117] Building C object CMakeFiles/mgba.dir/src/util/patch-ips.c.o
+build	Build release APK	2026-11-07T14:00:14.6263271Z   [90/117] Building C object CMakeFiles/mgba.dir/src/util/ring-fifo.c.o
+build	Build release APK	2026-11-07T14:00:14.6264024Z   [91/117] Building C object CMakeFiles/mgba.dir/src/util/patch-fast.c.o
+build	Build release APK	2026-11-07T14:00:14.6265135Z   [92/117] Building C object CMakeFiles/mgba.dir/src/util/png-io.c.o
+build	Build release APK	2026-11-07T14:00:14.6265744Z   [93/117] Building C object CMakeFiles/mgba.dir/version.c.o
+build	Build release APK	2026-11-07T14:00:14.6266398Z   [94/117] Building C object CMakeFiles/mgba.dir/src/util/patch-ups.c.o
+build	Build release APK	2026-11-07T14:00:14.6267099Z   [95/117] Building C object CMakeFiles/mgba.dir/src/util/vfs/vfs-mem.c.o
+build	Build release APK	2026-11-07T14:00:14.6267808Z   [96/117] Building C object CMakeFiles/mgba.dir/src/util/vfs/vfs-fd.c.o
+build	Build release APK	2026-11-07T14:00:14.6268450Z   [97/117] Building C object CMakeFiles/mgba.dir/src/util/text-codec.c.o
+build	Build release APK	2026-11-07T14:00:14.6269134Z   [98/117] Building C object CMakeFiles/mgba.dir/src/util/vfs/vfs-fifo.c.o
+build	Build release APK	2026-11-07T14:00:14.6269811Z   [99/117] Building C object CMakeFiles/mgba.dir/src/util/vfs/vfs-dirent.c.o
+build	Build release APK	2026-11-07T14:00:14.6270563Z   [100/117] Building C object CMakeFiles/mgba.dir/src/platform/posix/memory.c.o
+build	Build release APK	2026-11-07T14:00:14.6271542Z   [101/117] Building C object CMakeFiles/mgba.dir/src/third-party/blip_buf/blip_buf.c.o
+build	Build release APK	2026-11-07T14:00:14.6272314Z   [102/117] Building C object CMakeFiles/mgba.dir/src/gba/sio/dolphin.c.o
+build	Build release APK	2026-11-07T14:00:14.6273012Z   [103/117] Building C object CMakeFiles/mgba.dir/src/third-party/inih/ini.c.o
+build	Build release APK	2026-11-07T14:00:14.6273761Z   [104/117] Building C object CMakeFiles/mgba.dir/src/gb/sio/lockstep.c.o
+build	Build release APK	2026-11-07T14:00:14.6274550Z   [105/117] Building C object CMakeFiles/mgba.dir/src/gb/sio/printer.c.o
+build	Build release APK	2026-11-07T14:00:14.6275341Z   [106/117] Building C object CMakeFiles/mgba.dir/src/gba/extra/audio-mixer.c.o
+build	Build release APK	2026-11-07T14:00:14.6276348Z   [107/117] Building C object CMakeFiles/mgba.dir/src/gba/extra/proxy.c.o
+build	Build release APK	2026-11-07T14:00:14.6276954Z   [108/117] Building C object CMakeFiles/mgba.dir/src/gba/sio/lockstep.c.o
+build	Build release APK	2026-11-07T14:00:14.6277564Z   [109/117] Building C object CMakeFiles/mgba.dir/src/gb/extra/proxy.c.o
+build	Build release APK	2026-11-07T14:00:14.6278172Z   [110/117] Building C object CMakeFiles/mgba.dir/src/gba/extra/battlechip.c.o
+build	Build release APK	2026-11-07T14:00:14.6278811Z   [111/117] Building C object CMakeFiles/mgba.dir/src/feature/commandline.c.o
+build	Build release APK	2026-11-07T14:00:14.6279408Z   [112/117] Building C object CMakeFiles/mgba.dir/src/feature/updater.c.o
+build	Build release APK	2026-11-07T14:00:14.6280016Z   [113/117] Building C object CMakeFiles/mgba.dir/src/feature/thread-proxy.c.o
+build	Build release APK	2026-11-07T14:00:14.6280665Z   [114/117] Building C object CMakeFiles/mgba.dir/src/feature/video-logger.c.o
+build	Build release APK	2026-11-07T14:00:14.6281309Z   [115/117] Building C object CMakeFiles/mgba.dir/src/arm/isa-arm.c.o
+build	Build release APK	2026-11-07T14:00:14.6281936Z   [116/117] Building C object CMakeFiles/mgba.dir/src/gba/renderers/software-mode0.c.o
+build	Build release APK	2026-11-07T14:00:14.6282502Z   [117/117] Linking C static library libmgba.a
+build	Build release APK	2026-11-07T14:00:14.6282899Z   [7/10] Performing install step for 'mgba_ep'
+build	Build release APK	2026-11-07T14:00:14.6285932Z   [1/2] cd /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-ep/src/mgba_ep && /usr/local/lib/android/sdk/cmake/3.22.1/bin/cmake -DBINARY_NAME=mgba -DCONFIG_FILE=/home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-ep/src/mgba_ep/src/core/version.c.in -DOUT_FILE=/home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-ep/src/mgba_ep-build/version.c -P /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-ep/src/mgba_ep/version.cmake
+build	Build release APK	2026-11-07T14:00:14.6288977Z   [1/2] Install the project...
+build	Build release APK	2026-11-07T14:00:14.6289305Z   -- Install configuration: "Release"
+build	Build release APK	2026-11-07T14:00:14.6290045Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/lib/libmgba.a
+build	Build release APK	2026-11-07T14:00:14.6291330Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/share/icons/hicolor/16x16/apps/io.mgba.mGBA.png
+build	Build release APK	2026-11-07T14:00:14.6292745Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/share/icons/hicolor/24x24/apps/io.mgba.mGBA.png
+build	Build release APK	2026-11-07T14:00:14.6294165Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/share/icons/hicolor/32x32/apps/io.mgba.mGBA.png
+build	Build release APK	2026-11-07T14:00:14.6295789Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/share/icons/hicolor/48x48/apps/io.mgba.mGBA.png
+build	Build release APK	2026-11-07T14:00:14.6297152Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/share/icons/hicolor/64x64/apps/io.mgba.mGBA.png
+build	Build release APK	2026-11-07T14:00:14.6298538Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/share/icons/hicolor/96x96/apps/io.mgba.mGBA.png
+build	Build release APK	2026-11-07T14:00:14.6299906Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/share/icons/hicolor/128x128/apps/io.mgba.mGBA.png
+build	Build release APK	2026-11-07T14:00:14.6301486Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/share/icons/hicolor/256x256/apps/io.mgba.mGBA.png
+build	Build release APK	2026-11-07T14:00:14.6302898Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/share/icons/hicolor/512x512/apps/io.mgba.mGBA.png
+build	Build release APK	2026-11-07T14:00:14.6304186Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba
+build	Build release APK	2026-11-07T14:00:14.6335788Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/debugger
+build	Build release APK	2026-11-07T14:00:14.6336866Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/debugger/debugger.h
+build	Build release APK	2026-11-07T14:00:14.6337934Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/script
+build	Build release APK	2026-11-07T14:00:14.6339043Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/script/context.h
+build	Build release APK	2026-11-07T14:00:14.6340211Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/script/types.h
+build	Build release APK	2026-11-07T14:00:14.6341371Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/script/macros.h
+build	Build release APK	2026-11-07T14:00:14.6342535Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/feature
+build	Build release APK	2026-11-07T14:00:14.6343648Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/feature/thread-proxy.h
+build	Build release APK	2026-11-07T14:00:14.6345024Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/feature/video-logger.h
+build	Build release APK	2026-11-07T14:00:14.6346230Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/feature/updater.h
+build	Build release APK	2026-11-07T14:00:14.6347414Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/feature/commandline.h
+build	Build release APK	2026-11-07T14:00:14.6348704Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/gb
+build	Build release APK	2026-11-07T14:00:14.6349795Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/gb/interface.h
+build	Build release APK	2026-11-07T14:00:14.6350846Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/gb/core.h
+build	Build release APK	2026-11-07T14:00:14.6351964Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/gba
+build	Build release APK	2026-11-07T14:00:14.6353073Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/gba/interface.h
+build	Build release APK	2026-11-07T14:00:14.6354250Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/gba/core.h
+build	Build release APK	2026-11-07T14:00:14.6355555Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal
+build	Build release APK	2026-11-07T14:00:14.6356640Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/debugger
+build	Build release APK	2026-11-07T14:00:14.6357895Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/debugger/symbols.h
+build	Build release APK	2026-11-07T14:00:14.6359122Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/debugger/stack-trace.h
+build	Build release APK	2026-11-07T14:00:14.6360793Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/debugger/cli-debugger.h
+build	Build release APK	2026-11-07T14:00:14.6362114Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/debugger/gdb-stub.h
+build	Build release APK	2026-11-07T14:00:14.6363491Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/debugger/parser.h
+build	Build release APK	2026-11-07T14:00:14.6445248Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/sm83
+build	Build release APK	2026-11-07T14:00:14.6446672Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/sm83/debugger
+build	Build release APK	2026-11-07T14:00:14.6448139Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/sm83/debugger/memory-debugger.h
+build	Build release APK	2026-11-07T14:00:14.6449631Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/sm83/debugger/debugger.h
+build	Build release APK	2026-11-07T14:00:14.6451072Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/sm83/debugger/cli-debugger.h
+build	Build release APK	2026-11-07T14:00:14.6452420Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/sm83/sm83.h
+build	Build release APK	2026-11-07T14:00:14.6453701Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/sm83/decoder.h
+build	Build release APK	2026-11-07T14:00:14.6455120Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/sm83/isa-sm83.h
+build	Build release APK	2026-11-07T14:00:14.6456461Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/sm83/emitter-sm83.h
+build	Build release APK	2026-11-07T14:00:14.6457736Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/script
+build	Build release APK	2026-11-07T14:00:14.6459275Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/script/socket.h
+build	Build release APK	2026-11-07T14:00:14.6460556Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/script/lua.h
+build	Build release APK	2026-11-07T14:00:14.6461810Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/defines.h
+build	Build release APK	2026-11-07T14:00:14.6463037Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/arm
+build	Build release APK	2026-11-07T14:00:14.6464300Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/arm/isa-arm.h
+build	Build release APK	2026-11-07T14:00:14.6465776Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/arm/debugger
+build	Build release APK	2026-11-07T14:00:14.6467158Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/arm/debugger/memory-debugger.h
+build	Build release APK	2026-11-07T14:00:14.6468569Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/arm/debugger/debugger.h
+build	Build release APK	2026-11-07T14:00:14.6469965Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/arm/debugger/cli-debugger.h
+build	Build release APK	2026-11-07T14:00:14.6471535Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/arm/emitter-arm.h
+build	Build release APK	2026-11-07T14:00:14.6472824Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/arm/arm.h
+build	Build release APK	2026-11-07T14:00:14.6474107Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/arm/decoder.h
+build	Build release APK	2026-11-07T14:00:14.6546075Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/arm/emitter-thumb.h
+build	Build release APK	2026-11-07T14:00:14.6547550Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/arm/emitter-inlines.h
+build	Build release APK	2026-11-07T14:00:14.6548911Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/arm/isa-thumb.h
+build	Build release APK	2026-11-07T14:00:14.6550210Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/arm/macros.h
+build	Build release APK	2026-11-07T14:00:14.6551504Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/arm/decoder-inlines.h
+build	Build release APK	2026-11-07T14:00:14.6552852Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/arm/isa-inlines.h
+build	Build release APK	2026-11-07T14:00:14.6554081Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gb
+build	Build release APK	2026-11-07T14:00:14.6555399Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gb/cheats.h
+build	Build release APK	2026-11-07T14:00:14.6556639Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gb/debugger
+build	Build release APK	2026-11-07T14:00:14.6557823Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gb/debugger/symbols.h
+build	Build release APK	2026-11-07T14:00:14.6559238Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gb/debugger/debugger.h
+build	Build release APK	2026-11-07T14:00:14.6560023Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gb/timer.h
+build	Build release APK	2026-11-07T14:00:14.6560816Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gb/serialize.h
+build	Build release APK	2026-11-07T14:00:14.6561576Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gb/mbc.h
+build	Build release APK	2026-11-07T14:00:14.6562300Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gb/sio.h
+build	Build release APK	2026-11-07T14:00:14.6563046Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gb/overrides.h
+build	Build release APK	2026-11-07T14:00:14.6563793Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gb/input.h
+build	Build release APK	2026-11-07T14:00:14.6564758Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gb/audio.h
+build	Build release APK	2026-11-07T14:00:14.6565938Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gb/io.h
+build	Build release APK	2026-11-07T14:00:14.6567052Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gb/gb.h
+build	Build release APK	2026-11-07T14:00:14.6569407Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gb/renderers
+build	Build release APK	2026-11-07T14:00:14.6570692Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gb/renderers/proxy.h
+build	Build release APK	2026-11-07T14:00:14.6571919Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gb/renderers/software.h
+build	Build release APK	2026-11-07T14:00:14.6573229Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gb/renderers/cache-set.h
+build	Build release APK	2026-11-07T14:00:14.6574680Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gb/memory.h
+build	Build release APK	2026-11-07T14:00:14.6575880Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gb/video.h
+build	Build release APK	2026-11-07T14:00:14.6577026Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gb/extra
+build	Build release APK	2026-11-07T14:00:14.6578247Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gb/extra/cli.h
+build	Build release APK	2026-11-07T14:00:14.6579421Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gb/sio
+build	Build release APK	2026-11-07T14:00:14.6580675Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gb/sio/lockstep.h
+build	Build release APK	2026-11-07T14:00:14.6582026Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gb/sio/printer.h
+build	Build release APK	2026-11-07T14:00:14.6583205Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gba
+build	Build release APK	2026-11-07T14:00:14.6584570Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gba/cart
+build	Build release APK	2026-11-07T14:00:14.6586079Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gba/cart/matrix.h
+build	Build release APK	2026-11-07T14:00:14.6587223Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gba/cart/gpio.h
+build	Build release APK	2026-11-07T14:00:14.6588410Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gba/cart/vfame.h
+build	Build release APK	2026-11-07T14:00:14.6589743Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gba/cart/ereader.h
+build	Build release APK	2026-11-07T14:00:14.6591050Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gba/sharkport.h
+build	Build release APK	2026-11-07T14:00:14.6592328Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gba/cheats.h
+build	Build release APK	2026-11-07T14:00:14.6593532Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gba/timer.h
+build	Build release APK	2026-11-07T14:00:14.6633900Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gba/serialize.h
+build	Build release APK	2026-11-07T14:00:14.6635550Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gba/sio.h
+build	Build release APK	2026-11-07T14:00:14.6636907Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gba/overrides.h
+build	Build release APK	2026-11-07T14:00:14.6655291Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gba/input.h
+build	Build release APK	2026-11-07T14:00:14.6656682Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gba/gba.h
+build	Build release APK	2026-11-07T14:00:14.6657999Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gba/audio.h
+build	Build release APK	2026-11-07T14:00:14.6659300Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gba/io.h
+build	Build release APK	2026-11-07T14:00:14.6660574Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gba/renderers
+build	Build release APK	2026-11-07T14:00:14.6661929Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gba/renderers/proxy.h
+build	Build release APK	2026-11-07T14:00:14.6663330Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gba/renderers/gl.h
+build	Build release APK	2026-11-07T14:00:14.6664954Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gba/renderers/video-software.h
+build	Build release APK	2026-11-07T14:00:14.6666406Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gba/renderers/common.h
+build	Build release APK	2026-11-07T14:00:14.6667845Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gba/renderers/cache-set.h
+build	Build release APK	2026-11-07T14:00:14.6669207Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gba/dma.h
+build	Build release APK	2026-11-07T14:00:14.6670500Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gba/memory.h
+build	Build release APK	2026-11-07T14:00:14.6671811Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gba/video.h
+build	Build release APK	2026-11-07T14:00:14.6673331Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gba/bios.h
+build	Build release APK	2026-11-07T14:00:14.6697501Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gba/extra
+build	Build release APK	2026-11-07T14:00:14.6698970Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gba/extra/audio-mixer.h
+build	Build release APK	2026-11-07T14:00:14.6700373Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gba/extra/cli.h
+build	Build release APK	2026-11-07T14:00:14.6701667Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gba/sio
+build	Build release APK	2026-11-07T14:00:14.6703006Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gba/sio/lockstep.h
+build	Build release APK	2026-11-07T14:00:14.6704507Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gba/sio/gbp.h
+build	Build release APK	2026-11-07T14:00:14.6705854Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gba/sio/dolphin.h
+build	Build release APK	2026-11-07T14:00:14.6707225Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/internal/gba/savedata.h
+build	Build release APK	2026-11-07T14:00:14.6708798Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/core
+build	Build release APK	2026-11-07T14:00:14.6710000Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/core/thread.h
+build	Build release APK	2026-11-07T14:00:14.6711272Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/core/interface.h
+build	Build release APK	2026-11-07T14:00:14.6712525Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/core/cheats.h
+build	Build release APK	2026-11-07T14:00:14.6713789Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/core/bitmap-cache.h
+build	Build release APK	2026-11-07T14:00:14.6715202Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/core/map-cache.h
+build	Build release APK	2026-11-07T14:00:14.6716519Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/core/serialize.h
+build	Build release APK	2026-11-07T14:00:14.6717796Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/core/timing.h
+build	Build release APK	2026-11-07T14:00:14.6719027Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/core/core.h
+build	Build release APK	2026-11-07T14:00:14.6720290Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/core/tile-cache.h
+build	Build release APK	2026-11-07T14:00:14.6721558Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/core/input.h
+build	Build release APK	2026-11-07T14:00:14.6722783Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/core/lockstep.h
+build	Build release APK	2026-11-07T14:00:14.6724057Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/core/log.h
+build	Build release APK	2026-11-07T14:00:14.6725367Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/core/library.h
+build	Build release APK	2026-11-07T14:00:14.6726834Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/core/config.h
+build	Build release APK	2026-11-07T14:00:14.6728075Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/core/rewind.h
+build	Build release APK	2026-11-07T14:00:14.6729307Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/core/mem-search.h
+build	Build release APK	2026-11-07T14:00:14.6730500Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/core/scripting.h
+build	Build release APK	2026-11-07T14:00:14.6731682Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/core/version.h
+build	Build release APK	2026-11-07T14:00:14.6732904Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/core/cpu.h
+build	Build release APK	2026-11-07T14:00:14.6734130Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/core/cache-set.h
+build	Build release APK	2026-11-07T14:00:14.6747814Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/core/blip_buf.h
+build	Build release APK	2026-11-07T14:00:14.6749062Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/core/sync.h
+build	Build release APK	2026-11-07T14:00:14.6750257Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/core/directories.h
+build	Build release APK	2026-11-07T14:00:14.6751733Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util
+build	Build release APK	2026-11-07T14:00:14.6752926Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/string.h
+build	Build release APK	2026-11-07T14:00:14.6754233Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/export.h
+build	Build release APK	2026-11-07T14:00:14.6755528Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/socket.h
+build	Build release APK	2026-11-07T14:00:14.6756689Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/ring-fifo.h
+build	Build release APK	2026-11-07T14:00:14.6757878Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/convolve.h
+build	Build release APK	2026-11-07T14:00:14.6759039Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/png-io.h
+build	Build release APK	2026-11-07T14:00:14.6806065Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/crc32.h
+build	Build release APK	2026-11-07T14:00:14.6807403Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/gui
+build	Build release APK	2026-11-07T14:00:14.6808615Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/gui/font.h
+build	Build release APK	2026-11-07T14:00:14.6809916Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/gui/file-select.h
+build	Build release APK	2026-11-07T14:00:14.6811184Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/gui/menu.h
+build	Build release APK	2026-11-07T14:00:14.6812490Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/gui/font-metrics.h
+build	Build release APK	2026-11-07T14:00:14.6813732Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/gui.h
+build	Build release APK	2026-11-07T14:00:14.6845868Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/hash.h
+build	Build release APK	2026-11-07T14:00:14.6847117Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/dllexports.h
+build	Build release APK	2026-11-07T14:00:14.6848353Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/threading.h
+build	Build release APK	2026-11-07T14:00:14.6849588Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/elf-read.h
+build	Build release APK	2026-11-07T14:00:14.6850728Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/common.h
+build	Build release APK	2026-11-07T14:00:14.6851960Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/text-codec.h
+build	Build release APK	2026-11-07T14:00:14.6853151Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/table.h
+build	Build release APK	2026-11-07T14:00:14.6854581Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/configuration.h
+build	Build release APK	2026-11-07T14:00:14.6855662Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/platform
+build	Build release APK	2026-11-07T14:00:14.6856800Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/platform/windows
+build	Build release APK	2026-11-07T14:00:14.6858458Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/platform/windows/threading.h
+build	Build release APK	2026-11-07T14:00:14.6859820Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/platform/windows/getopt.h
+build	Build release APK	2026-11-07T14:00:14.6861079Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/platform/posix
+build	Build release APK	2026-11-07T14:00:14.6862329Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/platform/posix/threading.h
+build	Build release APK	2026-11-07T14:00:14.6863654Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/platform/psp2
+build	Build release APK	2026-11-07T14:00:14.6865179Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/platform/psp2/sce-vfs.h
+build	Build release APK	2026-11-07T14:00:14.6866610Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/platform/psp2/threading.h
+build	Build release APK	2026-11-07T14:00:14.6867978Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/platform/switch
+build	Build release APK	2026-11-07T14:00:14.6869340Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/platform/switch/threading.h
+build	Build release APK	2026-11-07T14:00:14.6870664Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/platform/3ds
+build	Build release APK	2026-11-07T14:00:14.6871940Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/platform/3ds/3ds-vfs.h
+build	Build release APK	2026-11-07T14:00:14.6873325Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/platform/3ds/threading.h
+build	Build release APK	2026-11-07T14:00:14.6877426Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/memory.h
+build	Build release APK	2026-11-07T14:00:14.6879015Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/formatting.h
+build	Build release APK	2026-11-07T14:00:14.6880238Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/patch
+build	Build release APK	2026-11-07T14:00:14.6881567Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/patch/fast.h
+build	Build release APK	2026-11-07T14:00:14.6882851Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/patch/ups.h
+build	Build release APK	2026-11-07T14:00:14.6884123Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/patch/ips.h
+build	Build release APK	2026-11-07T14:00:14.6885560Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/circle-buffer.h
+build	Build release APK	2026-11-07T14:00:14.6886881Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/patch.h
+build	Build release APK	2026-11-07T14:00:14.6888139Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/math.h
+build	Build release APK	2026-11-07T14:00:14.6889402Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/macros.h
+build	Build release APK	2026-11-07T14:00:14.6890641Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/vfs.h
+build	Build release APK	2026-11-07T14:00:14.6892050Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba-util/vector.h
+build	Build release APK	2026-11-07T14:00:14.6893268Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include/mgba/flags.h
+build	Build release APK	2026-11-07T14:00:14.6894651Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/share/doc/mGBA/licenses/blip_buf.txt
+build	Build release APK	2026-11-07T14:00:14.6895928Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/share/doc/mGBA/licenses/inih.txt
+build	Build release APK	2026-11-07T14:00:14.6897187Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/share/doc/mGBA/README.md
+build	Build release APK	2026-11-07T14:00:14.6898438Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/share/doc/mGBA/README_DE.md
+build	Build release APK	2026-11-07T14:00:14.6899713Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/share/doc/mGBA/README_ES.md
+build	Build release APK	2026-11-07T14:00:14.6900995Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/share/doc/mGBA/README_ZH_CN.md
+build	Build release APK	2026-11-07T14:00:14.6902257Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/share/doc/mGBA/CHANGES
+build	Build release APK	2026-11-07T14:00:14.6903454Z   -- Installing: /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/share/doc/mGBA/LICENSE
+build	Build release APK	2026-11-07T14:00:14.6904225Z   [8/10] Completed 'mgba_ep'
+build	Build release APK	2026-11-07T14:00:14.6904743Z   [9/10] Building C object CMakeFiles/gbalib.dir/native-lib.c.o
+build	Build release APK	2026-11-07T14:00:14.6905163Z   FAILED: CMakeFiles/gbalib.dir/native-lib.c.o 
+build	Build release APK	2026-11-07T14:00:14.6909578Z   /usr/local/lib/android/sdk/ndk/27.2.12479018/toolchains/llvm/prebuilt/linux-x86_64/bin/clang --target=aarch64-none-linux-android24 --sysroot=/usr/local/lib/android/sdk/ndk/27.2.12479018/toolchains/llvm/prebuilt/linux-x86_64/sysroot -Dgbalib_EXPORTS -I/home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-install/include -I/home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-ep/src/mgba_ep/include -I/home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a/mgba-ep/src/mgba_ep-build/include -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security  -O2 -g -DNDEBUG -fPIC -O2 -Wall -MD -MT CMakeFiles/gbalib.dir/native-lib.c.o -MF CMakeFiles/gbalib.dir/native-lib.c.o.d -o CMakeFiles/gbalib.dir/native-lib.c.o -c /home/runner/work/mBoyLibrary/mBoyLibrary/app/src/main/cpp/native-lib.c
+build	Build release APK	2026-11-07T14:00:14.6914571Z   /home/runner/work/mBoyLibrary/mBoyLibrary/app/src/main/cpp/native-lib.c:57:12: error: no member named 'baseVideoSize' in 'struct mCore'
+build	Build release APK	2026-11-07T14:00:14.6915278Z      57 |     gCore->baseVideoSize(gCore, &w, &h);
+build	Build release APK	2026-11-07T14:00:14.6915603Z         |     ~~~~~  ^
+build	Build release APK	2026-11-07T14:00:14.6916237Z   /home/runner/work/mBoyLibrary/mBoyLibrary/app/src/main/cpp/native-lib.c:134:12: error: no member named 'baseVideoSize' in 'struct mCore'
+build	Build release APK	2026-11-07T14:00:14.6916956Z     134 |     gCore->baseVideoSize(gCore, &w, &h);
+build	Build release APK	2026-11-07T14:00:14.6917284Z         |     ~~~~~  ^
+build	Build release APK	2026-11-07T14:00:14.6917529Z   2 errors generated.
+build	Build release APK	2026-11-07T14:00:14.6917810Z   ninja: build stopped: subcommand failed.
+build	Build release APK	2026-11-07T14:00:14.6918135Z   
+build	Build release APK	2026-11-07T14:00:14.6918389Z   C++ build system [build] failed while executing:
+build	Build release APK	2026-11-07T14:00:14.6918817Z       /usr/local/lib/android/sdk/cmake/3.22.1/bin/ninja \
+build	Build release APK	2026-11-07T14:00:14.6919193Z         -C \
+build	Build release APK	2026-11-07T14:00:14.6919667Z         /home/runner/work/mBoyLibrary/mBoyLibrary/app/.cxx/RelWithDebInfo/3o3b5w4g/arm64-v8a \
+build	Build release APK	2026-11-07T14:00:14.6920421Z         gbalib
+build	Build release APK	2026-11-07T14:00:14.6920737Z     from /home/runner/work/mBoyLibrary/mBoyLibrary/app
+build	Build release APK	2026-11-07T14:00:14.6921027Z 
+build	Build release APK	2026-11-07T14:00:14.6921127Z * Try:
+build	Build release APK	2026-11-07T14:00:14.6921421Z > Run with --stacktrace option to get the stack trace.
+build	Build release APK	2026-11-07T14:00:14.6921878Z > Run with --info or --debug option to get more log output.
+build	Build release APK	2026-11-07T14:00:14.6922355Z > Run with --scan to get full insights.
+build	Build release APK	2026-11-07T14:00:14.6922734Z > Get more help at https://help.gradle.org.
+build	Build release APK	2026-11-07T14:00:14.6922987Z 
+build	Build release APK	2026-11-07T14:00:14.6923106Z BUILD FAILED in 1m 34s
+build	Build release APK	2026-11-07T14:00:14.9102338Z ##[error]Process completed with exit code 1.
