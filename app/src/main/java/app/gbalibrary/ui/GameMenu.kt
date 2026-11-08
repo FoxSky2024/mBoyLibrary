@@ -34,7 +34,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.launch
 import app.gbalibrary.data.Settings
 
 /** Acciones que el menu delega en la Activity. */
@@ -56,8 +55,6 @@ class MenuActions(
     val pickPipVideo: () -> Unit = {},
     /** Cuando se guardo la ranura (ms) o 0 si esta vacia. */
     val slotTime: (String) -> Long = { 0L },
-    /** Ruta de la miniatura de la ranura (o null si no hay). */
-    val slotThumb: (String) -> String? = { null },
 )
 
 private enum class PauseView { MAIN, SAVE, LOAD, SETTINGS }
@@ -160,46 +157,30 @@ fun GameMenu(title: String, speed: Int, layout: ControlLayout, padConnected: Boo
 @Composable
 private fun SlotList(saving: Boolean, a: MenuActions) {
     val p = LocalPalette.current
-    val scope = androidx.compose.runtime.rememberCoroutineScope()
-    var tick by remember { mutableStateOf(0) } // refresca hora y miniatura tras guardar
-    var confirm by remember { mutableStateOf<String?>(null) } // ranura pendiente de confirmar sobrescritura
+    var tick by remember { mutableStateOf(0) } // refresca la hora tras guardar
     Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(Ds.GapL)) {
         SLOTS.forEach { (slot, name) ->
             val time = remember(slot, tick) { a.slotTime(slot) }
-            val thumb = remember(slot, tick) { a.slotThumb(slot) }
             val empty = time <= 0L
             Row(
                 Modifier.fillMaxWidth()
                     .background(p.card, RoundedCornerShape(Ds.RadiusM))
-                    .padding(start = 10.dp, top = 8.dp, end = 8.dp, bottom = 8.dp),
+                    .padding(start = Ds.Pad, top = 8.dp, end = 8.dp, bottom = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Ds.GapL),
             ) {
-                SlotThumb(if (empty) null else thumb)
                 Column(Modifier.weight(1f)) {
                     Text(name, color = p.text, fontSize = Ds.BodySp.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                     Text(if (empty) "Vacía" else formatAgo(time), color = p.dim, fontSize = Ds.LabelSp.sp, maxLines = 1)
                 }
                 if (saving) {
-                    val asking = confirm == slot
-                    AppButton(
-                        if (empty) "Guardar" else if (asking) "¿Seguro?" else "Sobrescribir",
-                        {
-                            if (empty || asking) {
-                                confirm = null
-                                a.save(slot)
-                                scope.launch { kotlinx.coroutines.delay(700); tick++ }
-                            } else confirm = slot
-                        },
-                        Modifier.widthIn(min = 130.dp),
-                        kind = if (asking) BtnKind.DANGER else BtnKind.PRIMARY,
-                    )
+                    AppButton("Guardar", { a.save(slot); tick++ }, Modifier.widthIn(min = 120.dp), kind = BtnKind.PRIMARY)
                 } else {
                     AppButton("Cargar", { a.load(slot) }, Modifier.widthIn(min = 120.dp), kind = BtnKind.PRIMARY, enabled = !empty)
                 }
             }
         }
-        Hint(if (saving) "Guarda el instante exacto del juego. Sobrescribir pide confirmación." else "Carga el instante guardado y continúa desde ahí.")
+        Hint(if (saving) "Guarda el instante exacto del juego." else "Carga el instante guardado y continúa desde ahí.")
     }
 }
 
@@ -246,7 +227,7 @@ private fun PauseControls(layout: ControlLayout, padConnected: Boolean, forceTou
         a.persistLayout()
     }
     if (layout.moveType == MoveType.STICK) {
-        SliderRow("Zona muerta", layout.deadzone, 0.05f..0.7f, "${(layout.deadzone * 100).toInt()}%", onFinished = a.persistLayout) { layout.deadzone = it }
+        SliderRow("Zona muerta", layout.deadzone, 0.05f..0.7f, "${(layout.deadzone * 100).toInt()}%", { layout.deadzone = it }, onFinished = a.persistLayout)
     }
     ButtonFlow {
         AppButton("Editar controles", a.editControls, kind = BtnKind.PRIMARY)

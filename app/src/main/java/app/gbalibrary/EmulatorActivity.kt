@@ -330,25 +330,7 @@ class EmulatorActivity : ComponentActivity() {
     private fun doSave(slot: String) {
         engine?.saveState(statePath(slot)) { ok ->
             flash(if (ok) "Estado guardado" else "No se pudo guardar")
-            if (ok) {
-                runOnUiThread { PadInput.rumble(80) }
-                writeThumb(slot)
-            }
-        }
-    }
-
-    /** Miniatura de la ranura: PNG junto al estado (statePath + ".png"). */
-    private fun writeThumb(slot: String) {
-        engine?.screenshot { argb ->
-            if (argb == null) return@screenshot
-            try {
-                val vw = app.gbalibrary.emu.Native.videoWidth().coerceAtLeast(1)
-                val vh = (argb.size / vw).coerceAtLeast(1)
-                val bmp = Bitmap.createBitmap(argb, vw, vh, Bitmap.Config.ARGB_8888)
-                File(statePath(slot) + ".png").outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 90, it) }
-            } catch (e: Exception) {
-                // la miniatura es opcional
-            }
+            if (ok) runOnUiThread { PadInput.rumble(80) }
         }
     }
 
@@ -616,7 +598,6 @@ class EmulatorActivity : ComponentActivity() {
                         persistLayout = { layout.save(layoutScope) },
                         setForceTouch = { forceTouch.value = it },
                         toggleMusic = { Music.toggle(this@EmulatorActivity) },
-                        slotThumb = { slot -> File(statePath(slot) + ".png").takeIf { it.exists() }?.path },
                         slotTime = { slot -> File(statePath(slot)).let { f -> if (f.exists()) f.lastModified() else 0L } },
                         pickPipVideo = { pickPipVideoFile.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.VideoOnly)) },
                         setSpeed = {

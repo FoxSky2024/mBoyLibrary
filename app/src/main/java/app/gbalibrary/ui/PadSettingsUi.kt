@@ -162,37 +162,18 @@ fun PadDiagram(profile: Map<Int, Int>, listening: Int?, testing: Boolean, onTap:
         val d = LocalDensity.current
         Box(Modifier.size(w, h).align(Alignment.Center)) {
             Canvas(Modifier.size(w, h)) {
-                val cw = size.width
-                val ch = size.height
-                fun pt(x: Float, y: Float) = Offset(cw * x, ch * y)
-                // Silueta de un mando de Xbox: cuerpo ancho con dos agarres que bajan y se abren.
-                val body = androidx.compose.ui.graphics.Path().apply {
-                    moveTo(cw * 0.20f, ch * 0.20f)
-                    lineTo(cw * 0.80f, ch * 0.20f)
-                    cubicTo(cw * 0.90f, ch * 0.20f, cw * 0.96f, ch * 0.32f, cw * 0.97f, ch * 0.54f)
-                    cubicTo(cw * 0.985f, ch * 0.74f, cw * 0.965f, ch * 0.93f, cw * 0.88f, ch * 0.96f)
-                    cubicTo(cw * 0.80f, ch * 0.99f, cw * 0.745f, ch * 0.84f, cw * 0.69f, ch * 0.76f)
-                    cubicTo(cw * 0.63f, ch * 0.69f, cw * 0.37f, ch * 0.69f, cw * 0.31f, ch * 0.76f)
-                    cubicTo(cw * 0.255f, ch * 0.84f, cw * 0.20f, ch * 0.99f, cw * 0.12f, ch * 0.96f)
-                    cubicTo(cw * 0.035f, ch * 0.93f, cw * 0.015f, ch * 0.74f, cw * 0.03f, ch * 0.54f)
-                    cubicTo(cw * 0.04f, ch * 0.32f, cw * 0.10f, ch * 0.20f, cw * 0.20f, ch * 0.20f)
-                    close()
-                }
-                val shell = Color(0xFF2B323B)
-                val rim = Color(0xFF5A6673)
-                // gatillos y bumpers detras del cuerpo
-                drawRoundRect(Color(0xFF3A434D), topLeft = pt(0.10f, 0.0f), size = Size(cw * 0.18f, ch * 0.085f), cornerRadius = CornerRadius(cw * 0.03f))
-                drawRoundRect(Color(0xFF3A434D), topLeft = pt(0.72f, 0.0f), size = Size(cw * 0.18f, ch * 0.085f), cornerRadius = CornerRadius(cw * 0.03f))
-                drawRoundRect(Color(0xFF353D47), topLeft = pt(0.10f, 0.10f), size = Size(cw * 0.20f, ch * 0.08f), cornerRadius = CornerRadius(cw * 0.03f))
-                drawRoundRect(Color(0xFF353D47), topLeft = pt(0.70f, 0.10f), size = Size(cw * 0.20f, ch * 0.08f), cornerRadius = CornerRadius(cw * 0.03f))
-                drawPath(body, brush = androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFF3B444F), shell, Color(0xFF1F252C))))
-                drawPath(body, color = rim, style = androidx.compose.ui.graphics.drawscope.Stroke(3f))
-                // zonas decorativas: palanca izquierda, cruceta, palanca derecha y racimo ABXY
-                drawCircle(Color(0xFF171C21), radius = cw * 0.075f, center = pt(0.24f, 0.37f))
-                drawCircle(Color(0xFF171C21), radius = cw * 0.105f, center = pt(0.40f, 0.65f))
-                drawCircle(Color(0xFF171C21), radius = cw * 0.075f, center = pt(0.62f, 0.64f))
-                drawCircle(Color(0x22FFFFFF), radius = cw * 0.15f, center = pt(0.77f, 0.35f), style = androidx.compose.ui.graphics.drawscope.Stroke(2f))
-                drawCircle(Color(0xFF1A1F25), radius = cw * 0.03f, center = pt(0.50f, 0.25f))
+                val body = Color(0xFF2B323B)
+                val rim = Color(0xFF55606C)
+                // agarres y cuerpo
+                drawCircle(body, radius = size.width * 0.14f, center = Offset(size.width * 0.17f, size.height * 0.72f))
+                drawCircle(body, radius = size.width * 0.14f, center = Offset(size.width * 0.83f, size.height * 0.72f))
+                drawRoundRect(body, topLeft = Offset(size.width * 0.12f, size.height * 0.16f), size = Size(size.width * 0.76f, size.height * 0.62f), cornerRadius = CornerRadius(size.width * 0.14f))
+                drawRoundRect(rim, topLeft = Offset(size.width * 0.12f, size.height * 0.16f), size = Size(size.width * 0.76f, size.height * 0.62f), cornerRadius = CornerRadius(size.width * 0.14f), style = androidx.compose.ui.graphics.drawscope.Stroke(3f))
+                // sticks (decorativos)
+                drawCircle(Color(0xFF1A1F25), radius = size.width * 0.065f, center = Offset(size.width * 0.24f, size.height * 0.42f))
+                drawCircle(Color(0xFF1A1F25), radius = size.width * 0.065f, center = Offset(size.width * 0.60f, size.height * 0.72f))
+                // cruceta
+                drawCircle(Color(0xFF1A1F25), radius = size.width * 0.095f, center = Offset(size.width * 0.38f, size.height * 0.71f))
             }
             val btn = w * 0.085f
             PadInput.SLOTS.forEach { s ->

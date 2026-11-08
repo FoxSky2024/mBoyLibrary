@@ -366,6 +366,8 @@ private fun LibraryHome(
             TopBar(
                 query = query,
                 onQuery = { vm.query.value = it },
+                sort = sort,
+                onSort = { vm.sort.value = it },
                 actions = actions,
                 onRescan = { vm.rescan() },
                 onSettings = onSettings,
@@ -373,7 +375,7 @@ private fun LibraryHome(
                 onGallery = onGallery,
             )
             if (scanning) LinearProgressIndicator(Modifier.fillMaxWidth().height(3.dp), color = p.accent)
-            if (all.isNotEmpty()) SystemFilterRow(all, systemFilter, sort, { vm.sort.value = it }) { vm.systemFilter.value = it }
+            if (all.isNotEmpty()) SystemFilterRow(all, systemFilter) { vm.systemFilter.value = it }
 
             Row(Modifier.fillMaxSize()) {
                 SidePanel(all, collections, category, if (showFocus && nav.zone == Zone.SIDE) nav.side else -1, sideKeys) { vm.category.value = it }
@@ -404,6 +406,8 @@ private fun LibraryHome(
 private fun TopBar(
     query: String,
     onQuery: (String) -> Unit,
+    sort: SortMode,
+    onSort: (SortMode) -> Unit,
     actions: LibraryActions,
     onRescan: () -> Unit,
     onSettings: () -> Unit,
@@ -411,51 +415,47 @@ private fun TopBar(
     onGallery: () -> Unit,
 ) {
     val p = LocalPalette.current
+    var sortMenu by remember { mutableStateOf(false) }
     var addMenu by remember { mutableStateOf(false) }
-    // Barra global estilo Steam: logo + pestanas (BIBLIOTECA / GALERIA / PERFIL) + busqueda + cuenta.
     Row(
-        Modifier.fillMaxWidth().height(52.dp).background(p.bg.copy(alpha = 0.97f)).padding(horizontal = 12.dp),
+        Modifier.fillMaxWidth().height(48.dp).opacityPanel(p.panel).padding(horizontal = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text("◆", color = p.accent, fontSize = 20.sp)
-        Text(Settings.appName.value, color = p.text, fontWeight = FontWeight.Black, fontSize = 16.sp, maxLines = 1, softWrap = false, modifier = Modifier.widthIn(max = 130.dp), overflow = TextOverflow.Ellipsis)
-        NavLink("BIBLIOTECA", true) {}
-        NavLink("GALERÍA", false, onGallery)
-        NavLink("PERFIL", false, onProfile)
+        Text(Settings.appName.value, color = p.text, fontWeight = FontWeight.Black, fontSize = 18.sp, maxLines = 1, softWrap = false, modifier = Modifier.widthIn(max = 150.dp), overflow = TextOverflow.Ellipsis)
 
         Box(
-            Modifier.weight(1f).widthIn(min = 90.dp).height(34.dp).clip(RoundedCornerShape(4.dp)).background(p.panel).padding(horizontal = 10.dp),
+            Modifier.weight(1f).widthIn(min = 100.dp).height(36.dp).clip(RoundedCornerShape(18.dp)).background(p.bg.copy(alpha = 0.8f)).padding(horizontal = 14.dp),
             contentAlignment = Alignment.CenterStart,
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.weight(1f)) {
-                    BasicTextField(
-                        value = query,
-                        onValueChange = onQuery,
-                        singleLine = true,
-                        textStyle = TextStyle(color = p.text, fontSize = 14.sp),
-                        cursorBrush = SolidColor(p.accent),
-                        modifier = Modifier.fillMaxWidth().onFocusChanged { MenuNav.textFocus = it.isFocused },
-                        decorationBox = { inner ->
-                            Box(contentAlignment = Alignment.CenterStart) {
-                                if (query.isEmpty()) Text("Buscar", color = p.dim, fontSize = 14.sp)
-                                inner()
-                            }
-                        },
-                    )
-                }
-                // Limpiar la busqueda con un toque
-                if (query.isNotEmpty()) {
-                    Text("✕", color = p.dim, fontSize = 14.sp, modifier = Modifier.clickable { onQuery("") }.padding(start = 8.dp))
-                } else {
-                    Text("🔍", fontSize = 12.sp)
+            BasicTextField(
+                value = query,
+                onValueChange = onQuery,
+                singleLine = true,
+                textStyle = TextStyle(color = p.text, fontSize = 14.sp),
+                cursorBrush = SolidColor(p.accent),
+                modifier = Modifier.fillMaxWidth().onFocusChanged { MenuNav.textFocus = it.isFocused },
+                decorationBox = { inner ->
+                    Box(contentAlignment = Alignment.CenterStart) {
+                        if (query.isEmpty()) Text("Buscar juegos...", color = p.dim, fontSize = 14.sp)
+                        inner()
+                    }
+                },
+            )
+        }
+
+        Box {
+            Text("Orden: ${sort.label} ▾", color = p.text, fontSize = 13.sp, maxLines = 1, softWrap = false, modifier = Modifier.clickable { sortMenu = true }.padding(6.dp))
+            DropdownMenu(expanded = sortMenu, onDismissRequest = { sortMenu = false }) {
+                SortMode.entries.forEach { m ->
+                    DropdownMenuItem(text = { Text(m.label) }, onClick = { onSort(m); sortMenu = false })
                 }
             }
         }
 
         Box {
-            Text("＋", color = p.accent, fontSize = 24.sp, maxLines = 1, modifier = Modifier.clickable { Sfx.click(); addMenu = true }.padding(horizontal = 8.dp, vertical = 4.dp))
+            Text("＋", color = p.accent, fontSize = 24.sp, maxLines = 1, modifier = Modifier.clickable { Sfx.click(); addMenu = true }.padding(horizontal = 10.dp, vertical = 4.dp))
             DropdownMenu(expanded = addMenu, onDismissRequest = { addMenu = false }) {
                 DropdownMenuItem(text = { Text("Agregar carpeta de ROMs") }, onClick = { addMenu = false; actions.addFolder() })
                 DropdownMenuItem(text = { Text("Agregar archivos (.gba .gbc .gb .zip .7z)") }, onClick = { addMenu = false; actions.addFiles() })
@@ -465,29 +465,16 @@ private fun TopBar(
 
         StatusIndicators()
 
+        Text("🖼", fontSize = 18.sp, maxLines = 1, modifier = Modifier.clickable { onGallery() }.padding(horizontal = 6.dp, vertical = 4.dp))
         Row(
-            Modifier.clip(RoundedCornerShape(24.dp)).clickable(onClick = onProfile).padding(horizontal = 6.dp, vertical = 4.dp),
+            Modifier.clip(RoundedCornerShape(24.dp)).clickable(onClick = onProfile).padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text(Settings.profileName.value, color = p.text, fontSize = 13.sp, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 80.dp))
-            Avatar(30)
+            Text(Settings.profileName.value, color = p.text, fontSize = 13.sp, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 90.dp))
+            Avatar(32)
         }
-        Text("⚙", color = p.dim, fontSize = 20.sp, maxLines = 1, modifier = Modifier.clickable(onClick = onSettings).padding(horizontal = 6.dp, vertical = 4.dp))
-    }
-}
-
-/** Enlace de la barra superior (mayusculas, subrayado de acento si esta activo). */
-@Composable
-private fun NavLink(label: String, active: Boolean, onClick: () -> Unit) {
-    val p = LocalPalette.current
-    Column(
-        Modifier.clickable { if (!active) { Sfx.click(); onClick() } }.fillMaxHeight(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Text(label, color = if (active) p.text else p.dim, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false, letterSpacing = 0.5.sp, modifier = Modifier.padding(horizontal = 6.dp))
-        Box(Modifier.padding(top = 4.dp).height(2.dp).fillMaxWidth().background(if (active) p.accent else Color.Transparent))
+        Text("⚙", color = p.dim, fontSize = 20.sp, maxLines = 1, modifier = Modifier.clickable(onClick = onSettings).padding(horizontal = 8.dp, vertical = 4.dp))
     }
 }
 
@@ -565,15 +552,15 @@ private fun SidePanel(
 ) {
     val p = LocalPalette.current
     Column(
-        Modifier.width(176.dp).fillMaxHeight().background(p.panel).verticalScroll(rememberScrollState()).padding(vertical = 10.dp),
+        Modifier.width(160.dp).fillMaxHeight().opacityPanel(p.panel).verticalScroll(rememberScrollState()).padding(vertical = 10.dp),
     ) {
-        Text("BIBLIOTECA", color = p.dim, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+        Text("BIBLIOTECA", color = p.dim, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp))
         SideItem("Todos", all.size, selected == CAT_ALL, focusIndex >= 0 && sideKeys.getOrNull(focusIndex) == CAT_ALL) { onSelect(CAT_ALL) }
         SideItem("Favoritos", all.count { it.favorite }, selected == CAT_FAV, focusIndex >= 0 && sideKeys.getOrNull(focusIndex) == CAT_FAV) { onSelect(CAT_FAV) }
         SideItem("Recientes", all.count { it.lastPlayed > 0 }, selected == CAT_RECENT, focusIndex >= 0 && sideKeys.getOrNull(focusIndex) == CAT_RECENT) { onSelect(CAT_RECENT) }
         SideItem("Más jugados", all.count { it.playSeconds > 0 }, selected == CAT_TOP, focusIndex >= 0 && sideKeys.getOrNull(focusIndex) == CAT_TOP) { onSelect(CAT_TOP) }
         if (collections.isNotEmpty()) {
-            Text("COLECCIONES", color = p.dim, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 6.dp))
+            Text("COLECCIONES", color = p.dim, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 6.dp))
             collections.forEach { c -> SideItem(c, all.count { c in it.collections }, selected == c, focusIndex >= 0 && sideKeys.getOrNull(focusIndex) == c) { onSelect(c) } }
         }
     }
@@ -596,33 +583,20 @@ private fun SideItem(label: String, count: Int, selected: Boolean, focused: Bool
     }
 }
 
-/** Barra bajo el encabezado: filtro por sistema (con conteo) y orden, estilo Steam. */
+/** Filtro por sistema (Todos / GBA / GBC / GB), con cuantos juegos hay de cada uno. */
 @Composable
-private fun SystemFilterRow(all: List<Game>, selected: String, sort: SortMode, onSort: (SortMode) -> Unit, onSelect: (String) -> Unit) {
+private fun SystemFilterRow(all: List<Game>, selected: String, onSelect: (String) -> Unit) {
     val p = LocalPalette.current
     val systems = listOf("" to "Todos", "GBA" to "GBA", "GBC" to "GBC", "GB" to "GB")
-    var sortMenu by remember { mutableStateOf(false) }
     Row(
-        Modifier.fillMaxWidth().background(p.panel.copy(alpha = Settings.boxOpacity.floatValue)).padding(horizontal = 12.dp, vertical = 6.dp),
+        Modifier.fillMaxWidth().background(p.panel.copy(alpha = Settings.boxOpacity.floatValue))
+            .horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 6.dp),
         horizontalArrangement = Arrangement.spacedBy(Ds.Gap),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(Modifier.weight(1f).horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(Ds.Gap)) {
-            systems.forEach { (key, name) ->
-                val n = if (key.isEmpty()) all.size else all.count { systemOf(it) == key }
-                if (key.isEmpty() || n > 0 || selected == key) AppChip("$name  $n", selected == key, { onSelect(key) })
-            }
-        }
-        Box {
-            Text(
-                "ORDENAR: ${sort.label.uppercase()} ▾", color = p.text, fontSize = Ds.CaptionSp.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false,
-                modifier = Modifier.clip(RoundedCornerShape(4.dp)).clickable { sortMenu = true }.padding(horizontal = 10.dp, vertical = 10.dp),
-            )
-            DropdownMenu(expanded = sortMenu, onDismissRequest = { sortMenu = false }) {
-                SortMode.entries.forEach { m ->
-                    DropdownMenuItem(text = { Text(m.label) }, onClick = { onSort(m); sortMenu = false })
-                }
-            }
+        systems.forEach { (key, name) ->
+            val n = if (key.isEmpty()) all.size else all.count { systemOf(it) == key }
+            if (key.isEmpty() || n > 0 || selected == key) AppChip("$name  $n", selected == key, { onSelect(key) })
         }
     }
 }

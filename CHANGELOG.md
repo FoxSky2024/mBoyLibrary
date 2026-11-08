@@ -1,11 +1,5 @@
 # Changelog
 
-## 0.5.0-beta
-- Interfaz estilo Steam: barra superior con pestanas (BIBLIOTECA / GALERIA / PERFIL), busqueda con boton de limpiar, barra de sistema + orden, panel lateral, boton JUGAR verde con degradado.
-- Ficha tipo pagina de Steam: portada con arte, barra de acciones (JUGAR, Continuar, ultima vez, tiempo de juego) y pestanas Resumen / Guardados / Ajustes del juego.
-- Mando de Xbox: silueta dibujada (agarres, bumpers, gatillos, palancas, cruceta, ABXY) y botones colocados como en el mando real.
-- Calidad de vida: miniatura en cada ranura de guardado, confirmacion al sobrescribir, borrar ranuras desde la ficha.
-
 ## 0.4.0-beta
 - Eliminado Transmitir/Streaming (StreamHost, visor, QR, permisos, dependencia ZXing) y el reproductor de YouTube. El video en ventana ahora solo reproduce videos de la galeria.
 - Sistema de diseno unico (ui/Design.kt): botones, chips, tarjetas, interruptores y deslizadores comunes; temas con contraste verificado.
