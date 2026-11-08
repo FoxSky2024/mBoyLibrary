@@ -284,7 +284,9 @@ private fun SettingsPanel(
         AppButton("Guardar nota", { vm.setNote(game.id, note) })
         var prog by remember(game.id) { mutableStateOf(game.progress.coerceAtLeast(0).toFloat()) }
         SliderRow(
-            onFinished = { vm.setProgress(game.id, prog.toInt()) }) { prog = it }
+            "Progreso del juego", prog, 0f..100f, "${prog.toInt()}%",
+            onFinished = { vm.setProgress(game.id, prog.toInt()) }
+        ) { prog = it }
         if (game.progress >= 0) AppButton("Quitar progreso", { vm.setProgress(game.id, -1) })
     }
     if (systemOf(game) == "GBA") {
