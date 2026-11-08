@@ -30,7 +30,13 @@ jobs:
             echo "=== Intento $i ==="
             gradle :app:assembleRelease --no-daemon && break || sleep 30
           done
+      - name: List APKs
+        run: |
+          pwd
+          find . -name "*.apk" -ls
+          ls -lh app/build/outputs/apk/release/ || true
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: gba-library-app
-          path: app/build/outputs/apk/release/*.apk
+          path: "**/*.apk"
