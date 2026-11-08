@@ -4,25 +4,6 @@ Emulador de Game Boy Advance para Android (nucleo [mGBA](https://mgba.io/)) con 
 organizada como la de Steam: cuadricula con portadas, favoritos, colecciones, orden por tiempo
 de juego y ficha de cada juego con boton **JUGAR**.
 
-## Como obtener el APK
-
-### Opcion A — GitHub Actions (sin instalar nada)
-1. Crea un repositorio en GitHub y sube todo este proyecto (incluida la carpeta `.github`).
-2. Ve a **Actions → Build APK → Run workflow** (tambien corre solo con cada push).
-3. Cuando termine (~10-20 min la primera vez), abre la ejecucion y descarga el artefacto
-   **gba-library-apk**. Dentro esta `app-release.apk` (firmado con clave debug, instalable).
-4. Pasalo al telefono e instalalo (permite "instalar apps desconocidas").
-
-### Opcion B — Android Studio
-Abre la carpeta del proyecto, instala NDK 27.2.12479018 y CMake 3.22.1 desde el SDK Manager
-y ejecuta **Build → Build APK(s)**. Necesita internet (CMake descarga mGBA).
-
-### Opcion C — Linea de comandos
-```
-./gradlew :app:assembleRelease
-# APK en app/build/outputs/apk/release/
-```
-
 ## Uso
 1. Abre la app → **+** → *Agregar carpeta de ROMs* (o *archivos .gba*).
 2. Toca un juego para ver su ficha, o el boton **▶** de la tarjeta para jugar directo.
