@@ -31,7 +31,7 @@
 
 static struct mCore* gCore = NULL;
 static uint8_t* gRom = NULL;
-// mGBA dibuja aqui con stride fijo MAX_W; el tamano real lo da baseVideoSize.
+// mGBA dibuja aqui con stride fijo MAX_W; el tamano real lo da videoSize.
 static uint32_t gVideo[MAX_W * MAX_H];
 // Copia compacta (ancho real x alto real) del ultimo frame para el hilo de OpenGL.
 static uint32_t gFrame[MAX_W * MAX_H];
@@ -54,7 +54,7 @@ static void unloadCore(void) {
 
 static void publishFrame(void) {
     unsigned w = 0, h = 0;
-    gCore->baseVideoSize(gCore, &w, &h);
+    gCore->videoSize(gCore, &w, &h);
     if (w == 0 || h == 0 || w > MAX_W || h > MAX_H) return;
     pthread_mutex_lock(&gFrameLock);
     gFrameW = w;
@@ -160,7 +160,7 @@ Java_app_gbalibrary_emu_Native_load(JNIEnv* env, jobject thiz, jbyteArray rom, j
 
     // Tamano real de la imagen de este nucleo (GBA 240x160, GB/GBC 160x144).
     unsigned w = 0, h = 0;
-    gCore->baseVideoSize(gCore, &w, &h);
+    gCore->videoSize(gCore, &w, &h);
     pthread_mutex_lock(&gFrameLock);
     gFrameW = w ? w : 240;
     gFrameH = h ? h : 160;
