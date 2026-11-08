@@ -133,6 +133,18 @@ class Engine(
 
     fun autoSave() = post { Native.saveState(autoStatePath) }
 
+    /**
+     * Guarda el estado automatico y espera (maximo [waitMs]) a que termine. Se usa al salir de la
+     * pantalla: asi el progreso queda en disco antes de que Android pueda congelar o cerrar la app.
+     */
+    fun autoSaveSync(waitMs: Long = 1500L) {
+        val latch = java.util.concurrent.CountDownLatch(1)
+        post {
+            try { Native.saveState(autoStatePath) } finally { latch.countDown() }
+        }
+        try { latch.await(waitMs, java.util.concurrent.TimeUnit.MILLISECONDS) } catch (e: InterruptedException) { /* ignorado */ }
+    }
+
     /** Guarda el estado automatico y detiene el hilo. */
     fun shutdown() = post {
         Native.saveState(autoStatePath)
@@ -172,6 +184,34 @@ class Engine(
         return track
     }
 
+    /**
+     * Escribe todo el audio. Si el sistema mato la pista (cambio de salida, auriculares, Bluetooth,
+     * servidor de audio reiniciado) devuelve false para que el bucle la recree: antes el sonido
+     * se quedaba muerto hasta cerrar el juego.
+     */
+    private fun writeAudio(t: AudioTrack, buf: ShortArray, count: Int, blocking: Boolean): Boolean {
+        var off = 0
+        var stalls = 0
+        while (off < count) {
+            val w = t.write(buf, off, count - off, if (blocking) AudioTrack.WRITE_BLOCKING else AudioTrack.WRITE_NON_BLOCKING)
+            if (w < 0) return false
+            if (w == 0) {
+                if (!blocking || ++stalls > 3) return true
+                continue
+            }
+            off += w
+        }
+        return true
+    }
+
+    private fun rebuildTrack(old: AudioTrack): AudioTrack {
+        Log.w("Engine", "AudioTrack invalida: se recrea")
+        try { old.release() } catch (e: Throwable) { /* ignorado */ }
+        val n = createTrack()
+        n.play()
+        return n
+    }
+
     private fun loop() {
         coreLock.lock()
         var track: AudioTrack? = null
@@ -202,7 +242,7 @@ class Engine(
                 Native.loadState(autoStatePath)
             }
 
-            val t = createTrack()
+            var t = createTrack()
             track = t
             t.play()
             var playing = true
@@ -275,7 +315,10 @@ class Engine(
                                 audio[i] = ((audio[i] * gain) / 100).toShort()
                             }
                         }
-                        t.write(audio, 0, frames * 2, AudioTrack.WRITE_BLOCKING)
+                        if (!writeAudio(t, audio, frames * 2, true)) {
+                            t = rebuildTrack(t)
+                            track = t
+                        }
                     }
                     next = System.nanoTime()
                 } else if (sp == 1) {
@@ -283,7 +326,10 @@ class Engine(
                     if (frames > 0) {
                         val gain = if (muted) 0 else volume.coerceIn(0, 100)
                         for (i in 0 until frames * 2) audio[i] = ((audio[i] * gain) / 100).toShort()
-                        t.write(audio, 0, frames * 2, AudioTrack.WRITE_NON_BLOCKING)
+                        if (!writeAudio(t, audio, frames * 2, false)) {
+                            t = rebuildTrack(t)
+                            track = t
+                        }
                     }
                     if (unlimited) {
                         next = System.nanoTime()

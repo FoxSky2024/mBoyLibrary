@@ -4,41 +4,38 @@ package app.gbalibrary.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Slider
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 import app.gbalibrary.data.Settings
-import app.gbalibrary.emu.VideoFilter
-import app.gbalibrary.emu.VideoScale
 
 /** Acciones que el menu delega en la Activity. */
 class MenuActions(
@@ -56,220 +53,228 @@ class MenuActions(
     val setForceTouch: (Boolean) -> Unit,
     val setSpeed: (Int) -> Unit,
     val toggleMusic: () -> Unit = {},
-    val startStream: () -> Unit = {},
-    val stopStream: () -> Unit = {},
     val pickPipVideo: () -> Unit = {},
+    /** Cuando se guardo la ranura (ms) o 0 si esta vacia. */
+    val slotTime: (String) -> Long = { 0L },
+    /** Ruta de la miniatura de la ranura (o null si no hay). */
+    val slotThumb: (String) -> String? = { null },
 )
 
-private val TABS = listOf("VIDEO", "AUDIO", "CONTROLES", "JUEGO", "EN VIVO", "SALIR")
+private enum class PauseView { MAIN, SAVE, LOAD, SETTINGS }
 
+private val SETTING_TABS = listOf("Video", "Audio", "Controles", "Juego", "Ventana")
+
+private val SLOTS = listOf("quick" to "Guardado rápido", "slot1" to "Ranura 1", "slot2" to "Ranura 2", "slot3" to "Ranura 3")
+
+/**
+ * Menu de pausa. Misma estructura en vertical y en horizontal: un panel centrado con botones grandes
+ * (1 columna si es estrecho, 2 si cabe). Todo se arma con los componentes de Design.kt.
+ */
 @Composable
-fun GameMenu(title: String, speed: Int, layout: ControlLayout, padConnected: Boolean, forceTouch: Boolean, host: app.gbalibrary.stream.StreamHost?, actions: MenuActions) {
+fun GameMenu(title: String, speed: Int, layout: ControlLayout, padConnected: Boolean, forceTouch: Boolean, actions: MenuActions) {
     val p = LocalPalette.current
-    var tab by remember { mutableIntStateOf(0) }
+    var view by remember { mutableStateOf(PauseView.MAIN) }
+    var confirmReset by remember { mutableStateOf(false) }
+    val noRipple = remember { MutableInteractionSource() }
+
     Box(
-        Modifier.fillMaxSize().background(Color(0xAA000000)).clickable(onClick = actions.close),
+        Modifier.fillMaxSize().background(Color(0xB3000000))
+            .clickable(interactionSource = noRipple, indication = null) {
+                if (view == PauseView.MAIN) actions.close() else view = PauseView.MAIN
+            },
         contentAlignment = Alignment.Center,
     ) {
         StatusIndicators(Modifier.align(Alignment.TopEnd).padding(top = 6.dp, end = 12.dp), tint = Color.White)
-        Row(
-            Modifier
-                .fillMaxWidth(0.82f)
-                .fillMaxHeight(0.88f)
-                .background(p.panel, RoundedCornerShape(14.dp))
-                .clickable(enabled = false, onClick = {}),
-        ) {
+        BoxWithConstraints(Modifier.fillMaxSize().padding(12.dp), contentAlignment = Alignment.Center) {
+            val wide = maxWidth >= 560.dp
             Column(
-                Modifier.width(150.dp).fillMaxHeight().background(p.bg, RoundedCornerShape(topStart = 14.dp, bottomStart = 14.dp)).padding(vertical = 12.dp),
+                Modifier
+                    .widthIn(max = if (view == PauseView.SETTINGS) 760.dp else 560.dp)
+                    .fillMaxWidth()
+                    .heightIn(max = maxHeight)
+                    .background(p.panel, RoundedCornerShape(16.dp))
+                    .clickable(interactionSource = noRipple, indication = null) {}
+                    .padding(Ds.Pad),
+                verticalArrangement = Arrangement.spacedBy(Ds.GapL),
             ) {
-                Text(
-                    title, color = p.text, fontWeight = FontWeight.Bold, maxLines = 2,
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                )
-                TABS.forEachIndexed { i, name ->
-                    Text(
-                        name,
-                        color = if (i == tab) p.accent else p.text,
-                        fontWeight = if (i == tab) FontWeight.Bold else FontWeight.Normal,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(if (i == tab) p.card else Color.Transparent)
-                            .clickable { Sfx.click(); tab = i }
-                            .padding(horizontal = 14.dp, vertical = 11.dp),
+                // Cabecera: titulo del juego + (si no es el menu principal) volver.
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Ds.GapL)) {
+                    if (view != PauseView.MAIN) {
+                        Text(
+                            "←", color = p.accent, fontSize = 26.sp, fontWeight = FontWeight.Bold,
+                            modifier = Modifier.clickable { Sfx.click(); view = PauseView.MAIN }.padding(horizontal = 10.dp, vertical = 4.dp),
+                        )
+                    }
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            when (view) {
+                                PauseView.MAIN -> "Pausa"
+                                PauseView.SAVE -> "Guardar partida"
+                                PauseView.LOAD -> "Cargar partida"
+                                PauseView.SETTINGS -> "Ajustes"
+                            },
+                            color = p.text, fontSize = Ds.TitleSp.sp, fontWeight = FontWeight.Black,
+                        )
+                        Text(title, color = p.dim, fontSize = Ds.LabelSp.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                }
+
+                when (view) {
+                    PauseView.MAIN -> Column(
+                        Modifier.verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(Ds.GapL),
+                    ) {
+                        val items: List<Triple<String, BtnKind, () -> Unit>> = listOf(
+                            Triple("Continuar", BtnKind.PRIMARY, { actions.close() }),
+                            Triple("Guardar", BtnKind.SECONDARY, { view = PauseView.SAVE }),
+                            Triple("Cargar", BtnKind.SECONDARY, { view = PauseView.LOAD }),
+                            Triple(if (confirmReset) "¿Seguro? Toca otra vez" else "Reiniciar", BtnKind.SECONDARY, {
+                                if (confirmReset) { confirmReset = false; actions.reset() } else confirmReset = true
+                            }),
+                            Triple("Ajustes", BtnKind.SECONDARY, { view = PauseView.SETTINGS }),
+                            Triple("Salir", BtnKind.DANGER, { actions.exit() }),
+                        )
+                        val icons = listOf("▶", "💾", "📂", "↺", "⚙", "⏏")
+                        val cols = if (wide) 2 else 1
+                        items.chunked(cols).forEachIndexed { rowIdx, rowItems ->
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Ds.GapL)) {
+                                rowItems.forEachIndexed { i, (label, kind, act) ->
+                                    AppButton(label, act, Modifier.weight(1f), kind = kind, big = true, icon = icons[rowIdx * cols + i])
+                                }
+                            }
+                        }
+                        Hint(
+                            if (confirmReset) "Reiniciar borra la partida automática de este juego (tus guardados con ranura se conservan)."
+                            else "Al salir, tu progreso se guarda solo y se retoma al volver a entrar.",
+                        )
+                    }
+                    PauseView.SAVE -> SlotList(true, actions)
+                    PauseView.LOAD -> SlotList(false, actions)
+                    PauseView.SETTINGS -> PauseSettings(speed, layout, padConnected, forceTouch, actions, wide)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SlotList(saving: Boolean, a: MenuActions) {
+    val p = LocalPalette.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    var tick by remember { mutableStateOf(0) } // refresca hora y miniatura tras guardar
+    var confirm by remember { mutableStateOf<String?>(null) } // ranura pendiente de confirmar sobrescritura
+    Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(Ds.GapL)) {
+        SLOTS.forEach { (slot, name) ->
+            val time = remember(slot, tick) { a.slotTime(slot) }
+            val thumb = remember(slot, tick) { a.slotThumb(slot) }
+            val empty = time <= 0L
+            Row(
+                Modifier.fillMaxWidth()
+                    .background(p.card, RoundedCornerShape(Ds.RadiusM))
+                    .padding(start = 10.dp, top = 8.dp, end = 8.dp, bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Ds.GapL),
+            ) {
+                SlotThumb(if (empty) null else thumb)
+                Column(Modifier.weight(1f)) {
+                    Text(name, color = p.text, fontSize = Ds.BodySp.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                    Text(if (empty) "Vacía" else formatAgo(time), color = p.dim, fontSize = Ds.LabelSp.sp, maxLines = 1)
+                }
+                if (saving) {
+                    val asking = confirm == slot
+                    AppButton(
+                        if (empty) "Guardar" else if (asking) "¿Seguro?" else "Sobrescribir",
+                        {
+                            if (empty || asking) {
+                                confirm = null
+                                a.save(slot)
+                                scope.launch { kotlinx.coroutines.delay(700); tick++ }
+                            } else confirm = slot
+                        },
+                        Modifier.widthIn(min = 130.dp),
+                        kind = if (asking) BtnKind.DANGER else BtnKind.PRIMARY,
                     )
-                }
-                Box(Modifier.weight(1f))
-                Button(
-                    onClick = actions.close,
-                    colors = ButtonDefaults.buttonColors(containerColor = p.play),
-                    modifier = Modifier.padding(horizontal = 10.dp).fillMaxWidth(),
-                ) { Text("Continuar", color = Color.White) }
-            }
-            Column(
-                Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()).padding(18.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                when (tab) {
-                    0 -> VideoTab()
-                    1 -> AudioTab()
-                    2 -> ControlsTab(layout, padConnected, forceTouch, actions)
-                    3 -> GameTab(speed, actions)
-                    4 -> LiveTab(host, actions)
-                    else -> ExitTab(actions)
+                } else {
+                    AppButton("Cargar", { a.load(slot) }, Modifier.widthIn(min = 120.dp), kind = BtnKind.PRIMARY, enabled = !empty)
                 }
             }
         }
+        Hint(if (saving) "Guarda el instante exacto del juego. Sobrescribir pide confirmación." else "Carga el instante guardado y continúa desde ahí.")
     }
 }
 
 @Composable
-private fun Label(text: String) {
-    Text(text, color = LocalPalette.current.accent, fontWeight = FontWeight.Bold)
-}
-
-@Composable
-private fun Chips(options: List<String>, selected: Int, onSelect: (Int) -> Unit) {
-    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        options.forEachIndexed { i, name ->
-            FilterChip(selected = i == selected, onClick = { onSelect(i) }, label = { Text(name) })
+private fun PauseSettings(speed: Int, layout: ControlLayout, padConnected: Boolean, forceTouch: Boolean, a: MenuActions, wide: Boolean) {
+    var tab by remember { mutableStateOf(0) }
+    val body: @Composable () -> Unit = {
+        Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(Ds.GapL)) {
+            when (tab) {
+                0 -> VideoSettings()
+                1 -> AudioSettings()
+                2 -> PauseControls(layout, padConnected, forceTouch, a)
+                3 -> PauseGame(speed, a)
+                else -> {
+                    PipControls(pickVideo = a.pickPipVideo)
+                }
+            }
+        }
+    }
+    if (wide) {
+        Row(Modifier.heightIn(max = 420.dp), horizontalArrangement = Arrangement.spacedBy(Ds.GapL)) {
+            Column(Modifier.width(150.dp).fillMaxHeight().verticalScroll(rememberScrollState())) {
+                SETTING_TABS.forEachIndexed { i, n -> RailItem(n, "", i == tab) { tab = i } }
+            }
+            Column(Modifier.weight(1f)) { body() }
+        }
+    } else {
+        Column(verticalArrangement = Arrangement.spacedBy(Ds.GapL)) {
+            ChipRow(SETTING_TABS, tab) { tab = it }
+            Box(Modifier.heightIn(max = 360.dp)) { body() }
         }
     }
 }
 
 @Composable
-private fun SliderRow(label: String, value: Float, range: ClosedFloatingPointRange<Float>, shown: String, onChange: (Float) -> Unit) {
-    Column {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Label(label)
-            Text(shown, color = LocalPalette.current.text)
-        }
-        Slider(value = value, onValueChange = onChange, valueRange = range)
-    }
-}
-
-@Composable
-private fun SwitchRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(label, color = LocalPalette.current.text)
-        Switch(checked = checked, onCheckedChange = onChange)
-    }
-}
-
-@Composable
-private fun VideoTab() {
-    Label("Calidad de imagen")
-    Chips(listOf("Pixel Perfect", "Suave", "CRT / Scanlines"), Settings.filter.intValue) { Settings.setFilter(it) }
-    Text(
-        when (Settings.filter.intValue) {
-            VideoFilter.PIXEL -> "Pixeles nitidos (nearest), como una GBA real."
-            VideoFilter.SMOOTH -> "Imagen suavizada (lineal)."
-            else -> "Pixeles nitidos con lineas de barrido tipo CRT."
-        },
-        color = LocalPalette.current.dim,
-    )
-    SliderRow("Brillo", Settings.brightness.floatValue, 0.5f..1.5f, "${(Settings.brightness.floatValue * 100).toInt()}%") { Settings.setBrightness(it) }
-    Label("Escala")
-    Chips(listOf("Ajustar", "Original", "Estirar", "Pantalla completa"), Settings.scale.intValue) { Settings.setScale(it) }
-    Text(
-        when (Settings.scale.intValue) {
-            VideoScale.FIT -> "Llena la pantalla manteniendo la proporcion 3:2."
-            VideoScale.ORIGINAL -> "Multiplo entero del tamano original (pixeles perfectos)."
-            VideoScale.STRETCH -> "Estira la imagen a toda la pantalla."
-            else -> "Llena toda la pantalla recortando los bordes."
-        },
-        color = LocalPalette.current.dim,
-    )
-    SwitchRow("Mostrar FPS", Settings.showFps.value) { Settings.setShowFps(it) }
-}
-
-@Composable
-private fun AudioTab() {
-    SwitchRow("Sonido activado", !Settings.muted.value) { Settings.setMuted(!it) }
-    SliderRow("Volumen", Settings.volume.intValue.toFloat(), 0f..100f, "${Settings.volume.intValue}") { Settings.setVolume(it.toInt()) }
-    Text("Latencia: fija (~70 ms) para evitar cortes.", color = LocalPalette.current.dim)
-}
-
-@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
-@Composable
-private fun ControlsTab(layout: ControlLayout, padConnected: Boolean, forceTouch: Boolean, a: MenuActions) {
-    SwitchRow("Mostrar botones tactiles", Settings.padVisible.value) { Settings.setPadVisible(it) }
-    if (padConnected) {
-        SwitchRow("Mostrar tactiles aunque haya mando", forceTouch) { a.setForceTouch(it) }
-    }
-    SliderRow("Tamano general", Settings.padSize.floatValue, 0.6f..1.6f, "${(Settings.padSize.floatValue * 100).toInt()}%") { Settings.setPadSize(it) }
+private fun PauseControls(layout: ControlLayout, padConnected: Boolean, forceTouch: Boolean, a: MenuActions) {
+    SwitchRow("Mostrar botones táctiles", Settings.padVisible.value) { Settings.setPadVisible(it) }
+    if (padConnected) SwitchRow("Mostrar táctiles aunque haya mando", forceTouch) { a.setForceTouch(it) }
+    SliderRow("Tamaño general", Settings.padSize.floatValue, 0.6f..1.6f, "${(Settings.padSize.floatValue * 100).toInt()}%") { Settings.setPadSize(it) }
     SliderRow("Opacidad general", Settings.padOpacity.floatValue, 0.15f..1f, "${(Settings.padOpacity.floatValue * 100).toInt()}%") { Settings.setPadOpacity(it) }
-    Label("Tipo de movimiento")
-    Chips(listOf("Cruceta clasica", "Joystick analogico"), layout.moveType) {
+    Subtitle("Tipo de movimiento")
+    ChipRow(listOf("Cruceta", "Joystick"), layout.moveType) {
         layout.moveType = it
         a.persistLayout()
     }
     if (layout.moveType == MoveType.STICK) {
-        SliderRow("Zona muerta", layout.deadzone, 0.05f..0.7f, "${(layout.deadzone * 100).toInt()}%") { layout.deadzone = it }
-        OutlinedButton(onClick = a.persistLayout) { Text("Aplicar zona muerta") }
+        SliderRow("Zona muerta", layout.deadzone, 0.05f..0.7f, "${(layout.deadzone * 100).toInt()}%", { layout.deadzone = it }, onFinished = a.persistLayout)
     }
-    androidx.compose.foundation.layout.FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        Button(onClick = a.editControls) { Text("Editar controles") }
-        OutlinedButton(onClick = a.saveGameLayout) { Text("Guardar para este juego") }
-        OutlinedButton(onClick = a.saveGlobalLayout) { Text("Guardar global") }
-        OutlinedButton(onClick = a.resetLayout) { Text("Restablecer") }
+    ButtonFlow {
+        AppButton("Editar controles", a.editControls, kind = BtnKind.PRIMARY)
+        AppButton("Guardar para este juego", a.saveGameLayout)
+        AppButton("Guardar global", a.saveGlobalLayout)
+        AppButton("Restablecer", a.resetLayout)
     }
+    Hint("En el editor puedes mover, escalar y ocultar cada botón. Se guarda un layout distinto para cada orientación.")
 }
 
 @Composable
-private fun GameTab(speed: Int, a: MenuActions) {
-    Label("Guardado rapido")
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Button(onClick = { a.save("quick") }) { Text("Guardar") }
-        OutlinedButton(onClick = { a.load("quick") }) { Text("Cargar") }
-    }
-    Label("Estados (3 ranuras)")
-    (1..3).forEach { slot ->
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("Ranura $slot", color = LocalPalette.current.text, modifier = Modifier.width(80.dp))
-            Button(onClick = { a.save("slot$slot") }) { Text("Guardar") }
-            OutlinedButton(onClick = { a.load("slot$slot") }) { Text("Cargar") }
-        }
-    }
-    Label("Velocidad")
-    Chips(listOf("x1", "Fast-Forward x${Settings.ffSpeed.intValue}"), if (speed > 1) 1 else 0) {
+private fun PauseGame(speed: Int, a: MenuActions) {
+    Subtitle("Velocidad")
+    ChipRow(listOf("x1", "Rápido x${Settings.ffSpeed.intValue}"), if (speed > 1) 1 else 0) {
         a.setSpeed(if (it == 0) 1 else Settings.ffSpeed.intValue)
     }
     if (Settings.musicInGame.value && Music.hasSource()) {
-        Label("Música")
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = a.toggleMusic) { Text(if (Music.playing.value) "Pausar música" else "Reanudar música") }
-            OutlinedButton(onClick = { Music.next() }) { Text("Siguiente") }
+        Subtitle("Música")
+        ButtonFlow {
+            AppButton(if (Music.playing.value) "Pausar música" else "Reanudar música", a.toggleMusic)
+            AppButton("Siguiente", { Music.next() })
         }
         SliderRow("Volumen música", Settings.musicVolume.floatValue, 0f..1f, "${(Settings.musicVolume.floatValue * 100).toInt()}%") {
             Settings.setMusicVolume(it)
             Music.applyVolume()
         }
-        Text("El volumen del juego se ajusta en la pestaña de sonido.", color = LocalPalette.current.dim, fontSize = 11.sp)
     }
-    Label("Rendimiento")
+    Subtitle("Rendimiento")
     PerfControls()
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        OutlinedButton(onClick = a.reset) { Text("Reiniciar juego") }
-        OutlinedButton(onClick = a.screenshot) { Text("Captura de pantalla") }
-    }
-}
-
-@Composable
-private fun LiveTab(host: app.gbalibrary.stream.StreamHost?, a: MenuActions) {
-    StreamHostPanel(host, a.startStream, a.stopStream)
-    Label("Video en ventana (PiP)")
-    PipControls(pickVideo = a.pickPipVideo, openStreamViewer = null)
-}
-
-@Composable
-private fun ExitTab(a: MenuActions) {
-    Label("Salir al menu")
-    Text("Tu progreso se guarda automaticamente al salir y se retoma al volver a entrar.", color = LocalPalette.current.text)
-    Button(
-        onClick = a.exit,
-        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828)),
-    ) { Text("Salir al menu", color = Color.White) }
+    AppButton("Captura de pantalla", a.screenshot)
 }

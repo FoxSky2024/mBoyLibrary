@@ -8,6 +8,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -18,6 +19,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -25,8 +29,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
@@ -57,48 +59,80 @@ private val SolidColors = listOf(
     0xFF1B2838, 0xFF000000, 0xFF263238, 0xFF0D2B3E, 0xFF1B3A1F, 0xFF3A1F1F, 0xFF2E1F47, 0xFF3E2C1C,
 ).map { it.toInt() }
 
+private val SETTINGS_TABS = listOf(
+    "Perfil" to "👤", "Controles" to "🎮", "Video" to "🖥", "Audio" to "🔊", "Guardado" to "💾", "Tema" to "🎨",
+)
+
 /**
- * Ajustes (diseno de la 0.2.0): cabecera + dos columnas de tarjetas con scroll. Las tarjetas son
- * semi-opacas para que se lean sobre cualquier fondo. Botones y chips usan FlowRow (nada se encima).
+ * Ajustes: menu lateral con secciones (Perfil, Controles, Video, Audio, Guardado, Tema) y una sola
+ * columna de tarjetas solidas a la derecha. Sin dos columnas desiguales (no quedan huecos al hacer
+ * scroll) y sin fondo visible por detras.
  */
 @Composable
-fun SettingsScreen(vm: LibraryViewModel, actions: LibraryActions, onBack: () -> Unit, onViewer: () -> Unit = {}) {
+fun SettingsScreen(vm: LibraryViewModel, actions: LibraryActions, onBack: () -> Unit) {
     val p = LocalPalette.current
     var editingPad by remember { mutableStateOf(false) }
+    var tab by rememberSaveable { mutableIntStateOf(0) }
     val globalLayout = remember { ControlLayout().also { it.load("global") } }
 
     BackHandler(enabled = editingPad) { globalLayout.save("global"); editingPad = false }
 
     Box(Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxSize()) {
-            Row(
-                Modifier.fillMaxWidth().height(48.dp).opacityPanel(p.panel).padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Text("← Volver", color = p.accent, fontWeight = FontWeight.Bold, maxLines = 1, modifier = Modifier.clickable(onClick = onBack).padding(8.dp))
-                Text("Ajustes y personalización", color = p.text, fontWeight = FontWeight.Bold, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            }
-            Row(
-                Modifier.fillMaxSize().verticalScroll(rememberScrollState())
-                    .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 48.dp),
-                horizontalArrangement = Arrangement.spacedBy(20.dp),
-            ) {
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    ProfileSection(actions)
-                    ScaleSection()
-                    AppearanceSection(actions)
-                    AnimationsSection()
-                    InterfaceSection()
-                    PipSection(actions, onViewer)
+        Column(Modifier.fillMaxSize().background(p.bg)) {
+            ScreenHeader(title = "Ajustes", onBack = onBack)
+            BoxWithConstraints(Modifier.fillMaxSize()) {
+                val wide = maxWidth >= 560.dp
+                val content: @Composable () -> Unit = {
+                    Column(
+                        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Ds.Pad),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Column(Modifier.widthIn(max = 720.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Ds.GapL)) {
+                            when (tab) {
+                                0 -> ProfileSection(actions)
+                                1 -> ControlsSection(globalLayout) { editingPad = true }
+                                2 -> {
+                                    Section("Imagen") { VideoSettings() }
+                                    PerfSection()
+                                    PipSection(actions)
+                                }
+                                3 -> {
+                                    Section("Sonido del juego") { AudioSettings() }
+                                    MusicSection(actions)
+                                }
+                                4 -> {
+                                    LibrarySection(vm, actions)
+                                    CoversSection(vm)
+                                    DataSection(actions)
+                                }
+                                else -> {
+                                    AppearanceSection(actions)
+                                    ScaleSection()
+                                    InterfaceSection()
+                                    AnimationsSection()
+                                }
+                            }
+                            Box(Modifier.height(32.dp))
+                        }
+                    }
                 }
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    MusicSection(actions)
-                    ControlsSection(globalLayout) { editingPad = true }
-                    PerfSection()
-                    LibrarySection(vm, actions)
-                    CoversSection(vm)
-                    DataSection(actions)
+                if (wide) {
+                    Row(Modifier.fillMaxSize()) {
+                        Column(Modifier.width(176.dp).fillMaxHeight().background(p.panel).verticalScroll(rememberScrollState()).padding(vertical = Ds.Gap)) {
+                            SETTINGS_TABS.forEachIndexed { i, (name, icon) -> RailItem(name, icon, i == tab) { tab = i } }
+                        }
+                        Box(Modifier.weight(1f).fillMaxHeight()) { content() }
+                    }
+                } else {
+                    Column(Modifier.fillMaxSize()) {
+                        Row(
+                            Modifier.fillMaxWidth().background(p.panel).horizontalScroll(rememberScrollState()).padding(horizontal = Ds.GapL, vertical = Ds.Gap),
+                            horizontalArrangement = Arrangement.spacedBy(Ds.Gap),
+                        ) {
+                            SETTINGS_TABS.forEachIndexed { i, (name, _) -> AppChip(name, i == tab, { tab = i }) }
+                        }
+                        Box(Modifier.weight(1f).fillMaxWidth()) { content() }
+                    }
                 }
             }
         }
@@ -109,7 +143,7 @@ fun SettingsScreen(vm: LibraryViewModel, actions: LibraryActions, onBack: () -> 
                     Modifier.align(Alignment.Center).fillMaxHeight(0.8f).aspectRatioCompat(1.5f)
                         .border(2.dp, Color(0xFF2A3440), RoundedCornerShape(6.dp)),
                     contentAlignment = Alignment.Center,
-                ) { Text("Pantalla del juego (vista previa)", color = Color(0xFF3A4654), fontSize = 12.sp) }
+                ) { Text("Pantalla del juego (vista previa)", color = Color(0xFF8795A4), fontSize = 12.sp) }
                 ControlsCanvas(globalLayout, null, editing = true, showPad = true, onMenu = {}, onQuick = {})
                 ControlsEditorPanel(
                     layout = globalLayout,
@@ -142,7 +176,7 @@ private fun ProfileSection(actions: LibraryActions) {
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
-                OutlinedButton(onClick = actions.pickAvatar) { Text("Elegir foto") }
+                AppButton("Elegir foto", actions.pickAvatar)
             }
         }
         OutlinedTextField(
@@ -158,17 +192,11 @@ private fun ProfileSection(actions: LibraryActions) {
 @Composable
 private fun AppearanceSection(actions: LibraryActions) {
     val p = LocalPalette.current
-    Section("Tema") {
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Palettes.forEachIndexed { i, pal ->
-                FilterChip(
-                    selected = Settings.theme.intValue == i,
-                    onClick = { Sfx.click(); Settings.setTheme(i) },
-                    label = { Text(pal.name, maxLines = 1) },
-                    leadingIcon = { Box(Modifier.size(14.dp).clip(CircleShape).background(pal.accent)) },
-                )
-            }
+    Section("Tema de color") {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(Ds.GapL), verticalArrangement = Arrangement.spacedBy(Ds.GapL)) {
+            Palettes.forEachIndexed { i, pal -> ThemeTile(pal, Settings.theme.intValue == i) { Sfx.click(); Settings.setTheme(i) } }
         }
+        Hint("Todos los temas cumplen contraste de lectura (texto 7:1, acento y texto tenue 4.5:1).")
     }
     Section("Opacidad de paneles") {
         Text("Opacidad ${(Settings.boxOpacity.floatValue * 100).roundToInt()}%", color = p.text, fontSize = 13.sp)
@@ -177,16 +205,16 @@ private fun AppearanceSection(actions: LibraryActions) {
             onValueChange = { Settings.setBoxOpacity((it * 100).roundToInt() / 100f) },
             valueRange = 0.4f..1f,
         )
-        Text("Aplica a barras, tarjetas de juegos y paneles de Ajustes. Fondo sólido oscuro con transparencia, sin efectos de cristal ni desenfoque.", color = p.dim, fontSize = 12.sp)
+        Text("Aplica a las barras y tarjetas de la biblioteca. Los paneles de Ajustes son siempre sólidos.", color = p.dim, fontSize = 12.sp)
     }
     Section("Fondo de la biblioteca") {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             listOf("Por defecto", "Imagen", "Color sólido").forEachIndexed { i, name ->
-                FilterChip(selected = Settings.bgMode.intValue == i, onClick = { Settings.setBgMode(i) }, label = { Text(name) })
+                AppChip(name, Settings.bgMode.intValue == i, { Settings.setBgMode(i) })
             }
         }
         if (Settings.bgMode.intValue == 1) {
-            OutlinedButton(onClick = actions.pickLibraryBackground) { Text("Elegir imagen de la galería") }
+            AppButton("Elegir imagen de la galería", actions.pickLibraryBackground)
         }
         if (Settings.bgMode.intValue == 2) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -213,16 +241,8 @@ private fun ControlsSection(globalLayout: ControlLayout, onEdit: () -> Unit) {
         Slider(value = Settings.padOpacity.floatValue, onValueChange = { Settings.setPadOpacity(it) }, valueRange = 0.15f..1f)
         Text("Tipo de movimiento (global)", color = p.accent, fontSize = 12.sp, fontWeight = FontWeight.Bold)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            FilterChip(
-                selected = globalLayout.moveType == MoveType.CROSS,
-                onClick = { globalLayout.moveType = MoveType.CROSS; globalLayout.save("global") },
-                label = { Text("Cruceta clásica") },
-            )
-            FilterChip(
-                selected = globalLayout.moveType == MoveType.STICK,
-                onClick = { globalLayout.moveType = MoveType.STICK; globalLayout.save("global") },
-                label = { Text("Joystick analógico") },
-            )
+            AppChip("Cruceta clásica", globalLayout.moveType == MoveType.CROSS, { globalLayout.moveType = MoveType.CROSS; globalLayout.save("global") })
+            AppChip("Joystick analógico", globalLayout.moveType == MoveType.STICK, { globalLayout.moveType = MoveType.STICK; globalLayout.save("global") })
         }
         if (globalLayout.moveType == MoveType.STICK) {
             Text("Zona muerta ${(globalLayout.deadzone * 100).roundToInt()}%", color = p.text, fontSize = 13.sp)
@@ -239,8 +259,8 @@ private fun ControlsSection(globalLayout: ControlLayout, onEdit: () -> Unit) {
             color = p.dim, fontSize = 12.sp,
         )
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            OutlinedButton(onClick = onEdit) { Text("Editar controles") }
-            OutlinedButton(onClick = { globalLayout.reset(); globalLayout.save("global") }) { Text("Restablecer layout global") }
+            AppButton("Editar controles", onEdit)
+            AppButton("Restablecer layout global", { globalLayout.reset(); globalLayout.save("global") })
         }
     }
     Section("Mando") { PadSettingsSection() }
@@ -258,8 +278,8 @@ private fun MusicSection(actions: LibraryActions) {
             color = LocalPalette.current.dim, fontSize = 12.sp,
         )
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            OutlinedButton(onClick = actions.pickMusicFolder) { Text("Elegir carpeta (playlist)") }
-            OutlinedButton(onClick = actions.pickMusic) { Text("Un solo archivo") }
+            AppButton("Elegir carpeta (playlist)", actions.pickMusicFolder)
+            AppButton("Un solo archivo", actions.pickMusic)
         }
         val folder = Settings.musicFolder.value
         Text(
@@ -271,13 +291,13 @@ private fun MusicSection(actions: LibraryActions) {
             color = p.dim, fontSize = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis,
         )
         if (folder.isNotEmpty()) {
-            OutlinedButton(onClick = { Settings.setMusicFolder("") }) { Text("Quitar carpeta") }
+            AppButton("Quitar carpeta", { Settings.setMusicFolder("") })
         }
         Text("Orden de reproducción (en bucle)", color = p.accent, fontSize = 12.sp, fontWeight = FontWeight.Bold)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            FilterChip(selected = !Settings.musicShuffle.value, onClick = { Settings.setMusicShuffle(false) }, label = { Text("En orden") })
-            FilterChip(selected = Settings.musicShuffle.value, onClick = { Settings.setMusicShuffle(true) }, label = { Text("Aleatorio") })
-            OutlinedButton(onClick = { Music.next() }) { Text("Siguiente ⏭") }
+            AppChip("En orden", !Settings.musicShuffle.value, { Settings.setMusicShuffle(false) })
+            AppChip("Aleatorio", Settings.musicShuffle.value, { Settings.setMusicShuffle(true) })
+            AppButton("Siguiente ⏭", { Music.next() })
         }
         ToggleRow("Silenciar música", Settings.musicMuted.value) { Settings.setMusicMuted(it) }
         Text("Volumen de la música", color = p.text, fontSize = 13.sp)
@@ -300,9 +320,9 @@ private fun LibrarySection(vm: LibraryViewModel, actions: LibraryActions) {
     val p = LocalPalette.current
     Section("Biblioteca") {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            OutlinedButton(onClick = actions.addFolder) { Text("Agregar carpeta") }
-            OutlinedButton(onClick = actions.addFiles) { Text("Agregar archivos") }
-            OutlinedButton(onClick = { vm.rescan() }) { Text("Volver a escanear") }
+            AppButton("Agregar carpeta", actions.addFolder)
+            AppButton("Agregar archivos", actions.addFiles)
+            AppButton("Volver a escanear", { vm.rescan() })
         }
         Text("Acepta .gba, .gbc, .gb, .zip y .7z (se descomprimen solo en la caché y se limpian al salir).", color = p.dim, fontSize = 12.sp)
         Text("Esta app no incluye ROMs ni BIOS. Usa solo juegos que poseas legalmente.", color = p.dim, fontSize = 12.sp)
@@ -322,13 +342,9 @@ private fun ScaleSection() {
         Slider(value = Settings.uiScale.floatValue, onValueChange = { Settings.setUiScale((it * 100).roundToInt() / 100f) }, valueRange = 0.7f..1.25f)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             ScaleChips.forEach { v ->
-                FilterChip(
-                    selected = kotlin.math.abs(Settings.uiScale.floatValue - v) < 0.005f,
-                    onClick = { Settings.setUiScale(v) },
-                    label = { Text("${v}x", maxLines = 1) },
-                )
+                AppChip("${v}x", kotlin.math.abs(Settings.uiScale.floatValue - v) < 0.005f, { Settings.setUiScale(v) })
             }
-            OutlinedButton(onClick = { Settings.setUiScale(0.85f) }) { Text("Por defecto") }
+            AppButton("Por defecto", { Settings.setUiScale(0.85f) })
         }
         Text("Afecta tarjetas, títulos, barras, botones y texto de la biblioteca y Ajustes. Los controles dentro del juego no cambian.", color = p.dim, fontSize = 12.sp)
     }
@@ -340,7 +356,7 @@ private fun CoversSection(vm: LibraryViewModel) {
     val status = vm.coverStatus.collectAsState().value ?: ""
     Section("Portadas") {
         ToggleRow("Buscar portadas automáticamente al agregar juegos", Settings.autoCovers.value) { Settings.setAutoCovers(it) }
-        OutlinedButton(onClick = { vm.fetchCovers(true) }) { Text("Buscar portadas faltantes") }
+        AppButton("Buscar portadas faltantes", { vm.fetchCovers(true) })
         if (status.isNotBlank()) Text(status, color = p.accent, fontSize = 12.sp)
         OutlinedTextField(
             value = Settings.sgdbKey.value,
@@ -367,10 +383,10 @@ private fun DataSection(actions: LibraryActions) {
             color = if (perm) p.dim else p.accent, fontSize = 12.sp,
         )
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            if (!perm) OutlinedButton(onClick = actions.requestStorage) { Text("Conceder permiso") }
-            OutlinedButton(onClick = actions.openDataFolder) { Text("Abrir carpeta de datos") }
-            OutlinedButton(onClick = { actions.exportBackup(withRoms) }) { Text("Exportar copia de seguridad") }
-            OutlinedButton(onClick = actions.importBackup) { Text("Importar copia") }
+            if (!perm) AppButton("Conceder permiso", actions.requestStorage)
+            AppButton("Abrir carpeta de datos", actions.openDataFolder)
+            AppButton("Exportar copia de seguridad", { actions.exportBackup(withRoms) })
+            AppButton("Importar copia", actions.importBackup)
         }
         ToggleRow("Incluir ROMs en la copia", withRoms) { withRoms = it }
         Text("Games, Saves, States, Covers, config.json y library.json viven ahí y nunca se borran.", color = p.dim, fontSize = 12.sp)
@@ -381,25 +397,11 @@ private fun DataSection(actions: LibraryActions) {
 
 @Composable
 internal fun Section(title: String, content: @Composable () -> Unit) {
-    val p = LocalPalette.current
-    Column(
-        Modifier.fillMaxWidth()
-            .cardPanel(p.panel, RoundedCornerShape(10.dp))
-            .padding(14.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Text(title.uppercase(), color = p.accent, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-        content()
-    }
+    SectionCard(title) { content() }
 }
 
 @Composable
-internal fun ToggleRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text(label, color = LocalPalette.current.text, modifier = Modifier.weight(1f))
-        Switch(checked = checked, onCheckedChange = onChange)
-    }
-}
+internal fun ToggleRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) = SwitchRow(label, checked, onChange)
 
 
 // ---------- v0.3.3: animaciones, interfaz, optimizacion ----------
@@ -439,8 +441,28 @@ private fun PerfSection() {
 }
 
 @Composable
-private fun PipSection(actions: LibraryActions, onViewer: () -> Unit) {
+private fun PipSection(actions: LibraryActions) {
     Section("Video en ventana (PiP)") {
-        PipControls(pickVideo = actions.pickPipVideo, openStreamViewer = onViewer)
+        PipControls(pickVideo = actions.pickPipVideo)
+    }
+}
+
+/** Muestra de un tema: fondo, panel y acento, con su nombre completo debajo (nunca se corta). */
+@Composable
+private fun ThemeTile(pal: Palette, selected: Boolean, onClick: () -> Unit) {
+    val p = LocalPalette.current
+    Column(
+        Modifier.width(112.dp).clip(RoundedCornerShape(Ds.RadiusM)).clickable(onClick = onClick)
+            .border(if (selected) 3.dp else 1.dp, if (selected) p.accent else p.card, RoundedCornerShape(Ds.RadiusM))
+            .padding(8.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(Modifier.fillMaxWidth().height(48.dp).clip(RoundedCornerShape(8.dp)).background(pal.bg)) {
+            Box(Modifier.align(Alignment.BottomStart).fillMaxWidth().height(14.dp).background(pal.panel))
+            Box(Modifier.align(Alignment.CenterStart).padding(start = 8.dp).size(16.dp).clip(CircleShape).background(pal.accent))
+            Box(Modifier.align(Alignment.CenterEnd).padding(end = 8.dp).size(width = 26.dp, height = 12.dp).clip(RoundedCornerShape(4.dp)).background(pal.play))
+        }
+        Text(pal.name, color = p.text, fontSize = Ds.LabelSp.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium, maxLines = 2, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
     }
 }

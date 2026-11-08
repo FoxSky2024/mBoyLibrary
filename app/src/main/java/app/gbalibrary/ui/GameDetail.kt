@@ -8,6 +8,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -42,22 +43,41 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.gbalibrary.data.Covers
+import app.gbalibrary.data.DataDir
+import java.io.File
 import app.gbalibrary.data.Game
 import app.gbalibrary.data.SaveType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-/** Ficha del juego estilo Steam: portada grande, JUGAR, favorito, datos, nota y personalizacion. */
+private enum class DetailPanel { INFO, SAVES, SETTINGS }
+
+private val SAVE_SLOTS = listOf("auto" to "Partida automática", "quick" to "Guardado rápido", "slot1" to "Ranura 1", "slot2" to "Ranura 2", "slot3" to "Ranura 3")
+
+/**
+ * Ficha del juego: portada grande, nombre, sistema y tamano; boton grande JUGAR y debajo
+ * Continuar / Guardados / Ajustes del juego. Cada panel se muestra debajo, sin encimar texto.
+ */
 @Composable
-fun GameDetail(game: Game, vm: LibraryViewModel, actions: LibraryActions, onBack: () -> Unit, onPlay: () -> Unit) {
+fun GameDetail(
+    game: Game,
+    vm: LibraryViewModel,
+    actions: LibraryActions,
+    onBack: () -> Unit,
+    onPlay: () -> Unit,
+    onPlaySlot: (String) -> Unit = { onPlay() },
+) {
     val p = LocalPalette.current
     val ctx = LocalContext.current
     val collections by vm.collections.collectAsState()
@@ -68,149 +88,69 @@ fun GameDetail(game: Game, vm: LibraryViewModel, actions: LibraryActions, onBack
     var renaming by remember { mutableStateOf(false) }
     var urlDialog by remember { mutableStateOf(false) }
     var url by remember { mutableStateOf("") }
+    var panel by remember(game.id) { mutableStateOf(DetailPanel.INFO) }
+    val hasAuto = remember(game.id, panel) { File(DataDir.states(ctx), "${game.id}.auto.ss").exists() }
 
     val art by produceState<ImageBitmap?>(null, game.id, game.coverStamp, game.hasBackground) {
         value = if (game.hasBackground) withContext(Dispatchers.IO) { Covers.load(Covers.backgroundFile(ctx, game.id)) } else null
     }
 
-    Box(Modifier.fillMaxSize()) {
-        art?.let { Image(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
-        Box(Modifier.fillMaxSize().background(p.bg.copy(alpha = if (art != null) 0.78f else 0.92f)))
-
+    Box(Modifier.fillMaxSize().background(p.bg)) {
         Column(Modifier.fillMaxSize()) {
-            Row(
-                Modifier.fillMaxWidth().height(48.dp).opacityPanel(p.panel).padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Text("← Biblioteca", color = p.accent, fontWeight = FontWeight.Bold, modifier = Modifier.clickable(onClick = onBack).padding(8.dp))
-                Text(Settings_appName(), color = p.dim, fontSize = 13.sp)
-            }
-
-            Row(Modifier.fillMaxSize().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                Column(Modifier.width(190.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Box(Modifier.fillMaxWidth().aspectRatio(3f / 4f).clip(RoundedCornerShape(10.dp)).border(2.dp, p.card, RoundedCornerShape(10.dp))) {
-                        CoverImage(game, Modifier.fillMaxSize())
+            ScreenHeader(title = "Ficha del juego", onBack = onBack)
+            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                // ---- Portada estilo Steam: arte de fondo + degradado + capsula y titulo ----
+                Box(Modifier.fillMaxWidth().height(230.dp)) {
+                    if (art != null) {
+                        Image(art!!, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                    } else {
+                        CoverImage(game, Modifier.fillMaxSize().alpha(0.35f))
                     }
-                    OutlinedButton(onClick = { actions.pickCover(game.id) }, modifier = Modifier.fillMaxWidth()) { Text("Portada: galería", fontSize = 12.sp) }
-                    OutlinedButton(onClick = { urlDialog = true }, modifier = Modifier.fillMaxWidth()) { Text("Portada: pegar URL", fontSize = 12.sp) }
-                    OutlinedButton(onClick = { vm.fetchCoverFor(game.id) }, modifier = Modifier.fillMaxWidth()) { Text("Buscar en internet", fontSize = 12.sp) }
-                    if (game.hasCover) TextButton(onClick = { vm.clearCover(game.id) }, modifier = Modifier.fillMaxWidth()) { Text("Quitar portada", fontSize = 12.sp) }
-                    OutlinedButton(onClick = { actions.pickGameBackground(game.id) }, modifier = Modifier.fillMaxWidth()) { Text("Elegir fondo", fontSize = 12.sp) }
-                    if (game.hasBackground) TextButton(onClick = { vm.clearGameBackground(game.id) }, modifier = Modifier.fillMaxWidth()) { Text("Quitar fondo", fontSize = 12.sp) }
+                    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, p.bg.copy(alpha = 0.6f), p.bg))))
+                    Row(
+                        Modifier.align(Alignment.BottomStart).padding(horizontal = Ds.Pad, vertical = Ds.GapL),
+                        verticalAlignment = Alignment.Bottom,
+                        horizontalArrangement = Arrangement.spacedBy(Ds.Pad),
+                    ) {
+                        Box(Modifier.width(120.dp).aspectRatio(3f / 4f).clip(RoundedCornerShape(Ds.RadiusS)).border(2.dp, p.card, RoundedCornerShape(Ds.RadiusS))) {
+                            CoverImage(game, Modifier.fillMaxSize())
+                        }
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(game.title, color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Black, lineHeight = 30.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Ds.GapL)) {
+                                SystemBadge(systemOf(game))
+                                Text(formatSize(game.sizeBytes), color = Color(0xFFD0D6DC), fontSize = Ds.LabelSp.sp, maxLines = 1)
+                                if (game.favorite) Text("★", color = Color(0xFFFFD54F), fontSize = 16.sp)
+                            }
+                        }
+                    }
                 }
 
-                Column(Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    Text(game.title, color = p.text, fontSize = 24.sp, fontWeight = FontWeight.Black, lineHeight = 28.sp, maxLines = 3, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(
-                            onClick = onPlay,
-                            colors = ButtonDefaults.buttonColors(containerColor = p.play),
-                            shape = RoundedCornerShape(6.dp),
-                            modifier = Modifier.height(48.dp).widthIn(min = 170.dp),
-                        ) { Text("▶  JUGAR", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Black, maxLines = 1, softWrap = false) }
-                        OutlinedButton(onClick = { vm.toggleFavorite(game.id) }, modifier = Modifier.height(48.dp)) {
-                            Text(if (game.favorite) "★ Favorito" else "☆ Favorito", fontSize = 14.sp, maxLines = 1, softWrap = false)
-                        }
-                        OutlinedButton(onClick = { renaming = true }, modifier = Modifier.height(48.dp)) {
-                            Text("Renombrar", fontSize = 14.sp, maxLines = 1, softWrap = false)
-                        }
-                    }
+                // ---- Barra de acciones: JUGAR verde + Continuar + datos ----
+                FlowRow(
+                    Modifier.fillMaxWidth().background(p.panel).padding(horizontal = Ds.Pad, vertical = Ds.GapL),
+                    horizontalArrangement = Arrangement.spacedBy(Ds.GapL),
+                    verticalArrangement = Arrangement.spacedBy(Ds.GapL),
+                    itemVerticalAlignment = Alignment.CenterVertically,
+                ) {
+                    AppButton("JUGAR", onPlay, Modifier.widthIn(min = 180.dp), kind = BtnKind.PRIMARY, big = true, icon = "▶")
+                    AppButton("Continuar", { onPlaySlot("auto") }, Modifier.widthIn(min = 130.dp), enabled = hasAuto)
+                    StatBlock("Última vez", formatAgo(game.lastPlayed))
+                    StatBlock("Tiempo de juego", formatPlayTime(game.playSeconds))
+                    StatBlock("Veces abierto", game.launches.toString())
+                }
+                SteamTabs(listOf("Resumen", "Guardados", "Ajustes del juego"), panel.ordinal) { panel = DetailPanel.entries[it] }
 
-                    Column(
-                        Modifier.fillMaxWidth().cardPanel(p.panel, RoundedCornerShape(8.dp)).padding(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                        InfoRow("Tiempo jugado", formatPlayTime(game.playSeconds))
-                        InfoRow("Última vez", formatAgo(game.lastPlayed))
-                        InfoRow("Veces abierto", game.launches.toString())
-                        InfoRow("Guardado detectado", if (game.detSave >= 0) SaveType.label(game.detSave) else "— (se detecta al abrir)")
-                        InfoRow("Reloj (RTC)", when (game.detRtc) { 1 -> "Sí"; 0 -> "No"; else -> "—" })
-                        InfoRow("Tamaño", formatSize(game.sizeBytes))
-                        InfoRow("Código del juego", game.code.ifBlank { "—" })
-                        InfoRow("Archivo", game.fileName)
-                    }
-
-                    Text("DESCRIPCIÓN", color = p.dim, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    Text(
-                        "Juego de Game Boy Advance" +
-                            (if (game.headerTitle.isNotBlank()) " · título interno \"${game.headerTitle}\"" else "") +
-                            (if (game.code.isNotBlank()) " · código ${game.code}" else "") + ".",
-                        color = p.text,
-                    )
-                    OutlinedTextField(
-                        value = note,
-                        onValueChange = { note = it },
-                        label = { Text("Mi nota") },
-                        modifier = Modifier.fillMaxWidth(),
-                        minLines = 2,
-                    )
-                    OutlinedButton(onClick = { vm.setNote(game.id, note) }) { Text("Guardar nota") }
-
-                    Text("PROGRESO", color = p.dim, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    var prog by remember(game.id) { mutableStateOf(game.progress.coerceAtLeast(0).toFloat()) }
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(if (game.progress < 0) "Sin definir" else "${game.progress}%", color = p.text, fontSize = 13.sp, modifier = Modifier.width(80.dp))
-                        androidx.compose.material3.Slider(
-                            value = prog, onValueChange = { prog = it }, valueRange = 0f..100f,
-                            onValueChangeFinished = { vm.setProgress(game.id, prog.toInt()) },
-                            modifier = Modifier.weight(1f),
+                Column(Modifier.fillMaxWidth().padding(Ds.Pad), verticalArrangement = Arrangement.spacedBy(Ds.GapL)) {
+                    if (!hasAuto && panel == DetailPanel.INFO) Hint("Aún no hay partida automática: JUGAR empieza desde el principio y se guarda solo al salir.")
+                    when (panel) {
+                        DetailPanel.INFO -> InfoPanel(game)
+                        DetailPanel.SAVES -> SavesPanel(game, onPlaySlot)
+                        DetailPanel.SETTINGS -> SettingsPanel(
+                            game, vm, actions, collections, note, { note = it }, newCollection, { newCollection = it },
+                            onRename = { renaming = true }, onUrl = { urlDialog = true }, onRemove = { confirmRemove = true },
                         )
-                        if (game.progress >= 0) TextButton(onClick = { vm.setProgress(game.id, -1) }) { Text("Quitar", fontSize = 12.sp) }
                     }
-                    GameGallerySection(game.id)
-
-                    Text("COMPATIBILIDAD", color = p.dim, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    Column(
-                        Modifier.fillMaxWidth().cardPanel(p.panel, RoundedCornerShape(8.dp)).padding(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Text("Tipo de guardado", color = p.text, fontSize = 13.sp)
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            listOf(
-                                -1 to "Auto", SaveType.SRAM to "SRAM", SaveType.FLASH512 to "FLASH 64K",
-                                SaveType.FLASH1M to "FLASH 128K", SaveType.EEPROM to "EEPROM 8K", SaveType.EEPROM512 to "EEPROM 512B",
-                            ).forEach { (v, name) ->
-                                FilterChip(
-                                    selected = game.saveOverride == v || (v == -1 && game.saveOverride < 0),
-                                    onClick = { vm.setCompat(game.id, v, game.rtcMode) },
-                                    label = { Text(name, maxLines = 1) },
-                                )
-                            }
-                        }
-                        Text("Reloj (RTC)", color = p.text, fontSize = 13.sp)
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            listOf(0 to "Auto", 1 to "Sí", 2 to "No").forEach { (v, name) ->
-                                FilterChip(selected = game.rtcMode == v, onClick = { vm.setCompat(game.id, game.saveOverride, v) }, label = { Text(name) })
-                            }
-                        }
-                        Text("Se aplica la próxima vez que abras el juego. Déjalo en Auto salvo que un hack no guarde.", color = p.dim, fontSize = 11.sp)
-                    }
-
-                    Text("COLECCIONES", color = p.dim, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        collections.forEach { c ->
-                            val on = c in game.collections
-                            FilterChip(selected = on, onClick = { vm.setInCollection(game.id, c, !on) }, label = { Text(c) })
-                        }
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedTextField(
-                            value = newCollection,
-                            onValueChange = { newCollection = it },
-                            label = { Text("Nueva colección") },
-                            singleLine = true,
-                            modifier = Modifier.weight(1f),
-                        )
-                        OutlinedButton(onClick = {
-                            if (newCollection.isNotBlank()) {
-                                vm.setInCollection(game.id, newCollection, true)
-                                newCollection = ""
-                            }
-                        }) { Text("Agregar") }
-                    }
-
-                    TextButton(onClick = { confirmRemove = true }) { Text("Quitar de la biblioteca", color = Color(0xFFE57373)) }
                     Box(Modifier.height(24.dp))
                 }
             }
@@ -235,7 +175,6 @@ fun GameDetail(game: Game, vm: LibraryViewModel, actions: LibraryActions, onBack
             dismissButton = { TextButton(onClick = { urlDialog = false }) { Text("Cancelar") } },
         )
     }
-
     if (confirmRemove) {
         AlertDialog(
             onDismissRequest = { confirmRemove = false },
@@ -250,12 +189,149 @@ fun GameDetail(game: Game, vm: LibraryViewModel, actions: LibraryActions, onBack
 }
 
 @Composable
-private fun InfoRow(label: String, value: String) {
+private fun InfoPanel(game: Game) {
     val p = LocalPalette.current
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(label, color = p.dim, modifier = Modifier.width(150.dp), fontSize = 13.sp)
-        Text(value, color = p.text, fontSize = 13.sp, modifier = Modifier.weight(1f))
+    val sys = systemOf(game)
+    SectionCard("Información") {
+        InfoRow("Sistema", when (sys) { "GBA" -> "Game Boy Advance"; "GBC" -> "Game Boy Color"; else -> "Game Boy" })
+        InfoRow("Tamaño", formatSize(game.sizeBytes))
+        InfoRow("Tiempo jugado", formatPlayTime(game.playSeconds))
+        InfoRow("Última vez", formatAgo(game.lastPlayed))
+        InfoRow("Veces abierto", game.launches.toString())
+        InfoRow("Guardado detectado", if (game.detSave >= 0) SaveType.label(game.detSave) else "— (se detecta al abrir)")
+        if (sys == "GBA") InfoRow("Código del juego", game.code.ifBlank { "—" })
+        InfoRow("Archivo", game.fileName)
+    }
+    if (game.progress >= 0) {
+        SectionCard("Progreso") {
+            Text("${game.progress}%", color = p.text, fontSize = Ds.BodySp.sp)
+        }
+    }
+    GameGallerySection(game.id)
+}
+
+@Composable
+private fun SavesPanel(game: Game, onPlaySlot: (String) -> Unit) {
+    val p = LocalPalette.current
+    val ctx = LocalContext.current
+    var tick by remember { mutableStateOf(0) }
+    var confirmDelete by remember { mutableStateOf<String?>(null) }
+    SectionCard("Guardados") {
+        SAVE_SLOTS.forEach { (slot, name) ->
+            val f = File(DataDir.states(ctx), "${game.id}.$slot.ss")
+            val exists = remember(slot, tick) { f.exists() }
+            Row(
+                Modifier.fillMaxWidth().background(p.card, RoundedCornerShape(Ds.RadiusM)).padding(start = 10.dp, top = 8.dp, end = 8.dp, bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Ds.GapL),
+            ) {
+                SlotThumb(if (exists) f.path + ".png" else null)
+                Column(Modifier.weight(1f)) {
+                    Text(name, color = p.text, fontSize = Ds.BodySp.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                    Text(if (exists) formatAgo(f.lastModified()) else "Vacía", color = p.dim, fontSize = Ds.LabelSp.sp, maxLines = 1)
+                }
+                if (exists && slot != "auto") {
+                    val asking = confirmDelete == slot
+                    AppButton(
+                        if (asking) "¿Borrar?" else "Borrar",
+                        {
+                            if (asking) {
+                                f.delete(); File(f.path + ".png").delete()
+                                confirmDelete = null; tick++
+                            } else confirmDelete = slot
+                        },
+                        Modifier.widthIn(min = 90.dp), kind = if (asking) BtnKind.DANGER else BtnKind.SECONDARY,
+                    )
+                }
+                AppButton("Cargar", { onPlaySlot(slot) }, Modifier.widthIn(min = 100.dp), kind = BtnKind.PRIMARY, enabled = exists)
+            }
+        }
+        Hint("Las ranuras se crean dentro del juego: Pausa > Guardar. Cada una guarda una miniatura.")
     }
 }
 
-private fun Settings_appName(): String = app.gbalibrary.data.Settings.appName.value
+@Composable
+private fun SettingsPanel(
+    game: Game,
+    vm: LibraryViewModel,
+    actions: LibraryActions,
+    collections: List<String>,
+    note: String,
+    onNote: (String) -> Unit,
+    newCollection: String,
+    onNewCollection: (String) -> Unit,
+    onRename: () -> Unit,
+    onUrl: () -> Unit,
+    onRemove: () -> Unit,
+) {
+    SectionCard("Juego") {
+        ButtonFlow {
+            AppButton(if (game.favorite) "★ Favorito" else "☆ Favorito", { vm.toggleFavorite(game.id) })
+            AppButton("Renombrar", onRename)
+        }
+    }
+    SectionCard("Portada y fondo") {
+        ButtonFlow {
+            AppButton("Portada: galería", { actions.pickCover(game.id) })
+            AppButton("Portada: pegar URL", onUrl)
+            AppButton("Buscar en internet", { vm.fetchCoverFor(game.id) })
+            if (game.hasCover) AppButton("Quitar portada", { vm.clearCover(game.id) })
+            AppButton("Elegir fondo", { actions.pickGameBackground(game.id) })
+            if (game.hasBackground) AppButton("Quitar fondo", { vm.clearGameBackground(game.id) })
+        }
+    }
+    SectionCard("Nota y progreso") {
+        OutlinedTextField(value = note, onValueChange = onNote, label = { Text("Mi nota") }, modifier = Modifier.fillMaxWidth(), minLines = 2)
+        AppButton("Guardar nota", { vm.setNote(game.id, note) })
+        var prog by remember(game.id) { mutableStateOf(game.progress.coerceAtLeast(0).toFloat()) }
+        SliderRow(
+            "Progreso del juego", prog, 0f..100f, if (game.progress < 0) "Sin definir" else "${game.progress}%", { prog = it },
+            onFinished = { vm.setProgress(game.id, prog.toInt()) },
+        )
+        if (game.progress >= 0) AppButton("Quitar progreso", { vm.setProgress(game.id, -1) })
+    }
+    if (systemOf(game) == "GBA") {
+        SectionCard("Compatibilidad") {
+            Subtitle("Tipo de guardado")
+            val saveOpts = listOf(
+                -1 to "Auto", SaveType.SRAM to "SRAM", SaveType.FLASH512 to "FLASH 64K",
+                SaveType.FLASH1M to "FLASH 128K", SaveType.EEPROM to "EEPROM 8K", SaveType.EEPROM512 to "EEPROM 512B",
+            )
+            ChipRow(saveOpts.map { it.second }, saveOpts.indexOfFirst { it.first == game.saveOverride || (it.first == -1 && game.saveOverride < 0) }.coerceAtLeast(0)) {
+                vm.setCompat(game.id, saveOpts[it].first, game.rtcMode)
+            }
+            Subtitle("Reloj (RTC)")
+            ChipRow(listOf("Auto", "Sí", "No"), game.rtcMode) { vm.setCompat(game.id, game.saveOverride, it) }
+            Hint("Se aplica la próxima vez que abras el juego. Déjalo en Auto salvo que un hack no guarde.")
+        }
+    }
+    SectionCard("Colecciones") {
+        if (collections.isNotEmpty()) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(Ds.Gap), verticalArrangement = Arrangement.spacedBy(Ds.Gap)) {
+                collections.forEach { c ->
+                    val on = c in game.collections
+                    AppChip(c, on, { vm.setInCollection(game.id, c, !on) })
+                }
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(Ds.Gap), verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(value = newCollection, onValueChange = onNewCollection, label = { Text("Nueva colección") }, singleLine = true, modifier = Modifier.weight(1f))
+            AppButton("Agregar", {
+                if (newCollection.isNotBlank()) {
+                    vm.setInCollection(game.id, newCollection, true)
+                    onNewCollection("")
+                }
+            })
+        }
+    }
+    AppButton("Quitar de la biblioteca", onRemove, Modifier.fillMaxWidth(), kind = BtnKind.DANGER)
+}
+
+@Composable
+private fun InfoRow(label: String, value: String) {
+    val p = LocalPalette.current
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(label, color = p.dim, modifier = Modifier.width(150.dp), fontSize = Ds.LabelSp.sp)
+        Text(value, color = p.text, fontSize = Ds.LabelSp.sp, modifier = Modifier.weight(1f))
+    }
+}

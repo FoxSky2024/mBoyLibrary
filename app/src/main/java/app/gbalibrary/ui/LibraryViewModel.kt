@@ -52,6 +52,9 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
         try { SortMode.valueOf(Settings.sortMode.value) } catch (e: Exception) { SortMode.RECENT }
     )
     val category = MutableStateFlow(CAT_ALL)
+
+    /** Filtro por sistema: "" = todos, o "GBA" / "GBC" / "GB". */
+    val systemFilter = MutableStateFlow("")
     val scanning = MutableStateFlow(false)
     val message = MutableStateFlow<String?>(null)
 
@@ -71,7 +74,8 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
     val playRequest = MutableStateFlow<Game?>(null)
 
     val visible: StateFlow<List<Game>> =
-        combine(store.games, query, sort, category) { list, q, s, c ->
+        combine(store.games, query, sort, category, systemFilter) { list0, q, s, c, sysF ->
+            val list = if (sysF.isEmpty()) list0 else list0.filter { systemOf(it) == sysF }
             val base = when (c) {
                 CAT_ALL -> list
                 CAT_FAV -> list.filter { it.favorite }

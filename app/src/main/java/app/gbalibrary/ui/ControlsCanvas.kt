@@ -69,6 +69,7 @@ fun ControlsCanvas(
         for (item in layout.items.toList()) {
             val isSystem = item.kind == Kind.MENU
             if (!isSystem && !showPad && !editing) continue
+            if (item.hidden && !editing) continue
             PlacedItem(item, layout, engine, sw, sh, editing, live, onMenu, onQuick)
         }
     }
@@ -94,6 +95,7 @@ private fun PlacedItem(
     val hPx = with(d) { hDp.dp.toPx() }
     var a = (item.alpha * Settings.padOpacity.floatValue / 0.55f).coerceIn(0.1f, 1f)
     if (item.kind == Kind.MENU) a = maxOf(a, 0.45f)
+    if (item.hidden) a = 0.2f // solo se ve asi dentro del editor, para poder volver a mostrarlo
     val selected = editing && layout.selected == item.id
     val source = Engine.SOURCE_WIDGET_BASE + layout.slotOf(item.id) % (Engine.SOURCE_COUNT - Engine.SOURCE_WIDGET_BASE)
 
@@ -227,7 +229,10 @@ private fun EditorBody(
                 }
             }
             if (sel.kind != Kind.MENU) {
-                OutlinedButton(onClick = { layout.remove(sel.id) }) { Text("Borrar este botón", color = Color(0xFFFF8A80)) }
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    OutlinedButton(onClick = { layout.setHidden(sel.id, !sel.hidden) }) { Text(if (sel.hidden) "Mostrar este botón" else "Ocultar este botón") }
+                    OutlinedButton(onClick = { layout.remove(sel.id) }) { Text("Borrar este botón", color = Color(0xFFFF8A80)) }
+                }
             }
         }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {

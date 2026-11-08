@@ -74,8 +74,6 @@ import app.gbalibrary.input.PadInput
 import app.gbalibrary.ui.EntrySplash
 import app.gbalibrary.ui.Pip
 import app.gbalibrary.ui.PipOverlay
-import app.gbalibrary.ui.StreamHostOverlay
-import app.gbalibrary.stream.StreamHost
 import app.gbalibrary.ui.Music
 import app.gbalibrary.ui.effectiveFilter
 import kotlinx.coroutines.delay
@@ -85,6 +83,8 @@ import kotlin.math.roundToInt
 class EmulatorActivity : ComponentActivity() {
     companion object {
         const val EXTRA_GAME_ID = "gameId"
+        /** Ranura de estado que se carga al abrir ("quick", "slot1".. o "auto"); vacio = retomar la partida automatica. */
+        const val EXTRA_LOAD_SLOT = "loadSlot"
     }
 
     private var engine: Engine? = null
@@ -95,28 +95,11 @@ class EmulatorActivity : ComponentActivity() {
     private var layoutScope = "global" // de donde se cargo el layout (y donde se guarda al terminar)
     private val forceTouch = mutableStateOf(false) // mostrar tactiles aunque haya mando
     private val trigHeld = HashSet<Int>()
-    private var streamHost by mutableStateOf<StreamHost?>(null) // transmision P2P activa
 
     private val pickPipVideoFile =
         registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia()) { uri ->
             if (uri != null) Pip.showVideo(uri.toString())
         }
-
-    private fun startStream() {
-        val e = engine ?: return
-        val h = StreamHost(Settings.profileName.value)
-        if (h.start(e)) {
-            streamHost = h
-            flash("Transmitiendo · código ${h.code}")
-        } else {
-            flash("No se pudo transmitir: conéctate a una red WiFi")
-        }
-    }
-
-    private fun stopStream() {
-        streamHost?.stop()
-        streamHost = null
-    }
 
     private var resumedAt = 0L
     private var activityResumed = false
@@ -153,7 +136,8 @@ class EmulatorActivity : ComponentActivity() {
 
         PadInput.init(this)
         // Layout propio del juego si existe; si no, el global.
-        layoutScope = if (Settings.loadLayout(game.id) != null) game.id else "global"
+        layout.portrait = resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_PORTRAIT
+        layoutScope = if (layout.hasSaved(game.id)) game.id else "global"
         layout.load(layoutScope)
 
         val romUri = Uri.parse(game.uri)
@@ -195,6 +179,10 @@ class EmulatorActivity : ComponentActivity() {
         eng.audioSync = Settings.audioSync.value
         engine = eng
         eng.start()
+        // Desde la ficha: "Guardados" abre el juego directo en una ranura (se aplica tras cargar la ROM).
+        intent.getStringExtra(EXTRA_LOAD_SLOT)?.takeIf { it.isNotEmpty() && it != "auto" && savedInstanceState == null }?.let { slot ->
+            eng.loadState(statePath(slot)) { ok -> flash(if (ok) "Partida cargada" else "Esa ranura está vacía") }
+        }
 
         onBackPressedDispatcher.addCallback(this) {
             when {
@@ -299,13 +287,13 @@ class EmulatorActivity : ComponentActivity() {
 
     override fun onStop() {
         super.onStop()
-        engine?.autoSave()
+        // Sincrono: el progreso queda en disco antes de que Android pueda congelar o cerrar la app.
+        engine?.autoSaveSync()
     }
 
     override fun onDestroy() {
         super.onDestroy()
         ticker.removeCallbacks(flushRunnable)
-        stopStream() // cierra la transmision: no queda nada guardado
         engine?.shutdown()
         Archive.clearCache(this) // borra lo descomprimido al salir del juego
     }
@@ -313,8 +301,11 @@ class EmulatorActivity : ComponentActivity() {
     // Guarda horas jugadas cada 30 s (por si se cierra la app de golpe) y al salir.
     private val ticker = Handler(Looper.getMainLooper())
     private val flushRunnable = object : Runnable {
+        private var beats = 0
         override fun run() {
             flushPlayTime()
+            // Cada minuto, copia de seguridad de la partida (por si el telefono se apaga o la app se cierra de golpe).
+            if (++beats % 2 == 0 && !menuOpen.value) engine?.autoSave()
             ticker.postDelayed(this, 30_000L)
         }
     }
@@ -339,7 +330,25 @@ class EmulatorActivity : ComponentActivity() {
     private fun doSave(slot: String) {
         engine?.saveState(statePath(slot)) { ok ->
             flash(if (ok) "Estado guardado" else "No se pudo guardar")
-            if (ok) runOnUiThread { PadInput.rumble(80) }
+            if (ok) {
+                runOnUiThread { PadInput.rumble(80) }
+                writeThumb(slot)
+            }
+        }
+    }
+
+    /** Miniatura de la ranura: PNG junto al estado (statePath + ".png"). */
+    private fun writeThumb(slot: String) {
+        engine?.screenshot { argb ->
+            if (argb == null) return@screenshot
+            try {
+                val vw = app.gbalibrary.emu.Native.videoWidth().coerceAtLeast(1)
+                val vh = (argb.size / vw).coerceAtLeast(1)
+                val bmp = Bitmap.createBitmap(argb, vw, vh, Bitmap.Config.ARGB_8888)
+                File(statePath(slot) + ".png").outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 90, it) }
+            } catch (e: Exception) {
+                // la miniatura es opcional
+            }
         }
     }
 
@@ -490,6 +499,17 @@ class EmulatorActivity : ComponentActivity() {
             eng.volume = Settings.volume.intValue
             eng.muted = Settings.muted.value
         }
+        // Un layout de controles por orientacion.
+        val portrait = androidx.compose.ui.platform.LocalConfiguration.current.orientation ==
+            android.content.res.Configuration.ORIENTATION_PORTRAIT
+        LaunchedEffect(portrait) {
+            if (layout.portrait != portrait) {
+                layout.save(layoutScope)
+                layout.portrait = portrait
+                layoutScope = if (layout.hasSaved(game.id)) game.id else "global"
+                layout.load(layoutScope)
+            }
+        }
         var fps by remember { mutableIntStateOf(0) }
         LaunchedEffect(Settings.showFps.value) {
             while (Settings.showFps.value) {
@@ -512,7 +532,6 @@ class EmulatorActivity : ComponentActivity() {
             if (!Settings.pipOnTop.value) PipOverlay()
             Controls(eng)
             if (Settings.pipOnTop.value) PipOverlay()
-            streamHost?.let { h -> if (h.running.value) StreamHostOverlay(h, Modifier.fillMaxSize()) }
 
             // Boton flotante de musica (solo si "Seguir escuchando musica dentro del juego" esta ON).
             if (Settings.musicInGame.value && Music.hasSource() && !editing.value) {
@@ -575,7 +594,6 @@ class EmulatorActivity : ComponentActivity() {
                     layout = layout,
                     padConnected = PadInput.connected.value,
                     forceTouch = forceTouch.value,
-                    host = streamHost,
                     actions = MenuActions(
                         close = { setMenu(false) },
                         save = { doSave(it) },
@@ -598,8 +616,8 @@ class EmulatorActivity : ComponentActivity() {
                         persistLayout = { layout.save(layoutScope) },
                         setForceTouch = { forceTouch.value = it },
                         toggleMusic = { Music.toggle(this@EmulatorActivity) },
-                        startStream = { startStream() },
-                        stopStream = { stopStream() },
+                        slotThumb = { slot -> File(statePath(slot) + ".png").takeIf { it.exists() }?.path },
+                        slotTime = { slot -> File(statePath(slot)).let { f -> if (f.exists()) f.lastModified() else 0L } },
                         pickPipVideo = { pickPipVideoFile.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.VideoOnly)) },
                         setSpeed = {
                             speed.intValue = it

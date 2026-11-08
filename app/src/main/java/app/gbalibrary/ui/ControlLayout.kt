@@ -74,6 +74,8 @@ data class PadItem(
     val size: Float = 1f,
     val alpha: Float = 0.55f,
     val extra: Boolean = false,
+    /** Oculto: no se dibuja ni responde al tacto (en el editor se ve atenuado para poder volver a mostrarlo). */
+    val hidden: Boolean = false,
 )
 
 object MoveType {
@@ -88,20 +90,41 @@ class ControlLayout {
     var deadzone by mutableFloatStateOf(0.25f)
     var selected by mutableStateOf<String?>(null)
 
+    /**
+     * Orientacion del layout. Cada orientacion guarda el suyo (vertical con sufijo "@v"; el horizontal
+     * conserva la clave de siempre, asi no se pierde lo ya guardado).
+     */
+    var portrait by mutableStateOf(false)
+
     init { reset() }
+
+    private fun key(scope: String) = if (portrait) "$scope@v" else scope
 
     fun reset() {
         items.clear()
         fun d(id: String, k: String, x: Float, y: Float) = items.add(PadItem(id, k, x, y))
-        d(Kind.MOVE, Kind.MOVE, 0.11f, 0.64f)
-        d(Kind.L, Kind.L, 0.09f, 0.20f)
-        d(Kind.R, Kind.R, 0.91f, 0.20f)
-        d(Kind.A, Kind.A, 0.93f, 0.52f)
-        d(Kind.B, Kind.B, 0.84f, 0.70f)
-        d(Kind.SELECT, Kind.SELECT, 0.39f, 0.93f)
-        d(Kind.START, Kind.START, 0.61f, 0.93f)
-        d(Kind.MENU, Kind.MENU, 0.04f, 0.07f)
-        d(Kind.QUICK, Kind.QUICK, 0.96f, 0.07f)
+        if (portrait) {
+            // Vertical: el juego arriba y los controles abajo, sin taparlo.
+            d(Kind.MOVE, Kind.MOVE, 0.24f, 0.80f)
+            d(Kind.L, Kind.L, 0.14f, 0.58f)
+            d(Kind.R, Kind.R, 0.86f, 0.58f)
+            d(Kind.A, Kind.A, 0.88f, 0.76f)
+            d(Kind.B, Kind.B, 0.68f, 0.86f)
+            d(Kind.SELECT, Kind.SELECT, 0.36f, 0.96f)
+            d(Kind.START, Kind.START, 0.64f, 0.96f)
+            d(Kind.MENU, Kind.MENU, 0.06f, 0.04f)
+            d(Kind.QUICK, Kind.QUICK, 0.94f, 0.04f)
+        } else {
+            d(Kind.MOVE, Kind.MOVE, 0.11f, 0.64f)
+            d(Kind.L, Kind.L, 0.09f, 0.20f)
+            d(Kind.R, Kind.R, 0.91f, 0.20f)
+            d(Kind.A, Kind.A, 0.93f, 0.52f)
+            d(Kind.B, Kind.B, 0.84f, 0.70f)
+            d(Kind.SELECT, Kind.SELECT, 0.39f, 0.93f)
+            d(Kind.START, Kind.START, 0.61f, 0.93f)
+            d(Kind.MENU, Kind.MENU, 0.04f, 0.07f)
+            d(Kind.QUICK, Kind.QUICK, 0.96f, 0.07f)
+        }
         moveType = MoveType.CROSS
         deadzone = 0.25f
         selected = null
@@ -122,6 +145,8 @@ class ControlLayout {
 
     fun setSize(id: String, v: Float) = replace(id) { it.copy(size = v.coerceIn(0.5f, 2.5f)) }
     fun setAlpha(id: String, v: Float) = replace(id) { it.copy(alpha = v.coerceIn(0.1f, 1f)) }
+    /** Oculta / muestra un control. El boton de menu nunca se oculta (no habria como volver). */
+    fun setHidden(id: String, hidden: Boolean) = replace(id) { if (it.kind == Kind.MENU) it else it.copy(hidden = hidden) }
     fun setKind(id: String, kind: String) = replace(id) { if (it.extra) it.copy(kind = kind) else it }
 
     /** Agrega un boton extra mapeado a [kind]. Devuelve su id. */
@@ -150,17 +175,17 @@ class ControlLayout {
         val arr = JSONArray()
         items.forEach {
             arr.put(JSONObject().put("id", it.id).put("k", it.kind).put("x", it.x.toDouble()).put("y", it.y.toDouble())
-                .put("s", it.size.toDouble()).put("a", it.alpha.toDouble()).put("e", it.extra))
+                .put("s", it.size.toDouble()).put("a", it.alpha.toDouble()).put("e", it.extra).put("h", it.hidden))
         }
         o.put("items", arr)
         return o.toString()
     }
 
-    fun hasSaved(scope: String) = Settings.loadLayout(scope) != null
+    fun hasSaved(scope: String) = Settings.loadLayout(key(scope)) != null
 
     fun load(scope: String) {
         reset()
-        val raw = Settings.loadLayout(scope) ?: return
+        val raw = Settings.loadLayout(key(scope)) ?: return
         try {
             if (raw.trimStart().startsWith("{")) {
                 val o = JSONObject(raw)
@@ -176,6 +201,7 @@ class ControlLayout {
                             x = j.getDouble("x").toFloat(), y = j.getDouble("y").toFloat(),
                             size = j.optDouble("s", 1.0).toFloat(), alpha = j.optDouble("a", 0.55).toFloat(),
                             extra = j.optBoolean("e", false),
+                            hidden = j.optBoolean("h", false),
                         )
                     )
                 }
@@ -199,5 +225,5 @@ class ControlLayout {
         }
     }
 
-    fun save(scope: String) = Settings.saveLayout(scope, toJson())
+    fun save(scope: String) = Settings.saveLayout(key(scope), toJson())
 }

@@ -1,11 +1,24 @@
 # Changelog
 
+## 0.5.0-beta
+- Interfaz estilo Steam: barra superior con pestanas (BIBLIOTECA / GALERIA / PERFIL), busqueda con boton de limpiar, barra de sistema + orden, panel lateral, boton JUGAR verde con degradado.
+- Ficha tipo pagina de Steam: portada con arte, barra de acciones (JUGAR, Continuar, ultima vez, tiempo de juego) y pestanas Resumen / Guardados / Ajustes del juego.
+- Mando de Xbox: silueta dibujada (agarres, bumpers, gatillos, palancas, cruceta, ABXY) y botones colocados como en el mando real.
+- Calidad de vida: miniatura en cada ranura de guardado, confirmacion al sobrescribir, borrar ranuras desde la ficha.
+
+## 0.4.0-beta
+- Eliminado Transmitir/Streaming (StreamHost, visor, QR, permisos, dependencia ZXing) y el reproductor de YouTube. El video en ventana ahora solo reproduce videos de la galeria.
+- Sistema de diseno unico (ui/Design.kt): botones, chips, tarjetas, interruptores y deslizadores comunes; temas con contraste verificado.
+- Biblioteca: insignia GBA/GB/GBC, ultimo jugado, filtro por sistema, estado vacio.
+- Ficha: portada grande, JUGAR, Continuar, Guardados (ranuras) y Ajustes del juego.
+- Pausa: Continuar, Guardar, Cargar, Reiniciar, Ajustes, Salir (mismo diseno en vertical y horizontal).
+- Ajustes: menu lateral Perfil/Controles/Video/Audio/Guardado/Tema, tarjetas solidas, temas en mosaicos.
+- Controles: ocultar/mostrar cada boton; layout separado por orientacion.
+- P0: autoguardado sincrono al salir y cada minuto; audio se recrea si el sistema lo corta.
+
 ## 0.3.4-beta
-- **Transmitir (P2P, sin servidor)**: menú de pausa > EN VIVO. El teléfono anfitrión abre un puerto y hasta 3 amigos se conectan directo por la misma red WiFi con un código de 6 dígitos o un QR (`mboy://join/…`, se abre con la cámara). Video JPEG (~9 fps), chat a la derecha, emotes que suben flotando, y moderación: silenciar, expulsar, banear y cerrar. Al cerrar se desconecta todo y no se guarda nada. Espectadores: Ajustes > Video en ventana > "Stream de un amigo".
-- **Video en ventana (PiP)** en menú y dentro del juego: video de la galería, link de YouTube (reproductor oficial en WebView) o stream de un amigo. Esquina, tamaño (S/M/L), opacidad 20–100%, siempre encima o no, se arrastra desde su barra y se cierra con ✕.
 - **Márgenes de la interfaz**: Ajustes > Interfaz (0–48 dp) para el menú y los botones táctiles del juego.
 - **Portadas/fondos/avatar**: ahora usan el selector de fotos del sistema (abre en Imágenes, no en Descargas).
-- Pendiente: 7 (buscar/descargar música). Transmisión entre redes distintas (WebRTC + STUN) aún no.
 
 ## 0.3.3-beta
 - **Mi Perfil** (toca tu nombre/avatar en la barra superior): avatar, nombre, juegos totales, horas totales y lista de juegos con portada, horas, última vez, progreso (%) y si hay partida guardada. Tocar un juego abre su detalle. Las horas ya se guardan por juego en `library.json` y no se reinician. El % de progreso lo defines tú en el detalle del juego (no se puede leer del save de forma genérica).
@@ -15,7 +28,6 @@
 - **Música dentro del juego**: Ajustes > Música > "Seguir escuchando música dentro del juego". ON: sigue sonando, botón flotante ♪ y controles en el menú de pausa (pausar, siguiente, volumen de música aparte del volumen del juego). OFF: se pausa al entrar y vuelve al salir.
 - **Optimización / Rendimiento** (Ajustes y menú de pausa, se aplica al instante): calidad de renderizado Bajo/Medio/Alto, límite de FPS 30/60/Sin límite, Fast-Forward x2/x3/x4, saltar frames, sincronización de audio. Se guardan en SharedPreferences.
 - **Indicadores de batería e internet** en el menú principal y en la pausa (rojo + aviso bajo 20%, rayito al cargar, WiFi / datos / sin conexión en tiempo real). Ajustes > Interfaz para ocultarlos.
-- Pendientes: 7 (buscar/descargar música), 10 (transmisión P2P con chat y emotes), 11 (video en PiP).
 
 ## 0.3.2-beta
 ### Navegación con mando en el menú (estilo Steam Big Picture)

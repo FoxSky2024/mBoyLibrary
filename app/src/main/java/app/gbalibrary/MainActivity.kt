@@ -32,7 +32,6 @@ import app.gbalibrary.ui.LibraryApp
 import app.gbalibrary.ui.LibraryViewModel
 import app.gbalibrary.ui.MenuNav
 import app.gbalibrary.ui.Pip
-import app.gbalibrary.stream.StreamClient
 import app.gbalibrary.ui.Music
 import app.gbalibrary.ui.NavKey
 import android.os.SystemClock
@@ -166,21 +165,8 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun handleJoinLink(i: android.content.Intent?) {
-        val d = i?.data ?: return
-        if (d.scheme == "mboy" && d.host == "join") {
-            d.lastPathSegment?.filter { it.isDigit() }?.takeIf { it.length == 6 }?.let { StreamClient.pendingCode.value = it }
-        }
-    }
-
-    override fun onNewIntent(intent: android.content.Intent) {
-        super.onNewIntent(intent)
-        handleJoinLink(intent)
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        handleJoinLink(intent)
         Settings.init(this) // GbaApp ya lo hizo; es idempotente
         PadInput.init(this)
         Archive.clearCache(this) // restos de una sesion anterior
@@ -219,18 +205,22 @@ class MainActivity : ComponentActivity() {
                 LibraryApp(
                     vm = vm,
                     actions = actions,
-                    onPlay = { game ->
-                        // Con "seguir escuchando dentro del juego" la musica no se pausa al entrar.
-                        if (Settings.musicInGame.value) keepMusic = true else Music.pause()
-                        startActivity(
-                            Intent(this, EmulatorActivity::class.java)
-                                .putExtra(EmulatorActivity.EXTRA_GAME_ID, game.id)
-                        )
-                    },
+                    onPlay = { game -> launchGame(game.id, "") },
+                    onPlaySlot = { game, slot -> launchGame(game.id, slot) },
                 )
               }
             }
         }
+    }
+
+    private fun launchGame(gameId: String, slot: String) {
+        // Con "seguir escuchando dentro del juego" la musica no se pausa al entrar.
+        if (Settings.musicInGame.value) keepMusic = true else Music.pause()
+        startActivity(
+            Intent(this, EmulatorActivity::class.java)
+                .putExtra(EmulatorActivity.EXTRA_GAME_ID, gameId)
+                .putExtra(EmulatorActivity.EXTRA_LOAD_SLOT, slot)
+        )
     }
 
     override fun onResume() {

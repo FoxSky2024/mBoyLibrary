@@ -34,21 +34,10 @@ private fun PerfLabel(text: String) {
 }
 
 @Composable
-private fun PerfChips(options: List<String>, selected: Int, onSelect: (Int) -> Unit) {
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        options.forEachIndexed { i, label ->
-            FilterChip(selected = selected == i, onClick = { onSelect(i) }, label = { Text(label, maxLines = 1) })
-        }
-    }
-}
+private fun PerfChips(options: List<String>, selected: Int, onSelect: (Int) -> Unit) = ChipRow(options, selected, onSelect)
 
 @Composable
-private fun PerfSwitch(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text(label, color = LocalPalette.current.text, modifier = Modifier.weight(1f))
-        Switch(checked = checked, onCheckedChange = onChange)
-    }
-}
+private fun PerfSwitch(label: String, checked: Boolean, onChange: (Boolean) -> Unit) = SwitchRow(label, checked, onChange)
 
 /**
  * Controles de rendimiento. Se usan en Ajustes > Optimizacion y en el menu de pausa; guardan en

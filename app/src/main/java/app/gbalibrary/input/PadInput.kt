@@ -22,24 +22,25 @@ class PadSlot(val key: Int, val name: String, val x: Float, val y: Float, val ro
  * captura para remapear, modo "Probar mando" y vibracion.
  */
 object PadInput {
+    // Posiciones sobre la silueta de un mando de Xbox (fracciones del dibujo, alto = 0.62 del ancho).
     val SLOTS = listOf(
-        PadSlot(KeyEvent.KEYCODE_BUTTON_L2, "LT", 0.20f, 0.07f, false),
-        PadSlot(KeyEvent.KEYCODE_BUTTON_R2, "RT", 0.80f, 0.07f, false),
-        PadSlot(KeyEvent.KEYCODE_BUTTON_L1, "LB", 0.20f, 0.20f, false),
-        PadSlot(KeyEvent.KEYCODE_BUTTON_R1, "RB", 0.80f, 0.20f, false),
-        PadSlot(KeyEvent.KEYCODE_BUTTON_SELECT, "Back", 0.41f, 0.36f),
-        PadSlot(KeyEvent.KEYCODE_BUTTON_MODE, "Guía", 0.50f, 0.27f),
-        PadSlot(KeyEvent.KEYCODE_BUTTON_START, "Start", 0.59f, 0.36f),
-        PadSlot(KeyEvent.KEYCODE_BUTTON_THUMBL, "L3", 0.24f, 0.42f),
-        PadSlot(KeyEvent.KEYCODE_BUTTON_THUMBR, "R3", 0.60f, 0.72f),
-        PadSlot(KeyEvent.KEYCODE_DPAD_UP, "↑", 0.38f, 0.60f),
-        PadSlot(KeyEvent.KEYCODE_DPAD_DOWN, "↓", 0.38f, 0.82f),
-        PadSlot(KeyEvent.KEYCODE_DPAD_LEFT, "←", 0.30f, 0.71f),
-        PadSlot(KeyEvent.KEYCODE_DPAD_RIGHT, "→", 0.46f, 0.71f),
-        PadSlot(KeyEvent.KEYCODE_BUTTON_Y, "Y", 0.76f, 0.28f),
-        PadSlot(KeyEvent.KEYCODE_BUTTON_X, "X", 0.69f, 0.42f),
-        PadSlot(KeyEvent.KEYCODE_BUTTON_B, "B", 0.83f, 0.42f),
-        PadSlot(KeyEvent.KEYCODE_BUTTON_A, "A", 0.76f, 0.56f),
+        PadSlot(KeyEvent.KEYCODE_BUTTON_L2, "LT", 0.19f, 0.045f, false),
+        PadSlot(KeyEvent.KEYCODE_BUTTON_R2, "RT", 0.81f, 0.045f, false),
+        PadSlot(KeyEvent.KEYCODE_BUTTON_L1, "LB", 0.20f, 0.14f, false),
+        PadSlot(KeyEvent.KEYCODE_BUTTON_R1, "RB", 0.80f, 0.14f, false),
+        PadSlot(KeyEvent.KEYCODE_BUTTON_SELECT, "Back", 0.41f, 0.35f),
+        PadSlot(KeyEvent.KEYCODE_BUTTON_MODE, "Guía", 0.50f, 0.25f),
+        PadSlot(KeyEvent.KEYCODE_BUTTON_START, "Start", 0.59f, 0.35f),
+        PadSlot(KeyEvent.KEYCODE_BUTTON_THUMBL, "L3", 0.24f, 0.37f),
+        PadSlot(KeyEvent.KEYCODE_BUTTON_THUMBR, "R3", 0.62f, 0.64f),
+        PadSlot(KeyEvent.KEYCODE_DPAD_UP, "↑", 0.40f, 0.53f),
+        PadSlot(KeyEvent.KEYCODE_DPAD_DOWN, "↓", 0.40f, 0.77f),
+        PadSlot(KeyEvent.KEYCODE_DPAD_LEFT, "←", 0.32f, 0.65f),
+        PadSlot(KeyEvent.KEYCODE_DPAD_RIGHT, "→", 0.48f, 0.65f),
+        PadSlot(KeyEvent.KEYCODE_BUTTON_Y, "Y", 0.77f, 0.22f),
+        PadSlot(KeyEvent.KEYCODE_BUTTON_X, "X", 0.69f, 0.35f),
+        PadSlot(KeyEvent.KEYCODE_BUTTON_B, "B", 0.85f, 0.35f),
+        PadSlot(KeyEvent.KEYCODE_BUTTON_A, "A", 0.77f, 0.48f),
     )
 
     fun slotName(key: Int) = SLOTS.firstOrNull { it.key == key }?.name ?: KeyEvent.keyCodeToString(key)
