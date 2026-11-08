@@ -30,7 +30,6 @@ object Settings {
     val theme = mutableIntStateOf(0)
     val bgMode = mutableIntStateOf(0) // 0 por defecto, 1 imagen, 2 color
     val bgColor = mutableIntStateOf(0xFF1B2838.toInt())
-    val bgBlur = mutableStateOf(true)
     val bgStamp = mutableIntStateOf(0)
     val appName = mutableStateOf("GBA Library")
     val profileName = mutableStateOf("Jugador")
@@ -50,10 +49,57 @@ object Settings {
     val padAutoHide = mutableStateOf(true) // ocultar tactiles al conectar mando
     val padRumble = mutableStateOf(true)
 
+    // Escala de la interfaz (biblioteca y ajustes): 0.7 .. 1.25, por defecto 0.85 (compacto)
+    val uiScale = mutableFloatStateOf(0.85f)
+
+    // Opacidad de paneles / barras / tarjetas: 40%..100% (sin glass ni blur)
+    val boxOpacity = mutableFloatStateOf(0.9f)
+
+    // Animaciones / interfaz / musica en juego / rendimiento (v0.3.3)
+    val entryAnim = mutableStateOf(true)
+    val showStatus = mutableStateOf(true) // bateria + internet
+    val musicInGame = mutableStateOf(false)
+    val renderQuality = mutableIntStateOf(1) // 0 bajo, 1 medio, 2 alto
+    val fpsLimit = mutableIntStateOf(60) // 30, 60, 0 = sin limite
+    val ffSpeed = mutableIntStateOf(2) // 2, 3, 4
+    val frameSkip = mutableStateOf(false)
+    val audioSync = mutableStateOf(true)
+
+    // Margenes de la interfaz (dp) y ventana de video PiP
+    val uiMargin = mutableIntStateOf(0)
+    val pipCorner = mutableIntStateOf(1) // 0 sup-izq, 1 sup-der, 2 inf-izq, 3 inf-der
+    val pipSize = mutableIntStateOf(1) // 0 pequeno, 1 mediano, 2 grande
+    val pipOpacity = mutableFloatStateOf(0.95f)
+    val pipOnTop = mutableStateOf(true)
+
+    // Portadas desde internet
+    val autoCovers = mutableStateOf(true)
+    val sgdbKey = mutableStateOf("") // clave opcional de SteamGridDB
+
+    // Orden de la biblioteca (nombre del SortMode)
+    val sortMode = mutableStateOf("RECENT")
+
+    private var appCtx: Context? = null
+
     fun init(ctx: Context) {
         if (sp != null) return
-        val p = ctx.applicationContext.getSharedPreferences("settings", Context.MODE_PRIVATE)
+        val app = ctx.applicationContext
+        appCtx = app
+        val p = app.getSharedPreferences("settings", Context.MODE_PRIVATE)
         sp = p
+        // Instalacion nueva con una carpeta GBALibrary existente: se restauran los ajustes.
+        Persist.restoreConfigIfNeeded(app)
+        readAll(p)
+        Persist.touch(app)
+    }
+
+    /** Vuelve a leer las preferencias (despues de importar una copia o de cambiar la carpeta de datos). */
+    fun reload(ctx: Context) {
+        val p = sp ?: return init(ctx)
+        readAll(p)
+    }
+
+    private fun readAll(p: SharedPreferences) {
         filter.intValue = p.getInt("filter", 0)
         brightness.floatValue = p.getFloat("brightness", 1f)
         scale.intValue = p.getInt("scale", 0)
@@ -67,7 +113,6 @@ object Settings {
         theme.intValue = p.getInt("theme", 0)
         bgMode.intValue = p.getInt("bgMode", 0)
         bgColor.intValue = p.getInt("bgColor", 0xFF1B2838.toInt())
-        bgBlur.value = p.getBoolean("bgBlur", true)
         bgStamp.intValue = p.getInt("bgStamp", 0)
         appName.value = p.getString("appName", "GBA Library") ?: "GBA Library"
         profileName.value = p.getString("profileName", "Jugador") ?: "Jugador"
@@ -81,12 +126,31 @@ object Settings {
         musicShuffle.value = p.getBoolean("musicShuffle", false)
         padAutoHide.value = p.getBoolean("padAutoHide", true)
         padRumble.value = p.getBoolean("padRumble", true)
+        uiScale.floatValue = p.getFloat("uiScale", 0.85f).coerceIn(0.7f, 1.25f)
+        boxOpacity.floatValue = p.getFloat("boxOpacity", 0.9f).coerceIn(0.4f, 1f)
+        entryAnim.value = p.getBoolean("entryAnim", true)
+        showStatus.value = p.getBoolean("showStatus", true)
+        musicInGame.value = p.getBoolean("musicInGame", false)
+        renderQuality.intValue = p.getInt("renderQuality", 1).coerceIn(0, 2)
+        fpsLimit.intValue = p.getInt("fpsLimit", 60)
+        ffSpeed.intValue = p.getInt("ffSpeed", 2).coerceIn(2, 4)
+        frameSkip.value = p.getBoolean("frameSkip", false)
+        audioSync.value = p.getBoolean("audioSync", true)
+        uiMargin.intValue = p.getInt("uiMargin", 0).coerceIn(0, 48)
+        pipCorner.intValue = p.getInt("pipCorner", 1).coerceIn(0, 3)
+        pipSize.intValue = p.getInt("pipSize", 1).coerceIn(0, 2)
+        pipOpacity.floatValue = p.getFloat("pipOpacity", 0.95f).coerceIn(0.2f, 1f)
+        pipOnTop.value = p.getBoolean("pipOnTop", true)
+        autoCovers.value = p.getBoolean("autoCovers", true)
+        sgdbKey.value = p.getString("sgdbKey", "") ?: ""
+        sortMode.value = p.getString("sortMode", "RECENT") ?: "RECENT"
     }
 
     // ---- Guardado (cada setter actualiza el estado y persiste) ----
 
     private fun edit(block: SharedPreferences.Editor.() -> Unit) {
         sp?.edit()?.apply { block(); apply() }
+        appCtx?.let { Persist.touch(it) } // espejo en GBALibrary/config.json
     }
 
     fun setFilter(v: Int) { filter.intValue = v; edit { putInt("filter", v) } }
@@ -102,7 +166,6 @@ object Settings {
     fun setTheme(v: Int) { theme.intValue = v; edit { putInt("theme", v) } }
     fun setBgMode(v: Int) { bgMode.intValue = v; edit { putInt("bgMode", v) } }
     fun setBgColor(v: Int) { bgColor.intValue = v; edit { putInt("bgColor", v) } }
-    fun setBgBlur(v: Boolean) { bgBlur.value = v; edit { putBoolean("bgBlur", v) } }
     fun bumpBg() { bgStamp.intValue = bgStamp.intValue + 1; edit { putInt("bgStamp", bgStamp.intValue) } }
     fun setAppName(v: String) { appName.value = v; edit { putString("appName", v) } }
     fun setProfileName(v: String) { profileName.value = v; edit { putString("profileName", v) } }
@@ -117,6 +180,24 @@ object Settings {
     fun setMusicShuffle(v: Boolean) { musicShuffle.value = v; edit { putBoolean("musicShuffle", v) } }
     fun setPadAutoHide(v: Boolean) { padAutoHide.value = v; edit { putBoolean("padAutoHide", v) } }
     fun setPadRumble(v: Boolean) { padRumble.value = v; edit { putBoolean("padRumble", v) } }
+    fun setUiScale(v: Float) { val c = v.coerceIn(0.7f, 1.25f); uiScale.floatValue = c; edit { putFloat("uiScale", c) } }
+    fun setBoxOpacity(v: Float) { val c = v.coerceIn(0.4f, 1f); boxOpacity.floatValue = c; edit { putFloat("boxOpacity", c) } }
+    fun setEntryAnim(v: Boolean) { entryAnim.value = v; edit { putBoolean("entryAnim", v) } }
+    fun setShowStatus(v: Boolean) { showStatus.value = v; edit { putBoolean("showStatus", v) } }
+    fun setMusicInGame(v: Boolean) { musicInGame.value = v; edit { putBoolean("musicInGame", v) } }
+    fun setRenderQuality(v: Int) { renderQuality.intValue = v; edit { putInt("renderQuality", v) } }
+    fun setFpsLimit(v: Int) { fpsLimit.intValue = v; edit { putInt("fpsLimit", v) } }
+    fun setFfSpeed(v: Int) { ffSpeed.intValue = v; edit { putInt("ffSpeed", v) } }
+    fun setFrameSkip(v: Boolean) { frameSkip.value = v; edit { putBoolean("frameSkip", v) } }
+    fun setAudioSync(v: Boolean) { audioSync.value = v; edit { putBoolean("audioSync", v) } }
+    fun setUiMargin(v: Int) { uiMargin.intValue = v.coerceIn(0, 48); edit { putInt("uiMargin", uiMargin.intValue) } }
+    fun setPipCorner(v: Int) { pipCorner.intValue = v; edit { putInt("pipCorner", v) } }
+    fun setPipSize(v: Int) { pipSize.intValue = v; edit { putInt("pipSize", v) } }
+    fun setPipOpacity(v: Float) { pipOpacity.floatValue = v.coerceIn(0.2f, 1f); edit { putFloat("pipOpacity", pipOpacity.floatValue) } }
+    fun setPipOnTop(v: Boolean) { pipOnTop.value = v; edit { putBoolean("pipOnTop", v) } }
+    fun setAutoCovers(v: Boolean) { autoCovers.value = v; edit { putBoolean("autoCovers", v) } }
+    fun setSgdbKey(v: String) { sgdbKey.value = v.trim(); edit { putString("sgdbKey", v.trim()) } }
+    fun setSortMode(v: String) { sortMode.value = v; edit { putString("sortMode", v) } }
 
     fun loadRaw(key: String): String? = sp?.getString(key, null)
     fun saveRaw(key: String, data: String) = edit { putString(key, data) }

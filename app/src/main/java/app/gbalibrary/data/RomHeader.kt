@@ -25,13 +25,35 @@ object RomHeader {
         )
     }
 
-    /** Nombre legible a partir del archivo: quita extension, (USA), [!], guiones bajos. */
+    /**
+     * Nombre legible a partir del archivo: quita extension, (USA), [!], guiones bajos y caracteres
+     * que rompen rutas o la interfaz ( / \\ : * ? " < > | y de control). El archivo original no se toca.
+     */
     fun cleanTitle(fileName: String): String {
-        val base = fileName.substringBeforeLast('.')
+        val base = fileName.substringAfterLast('/').substringAfterLast('\\').substringBeforeLast('.')
         val noTags = base
             .replace(Regex("""\s*[\(\[][^)\]]*[)\]]"""), "")
             .replace('_', ' ')
+        val safe = noTags
+            .replace(Regex("""[\\/:*?"<>|\u0000-\u001F]"""), " ")
+            .replace(Regex("""\s+"""), " ")
             .trim()
-        return noTags.ifBlank { base }
+        return safe.ifBlank { base.replace(Regex("""[\\/:*?"<>|\u0000-\u001F]"""), " ").trim() }
+    }
+
+    /**
+     * Nombre para buscar portadas: sin version (v0.5.9), sin textos entre parentesis, sin guiones ni
+     * signos. "Pokemon Azoth v0.5.9 RIVER-EDITION" -> "Pokemon Azoth RIVER EDITION" (la busqueda
+     * despues prueba tambien sin las ultimas palabras).
+     */
+    fun searchName(title: String): String {
+        var t = title
+            .replace(Regex("""[\(\[][^)\]]*[)\]]"""), " ")
+            .replace(Regex("""(?i)\bv(er(sion)?)?\s*\d+([._]\d+)*[a-z]?\b"""), " ")
+            .replace(Regex("""\b\d+([.]\d+){1,3}[a-z]?\b"""), " ")
+        t = t.replace(Regex("""[-_.:,;!?/\\|+~]+"""), " ")
+            .replace(Regex("""\s+"""), " ")
+            .trim()
+        return t.ifBlank { title.trim() }
     }
 }

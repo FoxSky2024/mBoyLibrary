@@ -6,6 +6,8 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.os.Handler
+import android.os.Looper
 import android.os.SystemClock
 import android.provider.MediaStore
 import android.view.InputDevice
@@ -66,7 +68,16 @@ import app.gbalibrary.ui.MenuActions
 import app.gbalibrary.ui.ControlsCanvas
 import app.gbalibrary.ui.ControlsEditorPanel
 import app.gbalibrary.data.Archive
+import app.gbalibrary.data.DataDir
+import app.gbalibrary.data.RomImport
 import app.gbalibrary.input.PadInput
+import app.gbalibrary.ui.EntrySplash
+import app.gbalibrary.ui.Pip
+import app.gbalibrary.ui.PipOverlay
+import app.gbalibrary.ui.StreamHostOverlay
+import app.gbalibrary.stream.StreamHost
+import app.gbalibrary.ui.Music
+import app.gbalibrary.ui.effectiveFilter
 import kotlinx.coroutines.delay
 import java.io.File
 import kotlin.math.roundToInt
@@ -84,6 +95,28 @@ class EmulatorActivity : ComponentActivity() {
     private var layoutScope = "global" // de donde se cargo el layout (y donde se guarda al terminar)
     private val forceTouch = mutableStateOf(false) // mostrar tactiles aunque haya mando
     private val trigHeld = HashSet<Int>()
+    private var streamHost by mutableStateOf<StreamHost?>(null) // transmision P2P activa
+
+    private val pickPipVideoFile =
+        registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia()) { uri ->
+            if (uri != null) Pip.showVideo(uri.toString())
+        }
+
+    private fun startStream() {
+        val e = engine ?: return
+        val h = StreamHost(Settings.profileName.value)
+        if (h.start(e)) {
+            streamHost = h
+            flash("Transmitiendo · código ${h.code}")
+        } else {
+            flash("No se pudo transmitir: conéctate a una red WiFi")
+        }
+    }
+
+    private fun stopStream() {
+        streamHost?.stop()
+        streamHost = null
+    }
 
     private var resumedAt = 0L
     private var activityResumed = false
@@ -113,8 +146,10 @@ class EmulatorActivity : ComponentActivity() {
                 layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
             }
         }
-        File(filesDir, "saves").mkdirs()
-        File(filesDir, "states").mkdirs()
+        // Partidas y estados viven en la carpeta persistente GBALibrary (Saves / States).
+        DataDir.saves(this)
+        DataDir.states(this)
+        if (savedInstanceState == null) store.addLaunch(game.id, System.currentTimeMillis()) // veces abierto
 
         PadInput.init(this)
         // Layout propio del juego si existe; si no, el global.
@@ -125,7 +160,11 @@ class EmulatorActivity : ComponentActivity() {
         val eng = Engine(
             romProvider = {
                 try {
-                    if (game.entry.isNotEmpty()) {
+                    val copy = RomImport.storedFile(this, game)
+                    if (copy != null) {
+                        // ROM copiada en GBALibrary/Games
+                        copy.readBytes()
+                    } else if (game.entry.isNotEmpty()) {
                         // ROM dentro de un .zip/.7z: se descomprime a la cache, se lee y se borra.
                         val f = Archive.extractToCache(this, romUri, game.entry)
                         try { f?.readBytes() } finally { f?.delete() }
@@ -136,7 +175,7 @@ class EmulatorActivity : ComponentActivity() {
                     null
                 }
             },
-            savePath = File(filesDir, "saves/${game.id}.sav").path,
+            savePath = File(DataDir.saves(this), "${game.id}.sav").path,
             autoStatePath = statePath("auto"),
             onError = { msg ->
                 runOnUiThread {
@@ -144,9 +183,16 @@ class EmulatorActivity : ComponentActivity() {
                     finish()
                 }
             },
+            // Compatibilidad: lo que el usuario eligio a mano para este juego (-1 / 0 = automatico).
+            saveOverride = game.saveOverride,
+            rtcMode = game.rtcMode,
+            onDetected = { saveType, rtc -> store.setDetected(game.id, saveType, rtc) },
         )
         eng.volume = Settings.volume.intValue
         eng.muted = Settings.muted.value
+        eng.fpsLimit = Settings.fpsLimit.intValue
+        eng.frameSkip = Settings.frameSkip.value
+        eng.audioSync = Settings.audioSync.value
         engine = eng
         eng.start()
 
@@ -163,7 +209,7 @@ class EmulatorActivity : ComponentActivity() {
         applyImmersive()
     }
 
-    private fun statePath(slot: String) = File(filesDir, "states/${game.id}.$slot.ss").path
+    private fun statePath(slot: String) = File(DataDir.states(this), "${game.id}.$slot.ss").path
 
     private fun setMenu(open: Boolean) {
         menuOpen.value = open
@@ -233,17 +279,22 @@ class EmulatorActivity : ComponentActivity() {
         activityResumed = true
         applyImmersive()
         resumedAt = SystemClock.elapsedRealtime()
+        ticker.removeCallbacks(flushRunnable)
+        ticker.postDelayed(flushRunnable, 30_000L)
         glView?.onResume()
         syncPause()
+        if (Settings.musicInGame.value) Music.sync(this) // musica local dentro del juego (Ajustes > Musica)
     }
 
     override fun onPause() {
         super.onPause()
         activityResumed = false
+        ticker.removeCallbacks(flushRunnable)
         glView?.onPause()
         syncPause()
         engine?.releaseAll()
         commitPlayTime()
+        if (!isFinishing && Settings.musicInGame.value) Music.pause() // la app pasa a segundo plano
     }
 
     override fun onStop() {
@@ -253,8 +304,27 @@ class EmulatorActivity : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        ticker.removeCallbacks(flushRunnable)
+        stopStream() // cierra la transmision: no queda nada guardado
         engine?.shutdown()
         Archive.clearCache(this) // borra lo descomprimido al salir del juego
+    }
+
+    // Guarda horas jugadas cada 30 s (por si se cierra la app de golpe) y al salir.
+    private val ticker = Handler(Looper.getMainLooper())
+    private val flushRunnable = object : Runnable {
+        override fun run() {
+            flushPlayTime()
+            ticker.postDelayed(this, 30_000L)
+        }
+    }
+
+    private fun flushPlayTime() {
+        if (resumedAt <= 0L) return
+        val seconds = (SystemClock.elapsedRealtime() - resumedAt) / 1000
+        if (seconds <= 0L) return
+        resumedAt += seconds * 1000L // conserva el resto de milisegundos
+        store.addPlay(game.id, seconds, System.currentTimeMillis())
     }
 
     private fun commitPlayTime() {
@@ -285,32 +355,21 @@ class EmulatorActivity : ComponentActivity() {
             if (argb == null) {
                 flash("No se pudo capturar")
             } else {
-                flash(if (saveScreenshot(argb)) "Captura guardada en Imagenes/GBALibrary" else "No se pudo guardar la captura")
+                flash(if (saveScreenshot(argb)) "Captura guardada en Screenshots/${game.title}" else "No se pudo guardar la captura")
             }
         }
     }
 
+    /** Guarda en GBALibrary/Screenshots/[Nombre del juego]/ (4x sin suavizar). */
     private fun saveScreenshot(argb: IntArray): Boolean {
         return try {
             val vw = app.gbalibrary.emu.Native.videoWidth().coerceAtLeast(1)
             val vh = (argb.size / vw).coerceAtLeast(1)
             val small = Bitmap.createBitmap(argb, vw, vh, Bitmap.Config.ARGB_8888)
-            val bmp = Bitmap.createScaledBitmap(small, vw * 4, vh * 4, false) // 4x sin suavizar
-            val name = "GBA_${game.title.replace(Regex("[^A-Za-z0-9]+"), "_")}_${System.currentTimeMillis()}.png"
-            if (Build.VERSION.SDK_INT >= 29) {
-                val values = ContentValues().apply {
-                    put(MediaStore.Images.Media.DISPLAY_NAME, name)
-                    put(MediaStore.Images.Media.MIME_TYPE, "image/png")
-                    put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/GBALibrary")
-                }
-                val uri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values) ?: return false
-                contentResolver.openOutputStream(uri)?.use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
-                true
-            } else {
-                val dir = getExternalFilesDir(Environment.DIRECTORY_PICTURES) ?: return false
-                File(dir, name).outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
-                true
-            }
+            val bmp = Bitmap.createScaledBitmap(small, vw * 4, vh * 4, false)
+            val file = app.gbalibrary.data.Shots.newFile(this, game)
+            file.outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            true
         } catch (e: Exception) {
             false
         }
@@ -415,6 +474,18 @@ class EmulatorActivity : ComponentActivity() {
 
     @Composable
     private fun EmulatorUi(eng: Engine) {
+        // Rendimiento: se aplica al instante, sin reiniciar nada.
+        LaunchedEffect(Settings.fpsLimit.intValue, Settings.frameSkip.value, Settings.audioSync.value) {
+            eng.fpsLimit = Settings.fpsLimit.intValue
+            eng.frameSkip = Settings.frameSkip.value
+            eng.audioSync = Settings.audioSync.value
+        }
+        LaunchedEffect(Settings.ffSpeed.intValue) {
+            if (speed.intValue > 1) {
+                speed.intValue = Settings.ffSpeed.intValue
+                eng.speed = Settings.ffSpeed.intValue
+            }
+        }
         LaunchedEffect(Settings.volume.intValue, Settings.muted.value) {
             eng.volume = Settings.volume.intValue
             eng.muted = Settings.muted.value
@@ -432,13 +503,30 @@ class EmulatorActivity : ComponentActivity() {
                 modifier = Modifier.fillMaxSize(),
                 factory = { ctx -> GbaGlView(ctx).also { glView = it } },
                 update = { v ->
-                    v.filter = Settings.filter.intValue
+                    v.filter = effectiveFilter()
                     v.scaleMode = Settings.scale.intValue
                     v.brightness = Settings.brightness.floatValue
                 },
             )
 
+            if (!Settings.pipOnTop.value) PipOverlay()
             Controls(eng)
+            if (Settings.pipOnTop.value) PipOverlay()
+            streamHost?.let { h -> if (h.running.value) StreamHostOverlay(h, Modifier.fillMaxSize()) }
+
+            // Boton flotante de musica (solo si "Seguir escuchando musica dentro del juego" esta ON).
+            if (Settings.musicInGame.value && Music.hasSource() && !editing.value) {
+                Box(
+                    Modifier.align(Alignment.TopCenter).padding(top = 6.dp).size(34.dp).alpha(0.45f)
+                        .clip(CircleShape).background(Color(0xAA000000))
+                        .clickable { Music.toggle(this@EmulatorActivity) },
+                    contentAlignment = Alignment.Center,
+                ) { Text(if (Music.playing.value) "⏸" else "♪", color = Color.White) }
+            }
+
+            // Animacion de entrada (se puede desactivar en Ajustes > Animaciones).
+            var splash by remember { mutableStateOf(Settings.entryAnim.value) }
+            if (splash) EntrySplash(game.title) { splash = false }
 
             if (Settings.showFps.value) {
                 Text(
@@ -487,6 +575,7 @@ class EmulatorActivity : ComponentActivity() {
                     layout = layout,
                     padConnected = PadInput.connected.value,
                     forceTouch = forceTouch.value,
+                    host = streamHost,
                     actions = MenuActions(
                         close = { setMenu(false) },
                         save = { doSave(it) },
@@ -508,6 +597,10 @@ class EmulatorActivity : ComponentActivity() {
                         },
                         persistLayout = { layout.save(layoutScope) },
                         setForceTouch = { forceTouch.value = it },
+                        toggleMusic = { Music.toggle(this@EmulatorActivity) },
+                        startStream = { startStream() },
+                        stopStream = { stopStream() },
+                        pickPipVideo = { pickPipVideoFile.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.VideoOnly)) },
                         setSpeed = {
                             speed.intValue = it
                             eng.speed = it
@@ -520,6 +613,7 @@ class EmulatorActivity : ComponentActivity() {
 
     @Composable
     private fun Controls(eng: Engine) {
+      Box(Modifier.fillMaxSize().padding(Settings.uiMargin.intValue.dp)) {
         ControlsCanvas(
             layout = layout,
             engine = eng,
@@ -528,5 +622,6 @@ class EmulatorActivity : ComponentActivity() {
             onMenu = { setMenu(true) },
             onQuick = { doSave("quick") },
         )
+      }
     }
 }

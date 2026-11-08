@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.3.4-beta
+- **Transmitir (P2P, sin servidor)**: menú de pausa > EN VIVO. El teléfono anfitrión abre un puerto y hasta 3 amigos se conectan directo por la misma red WiFi con un código de 6 dígitos o un QR (`mboy://join/…`, se abre con la cámara). Video JPEG (~9 fps), chat a la derecha, emotes que suben flotando, y moderación: silenciar, expulsar, banear y cerrar. Al cerrar se desconecta todo y no se guarda nada. Espectadores: Ajustes > Video en ventana > "Stream de un amigo".
+- **Video en ventana (PiP)** en menú y dentro del juego: video de la galería, link de YouTube (reproductor oficial en WebView) o stream de un amigo. Esquina, tamaño (S/M/L), opacidad 20–100%, siempre encima o no, se arrastra desde su barra y se cierra con ✕.
+- **Márgenes de la interfaz**: Ajustes > Interfaz (0–48 dp) para el menú y los botones táctiles del juego.
+- **Portadas/fondos/avatar**: ahora usan el selector de fotos del sistema (abre en Imágenes, no en Descargas).
+- Pendiente: 7 (buscar/descargar música). Transmisión entre redes distintas (WebRTC + STUN) aún no.
+
+## 0.3.3-beta
+- **Mi Perfil** (toca tu nombre/avatar en la barra superior): avatar, nombre, juegos totales, horas totales y lista de juegos con portada, horas, última vez, progreso (%) y si hay partida guardada. Tocar un juego abre su detalle. Las horas ya se guardan por juego en `library.json` y no se reinician. El % de progreso lo defines tú en el detalle del juego (no se puede leer del save de forma genérica).
+- **Galería de capturas**: las capturas se guardan en `GBALibrary/Screenshots/[Juego]/`. Sección "Galería" en el detalle de cada juego, galería global (icono 🖼 de la barra superior o desde Perfil), visor con compartir y borrar.
+- **Animación de entrada** al juego (fade + zoom, ~0,7 s, sin retrasar la carga). Ajustes > Animaciones para desactivarla.
+- **Escaneo de ROMs más rápido**: solo se miran .gba/.gb/.gbc/.zip/.7z (por nombre, sin abrir nada más), una consulta por carpeta, los juegos aparecen mientras se encuentran y los reescaneos solo procesan archivos nuevos/cambiados (índice en `scan_index.tsv`). Juegos cuyo archivo original se borró se quitan solo si no tienen copia en GBALibrary/Games.
+- **Música dentro del juego**: Ajustes > Música > "Seguir escuchando música dentro del juego". ON: sigue sonando, botón flotante ♪ y controles en el menú de pausa (pausar, siguiente, volumen de música aparte del volumen del juego). OFF: se pausa al entrar y vuelve al salir.
+- **Optimización / Rendimiento** (Ajustes y menú de pausa, se aplica al instante): calidad de renderizado Bajo/Medio/Alto, límite de FPS 30/60/Sin límite, Fast-Forward x2/x3/x4, saltar frames, sincronización de audio. Se guardan en SharedPreferences.
+- **Indicadores de batería e internet** en el menú principal y en la pausa (rojo + aviso bajo 20%, rayito al cargar, WiFi / datos / sin conexión en tiempo real). Ajustes > Interfaz para ocultarlos.
+- Pendientes: 7 (buscar/descargar música), 10 (transmisión P2P con chat y emotes), 11 (video en PiP).
+
+## 0.3.2-beta
+### Navegación con mando en el menú (estilo Steam Big Picture)
+- D-Pad / stick izquierdo mueven el foco entre la barra lateral, los destacados y la cuadrícula; A abre el juego (ficha), B vuelve al foco de la cuadrícula, Start abre Ajustes. En la ficha: A = jugar, B = volver. En Ajustes: D-Pad mueve el foco, A pulsa, B vuelve.
+- El elemento enfocado hace zoom suave (1.08x), proyecta sombra, pasa por encima de los demás y lleva borde de acento; el foco se mantiene siempre dentro de una zona válida y la lista se desplaza sola para mostrarlo.
+- Teclado físico: flechas, Enter y Esc funcionan igual (no interfiere con la escritura en la búsqueda). Tocar la pantalla oculta el foco si no hay mando conectado.
+
+### Sin glass: solo opacidad
+- Eliminados el modo Glass, el desenfoque del fondo y `Glass.kt` (ahora `Panels.kt`).
+- Ajustes > Apariencia > "Opacidad de paneles": slider 40%–100% (barras, tarjetas y paneles, fondo sólido oscuro).
+
+## 0.3 (app 0.3.1-beta)
+- Compatibilidad: detección de SRAM/FLASH 64K/128K/EEPROM y RTC; ajuste manual por juego.
+- Escala UI 0.7–1.25x (defecto 0.85x), ficha de juego sin título duplicado ni JUGAR cortado.
+- Carpeta persistente Documents/GBALibrary (Games, Saves, States, Covers, config.json, library.json); copia de seguridad.
+- Estadísticas reales (horas, última vez, veces abierto), guardado cada 30 s.
+- Glass y opacidad de cajas 30–100%.
+- Portadas automáticas (Libretro, SteamGridDB, Wikipedia) y cambio manual con pulsación larga.
+
 ## 0.2.1
 
 ### P0 — Soporte .zip / .7z

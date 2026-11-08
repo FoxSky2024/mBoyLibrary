@@ -13,8 +13,8 @@ android {
         applicationId = "app.gbalibrary"
         minSdk = 24
         targetSdk = 35
-        versionCode = 3
-        versionName = "0.3.0-beta"
+        versionCode = 7
+        versionName = "0.3.4-beta"
 
         ndk {
             abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
@@ -50,6 +50,8 @@ android {
 
 dependencies {
     implementation("org.apache.commons:commons-compress:1.26.0")
+    // QR de la transmision (solo generar; se escanea con la camara del telefono)
+    implementation("com.google.zxing:core:3.5.3")
     val composeBom = platform("androidx.compose:compose-bom:2024.10.01")
     implementation(composeBom)
     implementation("androidx.compose.ui:ui")

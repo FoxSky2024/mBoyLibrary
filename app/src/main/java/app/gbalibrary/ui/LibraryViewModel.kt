@@ -7,7 +7,9 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.documentfile.provider.DocumentFile
 import app.gbalibrary.data.Archive
+import app.gbalibrary.data.CoverFetcher
 import app.gbalibrary.data.Covers
+import app.gbalibrary.data.Persist
 import app.gbalibrary.data.Game
 import app.gbalibrary.data.Settings
 import app.gbalibrary.data.GameStore
@@ -19,6 +21,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -44,10 +47,21 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
 
     val games: StateFlow<List<Game>> = store.games
     val query = MutableStateFlow("")
-    val sort = MutableStateFlow(SortMode.RECENT)
+    // El orden elegido se recuerda (Settings.sortMode -> config.json).
+    val sort = MutableStateFlow(
+        try { SortMode.valueOf(Settings.sortMode.value) } catch (e: Exception) { SortMode.RECENT }
+    )
     val category = MutableStateFlow(CAT_ALL)
     val scanning = MutableStateFlow(false)
     val message = MutableStateFlow<String?>(null)
+
+    /** Progreso de la busqueda de portadas ("Buscando portadas 3/10"), null si no hay busqueda. */
+    val coverStatus = MutableStateFlow<String?>(null)
+    private var coverJob: Job? = null
+
+    init {
+        viewModelScope.launch { sort.collect { Settings.setSortMode(it.name) } }
+    }
 
     /** Selector de ROM cuando un archivo comprimido trae varios .gba. */
     val archivePick = MutableStateFlow<ArchivePick?>(null)
@@ -134,6 +148,7 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
             }
             val added = store.addScanned(found)
             scanning.value = false
+            if (added > 0) autoCovers()
             pickQueue.addAll(queue)
             showNextPick()
             when {
@@ -162,7 +177,8 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
             scanning.value = true
             val game = withContext(Dispatchers.IO) { RomScanner.fromArchiveEntry(appContext, pick.uri, entry.name) }
             if (game != null) {
-                store.addScanned(listOf(game))
+                val added = store.addScanned(listOf(game))
+                if (added > 0) autoCovers()
                 if (pick.autoPlay) playRequest.value = store.get(game.id)
             } else {
                 message.value = "No se pudo descomprimir esa ROM"
@@ -172,18 +188,33 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    /** Escaneo en segundo plano: los juegos aparecen en la lista a medida que se encuentran. */
     private fun scan(folders: List<Uri>) {
         viewModelScope.launch {
             scanning.value = true
             var added = 0
-            var total = 0
+            var removed = 0
             for (f in folders) {
-                val found = RomScanner.scanTree(appContext, f)
-                total += found.size
-                added += store.addScanned(found)
+                val r = RomScanner.scanTree(appContext, f) { batch ->
+                    withContext(Dispatchers.Main) { added += store.addScanned(batch) }
+                }
+                // Archivos borrados: solo se quitan los juegos sin copia propia en GBALibrary/Games.
+                for (id in r.removedIds) {
+                    val g = store.get(id)
+                    if (g != null && g.stored.isEmpty()) {
+                        store.remove(id)
+                        removed++
+                    }
+                }
             }
             scanning.value = false
-            message.value = if (total == 0) "No se encontraron archivos .gba/.gbc/.gb" else "$added juego(s) nuevo(s) de $total encontrados"
+            if (added > 0) autoCovers()
+            message.value = when {
+                added > 0 && removed > 0 -> "$added nuevo(s), $removed quitado(s) (archivo borrado)"
+                added > 0 -> "$added juego(s) nuevo(s)"
+                removed > 0 -> "$removed juego(s) quitado(s) (archivo borrado)"
+                else -> "Sin cambios: no hay archivos nuevos"
+            }
         }
     }
 
@@ -207,6 +238,128 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun setNote(id: String, note: String) = store.setNote(id, note)
+
+    fun setProgress(id: String, pct: Int) = store.setProgress(id, pct)
+
+    /** Compatibilidad por juego: tipo de guardado (-1 auto) y RTC (0 auto, 1 si, 2 no). */
+    fun setCompat(id: String, saveOverride: Int, rtcMode: Int) = store.setCompat(id, saveOverride, rtcMode)
+
+    // ---- Portadas desde internet ----
+
+    /** Tras agregar juegos: busca las portadas de los que no tienen (si esta activado en Ajustes). */
+    private fun autoCovers() {
+        if (Settings.autoCovers.value) fetchCovers(force = false)
+    }
+
+    /**
+     * Busca portadas de los juegos que no tienen. Sin [force] se salta los que ya se intentaron hace
+     * menos de 7 dias; con [force] ("Buscar portadas faltantes") reintenta todos.
+     */
+    fun fetchCovers(force: Boolean) {
+        if (coverJob?.isActive == true) {
+            if (force) message.value = "Ya se estan buscando portadas"
+            return
+        }
+        coverJob = viewModelScope.launch {
+            val now = System.currentTimeMillis()
+            val pending = store.games.value.filter { g ->
+                !g.hasCover && (force || g.coverTried == 0L || now - g.coverTried > CoverFetcher.RETRY_AFTER_MS)
+            }
+            if (pending.isEmpty()) {
+                if (force) message.value = "No faltan portadas"
+                return@launch
+            }
+            var found = 0
+            var offline = false
+            for ((i, g) in pending.withIndex()) {
+                coverStatus.value = "Buscando portadas ${i + 1}/${pending.size}"
+                val ok = CoverFetcher.fetchFor(appContext, g)
+                if (ok) {
+                    store.setCover(g.id, true)
+                    found++
+                }
+                if (CoverFetcher.networkFailed) {
+                    offline = true
+                    break // sin conexion: no se marca nada para reintentar luego
+                }
+                store.markCoverTried(g.id, System.currentTimeMillis())
+            }
+            coverStatus.value = null
+            message.value = when {
+                offline && found == 0 -> "Sin conexion: no se pudieron buscar portadas"
+                force || found > 0 -> "Portadas encontradas: $found de ${pending.size}"
+                else -> null
+            }
+        }
+    }
+
+    /** Busca (de nuevo) la portada de un solo juego, aunque ya tenga una. */
+    fun fetchCoverFor(id: String) {
+        val g = store.get(id) ?: return
+        viewModelScope.launch {
+            coverStatus.value = "Buscando portada de ${g.title}"
+            val ok = CoverFetcher.fetchFor(appContext, g)
+            coverStatus.value = null
+            if (ok) {
+                store.setCover(id, true)
+                message.value = "Portada encontrada"
+            } else {
+                message.value = if (CoverFetcher.networkFailed) "Sin conexion" else "No se encontro portada para ${g.title}"
+            }
+            if (!CoverFetcher.networkFailed) store.markCoverTried(id, System.currentTimeMillis())
+        }
+    }
+
+    /** Portada desde una URL pegada por el usuario. */
+    fun setCoverFromUrl(id: String, url: String) {
+        viewModelScope.launch {
+            coverStatus.value = "Descargando portada"
+            val ok = CoverFetcher.fetchFromUrl(appContext, id, url)
+            coverStatus.value = null
+            if (ok) {
+                store.setCover(id, true)
+                message.value = "Portada actualizada"
+            } else {
+                message.value = "No se pudo descargar esa imagen (usa un enlace https directo a una imagen)"
+            }
+        }
+    }
+
+    // ---- Carpeta de datos / copias de seguridad ----
+
+    /** Vuelve a leer biblioteca y ajustes despues de importar una copia o de migrar la carpeta de datos. */
+    fun reloadFromDisk() {
+        store.reload()
+        Settings.reload(appContext)
+        try { sort.value = SortMode.valueOf(Settings.sortMode.value) } catch (e: Exception) { /* se queda el actual */ }
+    }
+
+    fun exportBackup(uri: Uri, includeRoms: Boolean) {
+        viewModelScope.launch {
+            val ok = withContext(Dispatchers.IO) {
+                try {
+                    appContext.contentResolver.openOutputStream(uri)?.let { Persist.exportBackup(appContext, it, includeRoms); true } ?: false
+                } catch (e: Exception) { false }
+            }
+            message.value = if (ok) "Copia de seguridad guardada" else "No se pudo guardar la copia"
+        }
+    }
+
+    fun importBackup(uri: Uri) {
+        viewModelScope.launch {
+            val count = withContext(Dispatchers.IO) {
+                try {
+                    appContext.contentResolver.openInputStream(uri)?.use { Persist.importBackup(appContext, it) } ?: 0
+                } catch (e: Exception) { 0 }
+            }
+            if (count > 0) {
+                reloadFromDisk()
+                message.value = "Copia restaurada ($count archivos)"
+            } else {
+                message.value = "No se pudo importar esa copia"
+            }
+        }
+    }
 
     // ---- Imagenes personalizadas (se copian reducidas a la app) ----
 

@@ -50,6 +50,26 @@ object Music {
     private var failures = 0
     private var appCtx: Context? = null
 
+    /** El usuario pauso la musica a mano (boton flotante / menu del juego): sync() no la reanuda sola. */
+    @Volatile var userPaused = false
+
+    fun hasSource(): Boolean = Settings.musicOn.value && (Settings.musicFolder.value.isNotEmpty() || Settings.musicUri.value.isNotEmpty())
+
+    fun applyVolume() {
+        try { val v = volume(); player?.setVolume(v, v) } catch (e: Exception) { /* ignorado */ }
+    }
+
+    /** Pausa / reanuda a pedido del usuario. */
+    fun toggle(ctx: Context) {
+        if (playing.value) {
+            userPaused = true
+            pause()
+        } else {
+            userPaused = false
+            sync(ctx)
+        }
+    }
+
     private fun currentKey(): String {
         val src = Settings.musicFolder.value.ifEmpty { Settings.musicUri.value }
         return src + "|" + Settings.musicShuffle.value
@@ -77,8 +97,10 @@ object Music {
             try {
                 val v = volume()
                 mp.setVolume(v, v)
-                if (!mp.isPlaying) mp.start()
-                playing.value = true
+                if (!userPaused) {
+                    if (!mp.isPlaying) mp.start()
+                    playing.value = true
+                }
             } catch (e: Exception) {
                 skip(false)
             }
@@ -151,9 +173,11 @@ object Music {
                 val v = volume()
                 mp.setVolume(v, v)
                 player = mp
-                mp.start()
+                if (!userPaused) {
+                    mp.start()
+                    playing.value = true
+                }
                 failures = 0
-                playing.value = true
                 readMetadata(ctx, uri)
             } catch (e: Exception) {
                 failures++

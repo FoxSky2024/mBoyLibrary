@@ -31,7 +31,7 @@
 
 static struct mCore* gCore = NULL;
 static uint8_t* gRom = NULL;
-// Tamano real por plataforma
+// mGBA dibuja aqui con stride fijo MAX_W; el tamano real lo da baseVideoSize.
 static uint32_t gVideo[MAX_W * MAX_H];
 // Copia compacta (ancho real x alto real) del ultimo frame para el hilo de OpenGL.
 static uint32_t gFrame[MAX_W * MAX_H];
@@ -54,7 +54,7 @@ static void unloadCore(void) {
 
 static void publishFrame(void) {
     unsigned w = 0, h = 0;
-    if (gCore->platform(gCore) == mPLATFORM_GBA) { w = 240; h = 160; } else { w = 160; h = 144; }
+    gCore->baseVideoSize(gCore, &w, &h);
     if (w == 0 || h == 0 || w > MAX_W || h > MAX_H) return;
     pthread_mutex_lock(&gFrameLock);
     gFrameW = w;
@@ -66,10 +66,39 @@ static void publishFrame(void) {
     pthread_mutex_unlock(&gFrameLock);
 }
 
+// Compatibilidad con hacks: tipo de guardado y RTC se deciden en Kotlin leyendo la ROM
+// (ver SaveType.kt) y se aplican aqui despues de cada reset, porque mGBA limpia el hardware
+// de cartucho (RTC) al resetear y los hacks cambian el codigo de juego que mGBA usa para
+// reconocerlos.
+static int gSaveType = 0;
+static int gRtc = 0;
+
+// Enlace debil: si la libreria no exportara GBAHardwareInitRTC el RTC simplemente no se fuerza
+// (no rompe la compilacion ni el arranque).
+extern void gbalibInitRtc(void* hw) __asm__("GBAHardwareInitRTC") __attribute__((weak));
+
+static void applyCompat(void) {
+    if (!gCore || gCore->platform(gCore) != mPLATFORM_GBA || !gCore->board) return;
+    struct GBA* gba = (struct GBA*) gCore->board;
+    // 1 SRAM, 2 FLASH512, 3 FLASH1M, 4 EEPROM, 5 EEPROM512; 0 = deteccion automatica de mGBA.
+    if (gSaveType > 0) {
+        GBASavedataForceType(&gba->memory.savedata, gSaveType);
+    }
+    if (gRtc) {
+        if (gbalibInitRtc) {
+            gbalibInitRtc(&gba->memory.hw);
+        } else {
+            LOGE("GBAHardwareInitRTC no disponible: RTC no forzado");
+        }
+    }
+}
+
 JNIEXPORT jboolean JNICALL
-Java_app_gbalibrary_emu_Native_load(JNIEnv* env, jobject thiz, jbyteArray rom, jstring savePath, jint saveType) {
+Java_app_gbalibrary_emu_Native_load(JNIEnv* env, jobject thiz, jbyteArray rom, jstring savePath, jint saveType, jboolean rtc) {
     (void) thiz;
     unloadCore();
+    gSaveType = saveType;
+    gRtc = rtc ? 1 : 0;
 
     jsize len = (*env)->GetArrayLength(env, rom);
     if (len <= 0) return JNI_FALSE;
@@ -131,19 +160,15 @@ Java_app_gbalibrary_emu_Native_load(JNIEnv* env, jobject thiz, jbyteArray rom, j
 
     // Tamano real de la imagen de este nucleo (GBA 240x160, GB/GBC 160x144).
     unsigned w = 0, h = 0;
-    if (gCore->platform(gCore) == mPLATFORM_GBA) { w = 240; h = 160; } else { w = 160; h = 144; }
+    gCore->baseVideoSize(gCore, &w, &h);
     pthread_mutex_lock(&gFrameLock);
     gFrameW = w ? w : 240;
     gFrameH = h ? h : 160;
     gFrameDirty = 1;
     pthread_mutex_unlock(&gFrameLock);
 
-    // Tipo de guardado detectado leyendo la ROM (SRAM/FLASH/EEPROM), solo para GBA.
-    // 1 SRAM, 2 FLASH512, 3 FLASH1M, 4 EEPROM; 0 = dejar la deteccion automatica de mGBA.
-    if (saveType > 0 && gCore->platform(gCore) == mPLATFORM_GBA && gCore->board) {
-        struct GBA* gba = (struct GBA*) gCore->board;
-        GBASavedataForceType(&gba->memory.savedata, saveType);
-    }
+    // Tipo de guardado y RTC detectados leyendo la ROM (solo GBA).
+    applyCompat();
 
     // Tasa de muestreo de salida: despues de reset para que no se pierda.
     blip_set_rates(gCore->getAudioChannel(gCore, 0), gCore->frequency(gCore), SAMPLE_RATE);
@@ -162,7 +187,10 @@ JNIEXPORT void JNICALL
 Java_app_gbalibrary_emu_Native_reset(JNIEnv* env, jobject thiz) {
     (void) env;
     (void) thiz;
-    if (gCore) gCore->reset(gCore);
+    if (gCore) {
+        gCore->reset(gCore);
+        applyCompat();
+    }
 }
 
 JNIEXPORT void JNICALL

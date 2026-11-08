@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 
 package app.gbalibrary.ui
 
@@ -7,6 +7,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -65,6 +66,25 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
+import app.gbalibrary.input.PadInput
+import app.gbalibrary.stream.StreamClient
 import app.gbalibrary.data.Covers
 import app.gbalibrary.data.Game
 import app.gbalibrary.data.Settings
@@ -81,6 +101,11 @@ class LibraryActions(
     val pickLibraryBackground: () -> Unit,
     val pickMusic: () -> Unit,
     val pickMusicFolder: () -> Unit,
+    val pickPipVideo: () -> Unit = {},
+    val openDataFolder: () -> Unit = {},
+    val requestStorage: () -> Unit = {},
+    val exportBackup: (Boolean) -> Unit = {},
+    val importBackup: () -> Unit = {},
 )
 
 @Composable
@@ -89,10 +114,43 @@ fun LibraryApp(vm: LibraryViewModel, actions: LibraryActions, onPlay: (Game) -> 
     val all by vm.games.collectAsState()
     var detailId by rememberSaveable { mutableStateOf<String?>(null) }
     var showSettings by rememberSaveable { mutableStateOf(false) }
+    var showProfile by rememberSaveable { mutableStateOf(false) }
+    var showGallery by rememberSaveable { mutableStateOf(false) }
+    var showViewer by rememberSaveable { mutableStateOf(false) }
+    // Un QR (mboy://join/...) abre directamente el visor de transmision.
+    val joinCode by StreamClient.pendingCode
+    LaunchedEffect(joinCode) { if (joinCode != null) { showSettings = false; showProfile = false; showGallery = false; showViewer = true } }
     val detail = all.firstOrNull { it.id == detailId }
 
-    BackHandler(enabled = detail != null || showSettings) {
-        if (showSettings) showSettings = false else detailId = null
+    // Modo de navegacion con mando segun la pantalla visible.
+    val navMode = when {
+        showSettings || showGallery || showProfile || showViewer -> MenuNav.Mode.FOCUS
+        detail != null -> MenuNav.Mode.DETAIL
+        else -> MenuNav.Mode.HOME
+    }
+    SideEffect { MenuNav.mode = navMode }
+    // En Detalle: A = jugar, B = volver.
+    LaunchedEffect(navMode) {
+        if (navMode == MenuNav.Mode.DETAIL) {
+            MenuNav.events.collect { k ->
+                val g = all.firstOrNull { it.id == detailId }
+                when (k) {
+                    NavKey.OK -> if (g != null) { Sfx.enter(); onPlay(g) }
+                    NavKey.BACK -> { Sfx.click(); detailId = null }
+                    else -> {}
+                }
+            }
+        }
+    }
+
+    BackHandler(enabled = detail != null || showSettings || showProfile || showGallery || showViewer) {
+        when {
+            showViewer -> showViewer = false
+            showGallery -> showGallery = false
+            showSettings -> showSettings = false
+            showProfile -> showProfile = false
+            else -> detailId = null
+        }
     }
 
     LaunchedEffect(
@@ -130,12 +188,31 @@ fun LibraryApp(vm: LibraryViewModel, actions: LibraryActions, onPlay: (Game) -> 
         )
     }
 
-    Box(Modifier.fillMaxSize()) {
+    Box(
+        Modifier.fillMaxSize().pointerInput(Unit) {
+            // Tocar la pantalla apaga el foco de mando (si no hay mando conectado).
+            awaitEachGesture {
+                awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                if (!PadInput.connected.value) MenuNav.active.value = false
+            }
+        },
+    ) {
         LibraryBackground()
         // El contenido respeta barra de estado, notch y barra de navegacion (el fondo ocupa todo).
-        Box(Modifier.fillMaxSize().safeDrawingPadding()) {
+        Box(Modifier.fillMaxSize().safeDrawingPadding().padding(Settings.uiMargin.intValue.dp)) {
             when {
-                showSettings -> SettingsScreen(vm, actions, onBack = { showSettings = false })
+                showViewer -> StreamViewerScreen(
+                    onBack = { showViewer = false },
+                    onMinimize = { Pip.showStream(); showViewer = false },
+                )
+                showSettings -> SettingsScreen(vm, actions, onBack = { showSettings = false }, onViewer = { showSettings = false; showViewer = true })
+                showGallery -> GalleryScreen(onBack = { showGallery = false })
+                showProfile -> ProfileScreen(
+                    vm = vm,
+                    onBack = { showProfile = false },
+                    onOpenGame = { Sfx.click(); showProfile = false; detailId = it.id },
+                    onGallery = { showGallery = true },
+                )
                 detail != null -> GameDetail(
                     game = detail,
                     vm = vm,
@@ -149,15 +226,18 @@ fun LibraryApp(vm: LibraryViewModel, actions: LibraryActions, onPlay: (Game) -> 
                     onOpen = { Sfx.click(); detailId = it.id },
                     onPlay = { Sfx.enter(); onPlay(it) },
                     onSettings = { Sfx.click(); showSettings = true },
+                    onProfile = { Sfx.click(); showProfile = true },
+                    onGallery = { Sfx.click(); showGallery = true },
                 )
             }
         }
+        PipOverlay()
         // Vinilo abajo a la derecha (biblioteca y ajustes; nunca dentro del juego)
         VinylOverlay(Modifier.align(Alignment.BottomEnd))
     }
 }
 
-/** Fondo de la biblioteca: degradado del tema, imagen (con blur opcional) o color solido. */
+/** Fondo de la biblioteca: degradado del tema, imagen o color solido. */
 @Composable
 fun LibraryBackground() {
     val p = LocalPalette.current
@@ -165,12 +245,8 @@ fun LibraryBackground() {
     when (Settings.bgMode.intValue) {
         2 -> Box(Modifier.fillMaxSize().background(Color(Settings.bgColor.intValue)))
         1 -> {
-            val blur = Settings.bgBlur.value
-            val bmp by produceState<ImageBitmap?>(null, Settings.bgStamp.intValue, blur) {
-                value = withContext(Dispatchers.IO) {
-                    val f = Covers.libraryBgFile(ctx)
-                    if (blur) Covers.loadBlurred(f) else Covers.load(f)
-                }
+            val bmp by produceState<ImageBitmap?>(null, Settings.bgStamp.intValue) {
+                value = withContext(Dispatchers.IO) { Covers.load(Covers.libraryBgFile(ctx)) }
             }
             Box(Modifier.fillMaxSize().background(p.bg))
             bmp?.let { Image(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
@@ -187,6 +263,8 @@ private fun LibraryHome(
     onOpen: (Game) -> Unit,
     onPlay: (Game) -> Unit,
     onSettings: () -> Unit,
+    onProfile: () -> Unit,
+    onGallery: () -> Unit,
 ) {
     val p = LocalPalette.current
     val all by vm.games.collectAsState()
@@ -199,6 +277,90 @@ private fun LibraryHome(
     val message by vm.message.collectAsState()
 
     val snackbar = remember { SnackbarHostState() }
+    var menuGame by remember { mutableStateOf<Game?>(null) }
+
+    // ---- Navegacion con mando (Big Picture) ----
+    val nav = remember { HomeNav() }
+    val gridState = rememberLazyGridState()
+    val featState = rememberLazyListState()
+    val focusManager = LocalFocusManager.current
+    val featured = remember(all) { featuredOf(all) }
+    val showFeatured = category == CAT_ALL && query.isBlank() && featured.isNotEmpty()
+    val sideKeys = remember(collections) { listOf(CAT_ALL, CAT_FAV, CAT_RECENT, CAT_TOP) + collections }
+    val showFocus = MenuNav.active.value || PadInput.connected.value
+    DisposableEffect(Unit) { onDispose { MenuNav.textFocus = false } }
+
+    val handleNav: (NavKey) -> Unit = handle@{ k ->
+        if (MenuNav.textFocus) focusManager.clearFocus()
+        val n = games.size
+        // El foco nunca se pierde: si la zona ya no existe, se pasa a otra valida.
+        if (nav.zone == Zone.FEATURED && !showFeatured) nav.zone = Zone.GRID
+        if (nav.zone == Zone.GRID && n == 0) nav.zone = Zone.SIDE
+        nav.grid = nav.grid.coerceIn(0, maxOf(0, n - 1))
+        nav.feat = nav.feat.coerceIn(0, maxOf(0, featured.size - 1))
+        val cols = nav.cols.coerceAtLeast(1)
+        fun enterSide() {
+            nav.side = sideKeys.indexOf(category).coerceAtLeast(0)
+            nav.zone = Zone.SIDE
+        }
+        when (k) {
+            NavKey.START -> { Sfx.click(); onSettings() }
+            NavKey.BACK -> if (nav.zone != Zone.GRID && n > 0) nav.zone = Zone.GRID
+            NavKey.OK -> when (nav.zone) {
+                Zone.GRID -> games.getOrNull(nav.grid)?.let(onOpen)
+                Zone.FEATURED -> featured.getOrNull(nav.feat)?.let(onOpen)
+                Zone.SIDE -> { Sfx.click(); sideKeys.getOrNull(nav.side)?.let { vm.category.value = it } }
+            }
+            else -> when (nav.zone) {
+                Zone.GRID -> when (k) {
+                    NavKey.LEFT -> if (nav.grid % cols == 0) enterSide() else nav.grid--
+                    NavKey.RIGHT -> if (nav.grid < n - 1 && nav.grid % cols != cols - 1) nav.grid++
+                    NavKey.UP -> if (nav.grid >= cols) nav.grid -= cols else if (showFeatured) nav.zone = Zone.FEATURED
+                    NavKey.DOWN -> if (nav.grid + cols < n) nav.grid += cols else if (nav.grid / cols < (n - 1) / cols) nav.grid = n - 1
+                    else -> {}
+                }
+                Zone.FEATURED -> when (k) {
+                    NavKey.LEFT -> if (nav.feat == 0) enterSide() else nav.feat--
+                    NavKey.RIGHT -> if (nav.feat < featured.size - 1) nav.feat++
+                    NavKey.DOWN -> if (n > 0) { nav.grid = nav.feat.coerceAtMost(minOf(cols, n) - 1); nav.zone = Zone.GRID }
+                    else -> {}
+                }
+                Zone.SIDE -> when (k) {
+                    NavKey.UP -> nav.side = maxOf(0, nav.side - 1)
+                    NavKey.DOWN -> nav.side = minOf(sideKeys.size - 1, nav.side + 1)
+                    NavKey.RIGHT -> if (showFeatured) nav.zone = Zone.FEATURED else if (n > 0) nav.zone = Zone.GRID
+                    else -> {}
+                }
+            }
+        }
+        Unit
+    }
+    val currentNav by rememberUpdatedState(handleNav)
+    LaunchedEffect(Unit) { MenuNav.events.collect { currentNav(it) } }
+
+    // Mantiene el elemento enfocado a la vista (desplazamiento suave).
+    LaunchedEffect(nav.zone, nav.grid, nav.feat, showFeatured, showFocus) {
+        if (!showFocus) return@LaunchedEffect
+        when (nav.zone) {
+            Zone.GRID -> {
+                val idx = nav.grid + (if (showFeatured) 1 else 0)
+                val info = gridState.layoutInfo
+                val vh = info.viewportSize.height
+                val item = info.visibleItemsInfo.firstOrNull { it.index == idx }
+                if (item == null) gridState.animateScrollToItem(idx, -(vh / 3))
+                else if (item.offset.y < 0 || item.offset.y + item.size.height > vh) {
+                    gridState.animateScrollToItem(idx, -((vh - item.size.height) / 2))
+                }
+            }
+            Zone.FEATURED -> {
+                if (gridState.firstVisibleItemIndex != 0 || gridState.firstVisibleItemScrollOffset != 0) gridState.animateScrollToItem(0)
+                val li = featState.layoutInfo
+                val it = li.visibleItemsInfo.firstOrNull { v -> v.index == nav.feat }
+                if (it == null || it.offset < 0 || it.offset + it.size > li.viewportEndOffset) featState.animateScrollToItem(nav.feat)
+            }
+            Zone.SIDE -> {}
+        }
+    }
     LaunchedEffect(message) {
         message?.let {
             snackbar.showSnackbar(it)
@@ -216,24 +378,32 @@ private fun LibraryHome(
                 actions = actions,
                 onRescan = { vm.rescan() },
                 onSettings = onSettings,
+                onProfile = onProfile,
+                onGallery = onGallery,
             )
             if (scanning) LinearProgressIndicator(Modifier.fillMaxWidth().height(3.dp), color = p.accent)
 
             Row(Modifier.fillMaxSize()) {
-                SidePanel(all, collections, category) { vm.category.value = it }
+                SidePanel(all, collections, category, if (showFocus && nav.zone == Zone.SIDE) nav.side else -1, sideKeys) { vm.category.value = it }
                 if (all.isEmpty()) {
                     EmptyLibrary(actions)
                 } else {
                     GameGrid(
                         games = games,
-                        all = all,
-                        showFeatured = category == CAT_ALL && query.isBlank(),
+                        featured = featured,
+                        showFeatured = showFeatured,
+                        nav = nav,
+                        showFocus = showFocus,
+                        gridState = gridState,
+                        featState = featState,
                         onOpen = onOpen,
                         onPlay = onPlay,
+                        onLong = { menuGame = it },
                     )
                 }
             }
         }
+        menuGame?.let { g -> CoverMenu(g, vm, actions, onOpen) { menuGame = null } }
         SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp))
     }
 }
@@ -247,16 +417,18 @@ private fun TopBar(
     actions: LibraryActions,
     onRescan: () -> Unit,
     onSettings: () -> Unit,
+    onProfile: () -> Unit,
+    onGallery: () -> Unit,
 ) {
     val p = LocalPalette.current
     var sortMenu by remember { mutableStateOf(false) }
     var addMenu by remember { mutableStateOf(false) }
     Row(
-        Modifier.fillMaxWidth().height(56.dp).background(p.panel.copy(alpha = 0.97f)).padding(horizontal = 12.dp),
+        Modifier.fillMaxWidth().height(48.dp).opacityPanel(p.panel).padding(horizontal = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text("◆", color = p.accent, fontSize = 22.sp)
+        Text("◆", color = p.accent, fontSize = 20.sp)
         Text(Settings.appName.value, color = p.text, fontWeight = FontWeight.Black, fontSize = 18.sp, maxLines = 1, softWrap = false, modifier = Modifier.widthIn(max = 150.dp), overflow = TextOverflow.Ellipsis)
 
         Box(
@@ -269,7 +441,7 @@ private fun TopBar(
                 singleLine = true,
                 textStyle = TextStyle(color = p.text, fontSize = 14.sp),
                 cursorBrush = SolidColor(p.accent),
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().onFocusChanged { MenuNav.textFocus = it.isFocused },
                 decorationBox = { inner ->
                     Box(contentAlignment = Alignment.CenterStart) {
                         if (query.isEmpty()) Text("Buscar juegos...", color = p.dim, fontSize = 14.sp)
@@ -297,16 +469,62 @@ private fun TopBar(
             }
         }
 
+        StatusIndicators()
+
+        Text("🖼", fontSize = 18.sp, maxLines = 1, modifier = Modifier.clickable { onGallery() }.padding(horizontal = 6.dp, vertical = 4.dp))
         Row(
-            Modifier.clip(RoundedCornerShape(24.dp)).clickable(onClick = onSettings).padding(horizontal = 8.dp, vertical = 4.dp),
+            Modifier.clip(RoundedCornerShape(24.dp)).clickable(onClick = onProfile).padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(Settings.profileName.value, color = p.text, fontSize = 13.sp, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 90.dp))
-            Avatar(36)
-            Text("⚙", color = p.dim, fontSize = 18.sp, maxLines = 1)
+            Avatar(32)
         }
+        Text("⚙", color = p.dim, fontSize = 20.sp, maxLines = 1, modifier = Modifier.clickable(onClick = onSettings).padding(horizontal = 8.dp, vertical = 4.dp))
     }
+}
+
+
+/** Menu al mantener pulsado un juego: cambiar portada (galeria / pegar URL / buscar en internet / quitar). */
+@Composable
+private fun CoverMenu(g: Game, vm: LibraryViewModel, actions: LibraryActions, onOpen: (Game) -> Unit, onClose: () -> Unit) {
+    var urlMode by remember { mutableStateOf(false) }
+    var url by remember { mutableStateOf("") }
+    if (urlMode) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = onClose,
+            title = { Text("Pegar URL de portada") },
+            text = {
+                androidx.compose.material3.OutlinedTextField(
+                    value = url, onValueChange = { url = it }, singleLine = true,
+                    label = { Text("https://…/imagen.jpg") }, modifier = Modifier.fillMaxWidth(),
+                )
+            },
+            confirmButton = { androidx.compose.material3.TextButton(onClick = { vm.setCoverFromUrl(g.id, url); onClose() }) { Text("Descargar") } },
+            dismissButton = { androidx.compose.material3.TextButton(onClick = onClose) { Text("Cancelar") } },
+        )
+        return
+    }
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onClose,
+        title = { Text(g.title, maxLines = 2, overflow = TextOverflow.Ellipsis) },
+        text = {
+            Column {
+                @Composable
+                fun Item(label: String, act: () -> Unit) = Text(
+                    label, color = LocalPalette.current.text,
+                    modifier = Modifier.fillMaxWidth().clickable { act() }.padding(vertical = 11.dp, horizontal = 4.dp),
+                )
+                Item("Cambiar portada: galería") { actions.pickCover(g.id); onClose() }
+                Item("Cambiar portada: pegar URL") { urlMode = true }
+                Item("Buscar portada en internet") { vm.fetchCoverFor(g.id); onClose() }
+                if (g.hasCover) Item("Quitar portada") { vm.clearCover(g.id); onClose() }
+                Item("Ver ficha del juego") { onClose(); onOpen(g) }
+            }
+        },
+        confirmButton = {},
+        dismissButton = { androidx.compose.material3.TextButton(onClick = onClose) { Text("Cerrar") } },
+    )
 }
 
 @Composable
@@ -330,30 +548,38 @@ fun Avatar(sizeDp: Int) {
 }
 
 @Composable
-private fun SidePanel(all: List<Game>, collections: List<String>, selected: String, onSelect: (String) -> Unit) {
+private fun SidePanel(
+    all: List<Game>,
+    collections: List<String>,
+    selected: String,
+    focusIndex: Int,
+    sideKeys: List<String>,
+    onSelect: (String) -> Unit,
+) {
     val p = LocalPalette.current
     Column(
-        Modifier.width(190.dp).fillMaxHeight().background(p.panel.copy(alpha = 0.85f)).verticalScroll(rememberScrollState()).padding(vertical = 10.dp),
+        Modifier.width(160.dp).fillMaxHeight().opacityPanel(p.panel).verticalScroll(rememberScrollState()).padding(vertical = 10.dp),
     ) {
         Text("BIBLIOTECA", color = p.dim, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp))
-        SideItem("Todos", all.size, selected == CAT_ALL) { onSelect(CAT_ALL) }
-        SideItem("Favoritos", all.count { it.favorite }, selected == CAT_FAV) { onSelect(CAT_FAV) }
-        SideItem("Recientes", all.count { it.lastPlayed > 0 }, selected == CAT_RECENT) { onSelect(CAT_RECENT) }
-        SideItem("Más jugados", all.count { it.playSeconds > 0 }, selected == CAT_TOP) { onSelect(CAT_TOP) }
+        SideItem("Todos", all.size, selected == CAT_ALL, focusIndex >= 0 && sideKeys.getOrNull(focusIndex) == CAT_ALL) { onSelect(CAT_ALL) }
+        SideItem("Favoritos", all.count { it.favorite }, selected == CAT_FAV, focusIndex >= 0 && sideKeys.getOrNull(focusIndex) == CAT_FAV) { onSelect(CAT_FAV) }
+        SideItem("Recientes", all.count { it.lastPlayed > 0 }, selected == CAT_RECENT, focusIndex >= 0 && sideKeys.getOrNull(focusIndex) == CAT_RECENT) { onSelect(CAT_RECENT) }
+        SideItem("Más jugados", all.count { it.playSeconds > 0 }, selected == CAT_TOP, focusIndex >= 0 && sideKeys.getOrNull(focusIndex) == CAT_TOP) { onSelect(CAT_TOP) }
         if (collections.isNotEmpty()) {
             Text("COLECCIONES", color = p.dim, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 6.dp))
-            collections.forEach { c -> SideItem(c, all.count { c in it.collections }, selected == c) { onSelect(c) } }
+            collections.forEach { c -> SideItem(c, all.count { c in it.collections }, selected == c, focusIndex >= 0 && sideKeys.getOrNull(focusIndex) == c) { onSelect(c) } }
         }
     }
 }
 
 @Composable
-private fun SideItem(label: String, count: Int, selected: Boolean, onClick: () -> Unit) {
+private fun SideItem(label: String, count: Int, selected: Boolean, focused: Boolean, onClick: () -> Unit) {
     val p = LocalPalette.current
     Row(
         Modifier
             .fillMaxWidth()
-            .background(if (selected) p.card else Color.Transparent)
+            .background(if (focused) p.accent.copy(alpha = 0.30f) else if (selected) p.card else Color.Transparent)
+            .then(if (focused) Modifier.border(2.dp, p.accent) else Modifier)
             .clickable { Sfx.click(); onClick() }
             .padding(horizontal = 16.dp, vertical = 9.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -378,53 +604,81 @@ private fun EmptyLibrary(actions: LibraryActions) {
     }
 }
 
+/** Destacados: recientes + favoritos (o los ultimos agregados si aun no hay historial). */
+private fun featuredOf(all: List<Game>): List<Game> {
+    val recent = all.filter { it.lastPlayed > 0 }.sortedByDescending { it.lastPlayed }.take(8)
+    val favs = all.filter { it.favorite && recent.none { r -> r.id == it.id } }
+    val list = recent + favs
+    return if (list.isEmpty()) all.sortedByDescending { it.addedAt }.take(6) else list.take(12)
+}
+
+private enum class Zone { SIDE, FEATURED, GRID }
+
+/** Posicion del foco del mando en la biblioteca. */
+private class HomeNav {
+    var zone by mutableStateOf(Zone.GRID)
+    var grid by mutableIntStateOf(0)
+    var feat by mutableIntStateOf(0)
+    var side by mutableIntStateOf(0)
+    var cols by mutableIntStateOf(1)
+}
+
 @Composable
 private fun GameGrid(
     games: List<Game>,
-    all: List<Game>,
+    featured: List<Game>,
     showFeatured: Boolean,
+    nav: HomeNav,
+    showFocus: Boolean,
+    gridState: LazyGridState,
+    featState: LazyListState,
     onOpen: (Game) -> Unit,
     onPlay: (Game) -> Unit,
+    onLong: (Game) -> Unit,
 ) {
     val p = LocalPalette.current
-    val featured = remember(all) {
-        val recent = all.filter { it.lastPlayed > 0 }.sortedByDescending { it.lastPlayed }.take(8)
-        val favs = all.filter { it.favorite && recent.none { r -> r.id == it.id } }
-        val list = recent + favs
-        if (list.isEmpty()) all.sortedByDescending { it.addedAt }.take(6) else list.take(12)
-    }
-    LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = 150.dp),
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        if (showFeatured && featured.isNotEmpty()) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                Column {
-                    Text("DESTACADOS", color = p.dim, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                        items(featured, key = { it.id }) { g -> FeatureCard(g, onOpen, onPlay) }
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        // Misma cuenta que GridCells.Adaptive(128.dp) con 12.dp de margen y de separacion.
+        val cols = ((maxWidth - 24.dp + 12.dp) / (128.dp + 12.dp)).toInt().coerceAtLeast(1)
+        SideEffect { nav.cols = cols }
+        LazyVerticalGrid(
+            state = gridState,
+            columns = GridCells.Adaptive(minSize = 128.dp),
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            if (showFeatured) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Column {
+                        Text("DESTACADOS", color = p.dim, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
+                        LazyRow(state = featState, contentPadding = PaddingValues(vertical = 10.dp, horizontal = 6.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                            itemsIndexed(featured, key = { _, g -> g.id }) { i, g ->
+                                FeatureCard(g, showFocus && nav.zone == Zone.FEATURED && nav.feat == i, onOpen, onPlay, onLong)
+                            }
+                        }
+                        Text("TODOS LOS JUEGOS", color = p.dim, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 14.dp))
                     }
-                    Text("TODOS LOS JUEGOS", color = p.dim, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 20.dp))
                 }
             }
-        }
-        if (games.isEmpty()) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                Text("No hay juegos que coincidan.", color = p.dim, modifier = Modifier.padding(24.dp))
+            if (games.isEmpty()) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Text("No hay juegos que coincidan.", color = p.dim, modifier = Modifier.padding(24.dp))
+                }
+            }
+            itemsIndexed(games, key = { _, g -> g.id }) { i, g ->
+                GameCard(g, showFocus && nav.zone == Zone.GRID && nav.grid == i, onOpen, onPlay, onLong)
             }
         }
-        items(games, key = { it.id }) { g -> GameCard(g, onOpen, onPlay) }
     }
 }
 
 @Composable
-private fun FeatureCard(g: Game, onOpen: (Game) -> Unit, onPlay: (Game) -> Unit) {
+private fun FeatureCard(g: Game, focused: Boolean, onOpen: (Game) -> Unit, onPlay: (Game) -> Unit, onLong: (Game) -> Unit) {
     val p = LocalPalette.current
     Box(
-        Modifier.width(300.dp).height(150.dp).clip(RoundedCornerShape(10.dp)).clickable { onOpen(g) },
+        Modifier.width(250.dp).height(125.dp).bigPictureFocus(focused, RoundedCornerShape(10.dp), p.accent, 1.06f).cardPanel(p.card, RoundedCornerShape(10.dp)).combinedClickable(onClick = { onOpen(g) }, onLongClick = { onLong(g) }),
     ) {
         CoverImage(g, Modifier.fillMaxSize())
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xDD000000)))))
@@ -440,10 +694,10 @@ private fun FeatureCard(g: Game, onOpen: (Game) -> Unit, onPlay: (Game) -> Unit)
 }
 
 @Composable
-private fun GameCard(g: Game, onOpen: (Game) -> Unit, onPlay: (Game) -> Unit) {
+private fun GameCard(g: Game, focused: Boolean, onOpen: (Game) -> Unit, onPlay: (Game) -> Unit, onLong: (Game) -> Unit) {
     val p = LocalPalette.current
-    Column(Modifier.clickable { onOpen(g) }) {
-        Box(Modifier.fillMaxWidth().aspectRatio(3f / 4f).clip(RoundedCornerShape(8.dp)).border(1.dp, p.card, RoundedCornerShape(8.dp))) {
+    Column(Modifier.bigPictureFocus(focused, RoundedCornerShape(8.dp), p.accent).cardPanel(p.card, RoundedCornerShape(8.dp)).combinedClickable(onClick = { onOpen(g) }, onLongClick = { onLong(g) }).padding(bottom = 6.dp)) {
+        Box(Modifier.fillMaxWidth().aspectRatio(3f / 4f).clip(RoundedCornerShape(8.dp))) {
             CoverImage(g, Modifier.fillMaxSize())
             if (g.favorite) Text("★", color = Color(0xFFFFD54F), fontSize = 18.sp, modifier = Modifier.align(Alignment.TopEnd).padding(6.dp))
             Box(
@@ -451,9 +705,9 @@ private fun GameCard(g: Game, onOpen: (Game) -> Unit, onPlay: (Game) -> Unit) {
                 contentAlignment = Alignment.Center,
             ) { Text("▶", color = Color.White, fontSize = 14.sp) }
         }
-        FitTitle(g.title, p.text, FontWeight.SemiBold, maxSp = 13f, minSp = 9f, modifier = Modifier.padding(top = 6.dp).fillMaxWidth())
-        Text(formatPlayTime(g.playSeconds), color = p.dim, fontSize = 11.sp)
-        Text("Última vez: ${formatAgo(g.lastPlayed)}", color = p.dim, fontSize = 11.sp)
+        FitTitle(g.title, p.text, FontWeight.SemiBold, maxSp = 13f, minSp = 9f, modifier = Modifier.padding(top = 6.dp, start = 6.dp, end = 6.dp).fillMaxWidth())
+        Text(if (g.playSeconds >= 3600 && g.lastPlayed > 0) "${formatPlayTime(g.playSeconds)} · ${formatAgo(g.lastPlayed)}" else formatPlayTime(g.playSeconds), color = p.dim, fontSize = 11.sp, maxLines = 1, modifier = Modifier.padding(horizontal = 6.dp))
+        Text("Última vez: ${formatAgo(g.lastPlayed)}", color = p.dim, fontSize = 11.sp, maxLines = 1, modifier = Modifier.padding(horizontal = 6.dp))
     }
 }
 

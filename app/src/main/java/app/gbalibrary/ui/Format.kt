@@ -7,7 +7,7 @@ fun formatPlayTime(seconds: Long): String = when {
     seconds <= 0 -> "Sin jugar"
     seconds < 60 -> "$seconds s"
     seconds < 3600 -> "${seconds / 60} min"
-    else -> "${seconds / 3600} h ${(seconds % 3600) / 60} min"
+    else -> String.format(java.util.Locale.US, "%.1f h", seconds / 3600.0)
 }
 
 fun formatDate(ms: Long): String =

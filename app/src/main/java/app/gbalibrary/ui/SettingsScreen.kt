@@ -32,6 +32,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -40,6 +41,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
+import app.gbalibrary.data.DataDir
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -59,7 +62,7 @@ private val SolidColors = listOf(
  * semi-opacas para que se lean sobre cualquier fondo. Botones y chips usan FlowRow (nada se encima).
  */
 @Composable
-fun SettingsScreen(vm: LibraryViewModel, actions: LibraryActions, onBack: () -> Unit) {
+fun SettingsScreen(vm: LibraryViewModel, actions: LibraryActions, onBack: () -> Unit, onViewer: () -> Unit = {}) {
     val p = LocalPalette.current
     var editingPad by remember { mutableStateOf(false) }
     val globalLayout = remember { ControlLayout().also { it.load("global") } }
@@ -69,7 +72,7 @@ fun SettingsScreen(vm: LibraryViewModel, actions: LibraryActions, onBack: () -> 
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
             Row(
-                Modifier.fillMaxWidth().height(52.dp).background(p.panel.copy(alpha = 0.97f)).padding(horizontal = 16.dp),
+                Modifier.fillMaxWidth().height(48.dp).opacityPanel(p.panel).padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
@@ -83,12 +86,19 @@ fun SettingsScreen(vm: LibraryViewModel, actions: LibraryActions, onBack: () -> 
             ) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     ProfileSection(actions)
+                    ScaleSection()
                     AppearanceSection(actions)
+                    AnimationsSection()
+                    InterfaceSection()
+                    PipSection(actions, onViewer)
                 }
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     MusicSection(actions)
                     ControlsSection(globalLayout) { editingPad = true }
+                    PerfSection()
                     LibrarySection(vm, actions)
+                    CoversSection(vm)
+                    DataSection(actions)
                 }
             }
         }
@@ -160,6 +170,15 @@ private fun AppearanceSection(actions: LibraryActions) {
             }
         }
     }
+    Section("Opacidad de paneles") {
+        Text("Opacidad ${(Settings.boxOpacity.floatValue * 100).roundToInt()}%", color = p.text, fontSize = 13.sp)
+        Slider(
+            value = Settings.boxOpacity.floatValue,
+            onValueChange = { Settings.setBoxOpacity((it * 100).roundToInt() / 100f) },
+            valueRange = 0.4f..1f,
+        )
+        Text("Aplica a barras, tarjetas de juegos y paneles de Ajustes. Fondo sólido oscuro con transparencia, sin efectos de cristal ni desenfoque.", color = p.dim, fontSize = 12.sp)
+    }
     Section("Fondo de la biblioteca") {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             listOf("Por defecto", "Imagen", "Color sólido").forEachIndexed { i, name ->
@@ -168,7 +187,6 @@ private fun AppearanceSection(actions: LibraryActions) {
         }
         if (Settings.bgMode.intValue == 1) {
             OutlinedButton(onClick = actions.pickLibraryBackground) { Text("Elegir imagen de la galería") }
-            ToggleRow("Desenfocar (blur)", Settings.bgBlur.value) { Settings.setBgBlur(it) }
         }
         if (Settings.bgMode.intValue == 2) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -233,6 +251,12 @@ private fun MusicSection(actions: LibraryActions) {
     val p = LocalPalette.current
     Section("Música de fondo (biblioteca)") {
         ToggleRow("Activar música", Settings.musicOn.value) { Settings.setMusicOn(it) }
+        ToggleRow("Seguir escuchando música dentro del juego", Settings.musicInGame.value) { Settings.setMusicInGame(it) }
+        Text(
+            if (Settings.musicInGame.value) "ON: la música sigue al entrar a jugar; pausa con el botón ♪ flotante o desde el menú de pausa."
+            else "OFF: la música se pausa al entrar al juego y vuelve al salir.",
+            color = LocalPalette.current.dim, fontSize = 12.sp,
+        )
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             OutlinedButton(onClick = actions.pickMusicFolder) { Text("Elegir carpeta (playlist)") }
             OutlinedButton(onClick = actions.pickMusic) { Text("Un solo archivo") }
@@ -285,16 +309,82 @@ private fun LibrarySection(vm: LibraryViewModel, actions: LibraryActions) {
     }
 }
 
+
+// ---------- v0.3: escala, portadas, datos ----------
+
+private val ScaleChips = listOf(0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.25f)
+
+@Composable
+private fun ScaleSection() {
+    val p = LocalPalette.current
+    Section("Escala de la interfaz") {
+        Text("Tamaño ${"%.2f".format(Settings.uiScale.floatValue)}x (por defecto 0.85x)", color = p.text, fontSize = 13.sp)
+        Slider(value = Settings.uiScale.floatValue, onValueChange = { Settings.setUiScale((it * 100).roundToInt() / 100f) }, valueRange = 0.7f..1.25f)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            ScaleChips.forEach { v ->
+                FilterChip(
+                    selected = kotlin.math.abs(Settings.uiScale.floatValue - v) < 0.005f,
+                    onClick = { Settings.setUiScale(v) },
+                    label = { Text("${v}x", maxLines = 1) },
+                )
+            }
+            OutlinedButton(onClick = { Settings.setUiScale(0.85f) }) { Text("Por defecto") }
+        }
+        Text("Afecta tarjetas, títulos, barras, botones y texto de la biblioteca y Ajustes. Los controles dentro del juego no cambian.", color = p.dim, fontSize = 12.sp)
+    }
+}
+
+@Composable
+private fun CoversSection(vm: LibraryViewModel) {
+    val p = LocalPalette.current
+    val status = vm.coverStatus.collectAsState().value ?: ""
+    Section("Portadas") {
+        ToggleRow("Buscar portadas automáticamente al agregar juegos", Settings.autoCovers.value) { Settings.setAutoCovers(it) }
+        OutlinedButton(onClick = { vm.fetchCovers(true) }) { Text("Buscar portadas faltantes") }
+        if (status.isNotBlank()) Text(status, color = p.accent, fontSize = 12.sp)
+        OutlinedTextField(
+            value = Settings.sgdbKey.value,
+            onValueChange = { Settings.setSgdbKey(it.trim()) },
+            label = { Text("Clave SteamGridDB (opcional)") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Text("Fuentes: Libretro, SteamGridDB (si hay clave) y Wikipedia. Se guardan en GBALibrary/Covers; si no hay, queda la letra. Mantén pulsado un juego para cambiar su portada.", color = p.dim, fontSize = 12.sp)
+    }
+}
+
+@Composable
+private fun DataSection(actions: LibraryActions) {
+    val p = LocalPalette.current
+    val ctx = LocalContext.current
+    var withRoms by remember { mutableStateOf(false) }
+    val perm = DataDir.hasStoragePermission(ctx)
+    Section("Datos (carpeta persistente)") {
+        Text(DataDir.root(ctx).path, color = p.text, fontSize = 12.sp)
+        Text(
+            if (perm) "Permiso de almacenamiento: concedido ✓ (se conserva al reinstalar)"
+            else "Sin permiso de almacenamiento: se usa una carpeta que Android borra al desinstalar.",
+            color = if (perm) p.dim else p.accent, fontSize = 12.sp,
+        )
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            if (!perm) OutlinedButton(onClick = actions.requestStorage) { Text("Conceder permiso") }
+            OutlinedButton(onClick = actions.openDataFolder) { Text("Abrir carpeta de datos") }
+            OutlinedButton(onClick = { actions.exportBackup(withRoms) }) { Text("Exportar copia de seguridad") }
+            OutlinedButton(onClick = actions.importBackup) { Text("Importar copia") }
+        }
+        ToggleRow("Incluir ROMs en la copia", withRoms) { withRoms = it }
+        Text("Games, Saves, States, Covers, config.json y library.json viven ahí y nunca se borran.", color = p.dim, fontSize = 12.sp)
+    }
+}
+
 // ---------- Piezas ----------
 
 @Composable
-private fun Section(title: String, content: @Composable () -> Unit) {
+internal fun Section(title: String, content: @Composable () -> Unit) {
     val p = LocalPalette.current
     Column(
         Modifier.fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
-            .background(p.panel.copy(alpha = 0.94f))
-            .border(1.dp, p.card, RoundedCornerShape(10.dp))
+            .cardPanel(p.panel, RoundedCornerShape(10.dp))
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
@@ -304,9 +394,53 @@ private fun Section(title: String, content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun ToggleRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+internal fun ToggleRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(label, color = LocalPalette.current.text, modifier = Modifier.weight(1f))
         Switch(checked = checked, onCheckedChange = onChange)
+    }
+}
+
+
+// ---------- v0.3.3: animaciones, interfaz, optimizacion ----------
+
+@Composable
+private fun AnimationsSection() {
+    val p = LocalPalette.current
+    Section("Animaciones") {
+        ToggleRow("Animación al entrar al juego", Settings.entryAnim.value) { Settings.setEntryAnim(it) }
+        Text("Fade + zoom del logo y el nombre del juego (~0,7 s). El juego carga por detrás, no se retrasa.", color = p.dim, fontSize = 12.sp)
+    }
+}
+
+@Composable
+private fun InterfaceSection() {
+    val p = LocalPalette.current
+    Section("Interfaz") {
+        ToggleRow("Mostrar batería e internet", Settings.showStatus.value) { Settings.setShowStatus(it) }
+        Text("Indicadores pequeños en la esquina del menú principal y de la pantalla de pausa.", color = p.dim, fontSize = 12.sp)
+        Text("Márgenes de la interfaz: ${Settings.uiMargin.intValue} dp", color = p.text, fontSize = 13.sp)
+        Slider(
+            value = Settings.uiMargin.intValue.toFloat(),
+            onValueChange = { Settings.setUiMargin(it.roundToInt()) },
+            valueRange = 0f..48f, steps = 11,
+        )
+        Text("Separa de los bordes (notch, esquinas redondeadas) el menú y los botones táctiles del juego.", color = p.dim, fontSize = 12.sp)
+    }
+}
+
+@Composable
+private fun PerfSection() {
+    val p = LocalPalette.current
+    Section("Optimización / Rendimiento") {
+        PerfControls()
+        Text("Se aplican al instante (también dentro del juego, en el menú de pausa).", color = p.dim, fontSize = 12.sp)
+    }
+}
+
+@Composable
+private fun PipSection(actions: LibraryActions, onViewer: () -> Unit) {
+    Section("Video en ventana (PiP)") {
+        PipControls(pickVideo = actions.pickPipVideo, openStreamViewer = onViewer)
     }
 }

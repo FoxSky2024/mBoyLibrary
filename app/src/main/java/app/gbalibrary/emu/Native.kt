@@ -8,8 +8,11 @@ object Native {
         System.loadLibrary("gbalib")
     }
 
-    /** [saveType]: 0 auto, 1 SRAM, 2 FLASH 64K, 3 FLASH 128K, 4 EEPROM. */
-    external fun load(rom: ByteArray, savePath: String, saveType: Int): Boolean
+    /**
+     * [saveType]: 0 auto, 1 SRAM, 2 FLASH 64K, 3 FLASH 128K, 4 EEPROM 8K, 5 EEPROM 512B.
+     * [rtc]: forzar el reloj de tiempo real (juegos tipo Pokemon Rubi/Zafiro/Esmeralda y sus hacks).
+     */
+    external fun load(rom: ByteArray, savePath: String, saveType: Int, rtc: Boolean): Boolean
     external fun unload()
     external fun reset()
     external fun setKeys(keys: Int)

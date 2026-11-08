@@ -20,8 +20,24 @@ data class Game(
     val note: String = "",
     val hasCover: Boolean = false,
     val hasBackground: Boolean = false,
-    /** Nombre de la entrada dentro del .zip/.7z (vacio si la ROM es un .gba suelto). */
+    /** Nombre de la entrada dentro del .zip/.7z (vacio si la ROM es un .gba suelto o ya esta copiada). */
     val entry: String = "",
+    /** Nombre del archivo copiado en GBALibrary/Games (vacio = se lee desde [uri]). */
+    val stored: String = "",
+    /** Cuantas veces se abrio el juego. */
+    val launches: Int = 0,
+    /** Ultima vez que se intento buscar portada en internet (0 = nunca). */
+    val coverTried: Long = 0L,
+    /** Tipo de guardado elegido a mano: -1 = automatico, 0..5 = forzado (ver SaveType). */
+    val saveOverride: Int = -1,
+    /** RTC: 0 = automatico, 1 = forzar activado, 2 = desactivado. */
+    val rtcMode: Int = 0,
+    /** Lo que se detecto/uso la ultima vez que se abrio: tipo de guardado (-1 = aun no abierto). */
+    val detSave: Int = -1,
+    /** RTC usado la ultima vez: -1 desconocido, 0 no, 1 si. */
+    val detRtc: Int = -1,
+    /** Progreso del juego en % puesto por el usuario (-1 = sin definir). */
+    val progress: Int = -1,
 ) {
     fun toJson(): JSONObject = JSONObject().apply {
         put("id", id)
@@ -41,6 +57,14 @@ data class Game(
         put("hasCover", hasCover)
         put("hasBackground", hasBackground)
         put("entry", entry)
+        put("stored", stored)
+        put("launches", launches)
+        put("coverTried", coverTried)
+        put("saveOverride", saveOverride)
+        put("rtcMode", rtcMode)
+        put("detSave", detSave)
+        put("detRtc", detRtc)
+        put("progress", progress)
     }
 
     companion object {
@@ -66,6 +90,14 @@ data class Game(
                 hasCover = o.optBoolean("hasCover"),
                 hasBackground = o.optBoolean("hasBackground"),
                 entry = o.optString("entry"),
+                stored = o.optString("stored"),
+                launches = o.optInt("launches", 0),
+                coverTried = o.optLong("coverTried", 0L),
+                saveOverride = o.optInt("saveOverride", -1),
+                rtcMode = o.optInt("rtcMode", 0),
+                detSave = o.optInt("detSave", -1),
+                detRtc = o.optInt("detRtc", -1),
+                progress = o.optInt("progress", -1),
             )
         }
     }

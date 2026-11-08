@@ -54,18 +54,23 @@ class MenuActions(
     val persistLayout: () -> Unit,
     val setForceTouch: (Boolean) -> Unit,
     val setSpeed: (Int) -> Unit,
+    val toggleMusic: () -> Unit = {},
+    val startStream: () -> Unit = {},
+    val stopStream: () -> Unit = {},
+    val pickPipVideo: () -> Unit = {},
 )
 
-private val TABS = listOf("VIDEO", "AUDIO", "CONTROLES", "JUEGO", "SALIR")
+private val TABS = listOf("VIDEO", "AUDIO", "CONTROLES", "JUEGO", "EN VIVO", "SALIR")
 
 @Composable
-fun GameMenu(title: String, speed: Int, layout: ControlLayout, padConnected: Boolean, forceTouch: Boolean, actions: MenuActions) {
+fun GameMenu(title: String, speed: Int, layout: ControlLayout, padConnected: Boolean, forceTouch: Boolean, host: app.gbalibrary.stream.StreamHost?, actions: MenuActions) {
     val p = LocalPalette.current
     var tab by remember { mutableIntStateOf(0) }
     Box(
         Modifier.fillMaxSize().background(Color(0xAA000000)).clickable(onClick = actions.close),
         contentAlignment = Alignment.Center,
     ) {
+        StatusIndicators(Modifier.align(Alignment.TopEnd).padding(top = 6.dp, end = 12.dp), tint = Color.White)
         Row(
             Modifier
                 .fillMaxWidth(0.82f)
@@ -108,6 +113,7 @@ fun GameMenu(title: String, speed: Int, layout: ControlLayout, padConnected: Boo
                     1 -> AudioTab()
                     2 -> ControlsTab(layout, padConnected, forceTouch, actions)
                     3 -> GameTab(speed, actions)
+                    4 -> LiveTab(host, actions)
                     else -> ExitTab(actions)
                 }
             }
@@ -227,11 +233,34 @@ private fun GameTab(speed: Int, a: MenuActions) {
         }
     }
     Label("Velocidad")
-    Chips(listOf("x1", "x2", "x3"), speed - 1) { a.setSpeed(it + 1) }
+    Chips(listOf("x1", "Fast-Forward x${Settings.ffSpeed.intValue}"), if (speed > 1) 1 else 0) {
+        a.setSpeed(if (it == 0) 1 else Settings.ffSpeed.intValue)
+    }
+    if (Settings.musicInGame.value && Music.hasSource()) {
+        Label("Música")
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(onClick = a.toggleMusic) { Text(if (Music.playing.value) "Pausar música" else "Reanudar música") }
+            OutlinedButton(onClick = { Music.next() }) { Text("Siguiente") }
+        }
+        SliderRow("Volumen música", Settings.musicVolume.floatValue, 0f..1f, "${(Settings.musicVolume.floatValue * 100).toInt()}%") {
+            Settings.setMusicVolume(it)
+            Music.applyVolume()
+        }
+        Text("El volumen del juego se ajusta en la pestaña de sonido.", color = LocalPalette.current.dim, fontSize = 11.sp)
+    }
+    Label("Rendimiento")
+    PerfControls()
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         OutlinedButton(onClick = a.reset) { Text("Reiniciar juego") }
         OutlinedButton(onClick = a.screenshot) { Text("Captura de pantalla") }
     }
+}
+
+@Composable
+private fun LiveTab(host: app.gbalibrary.stream.StreamHost?, a: MenuActions) {
+    StreamHostPanel(host, a.startStream, a.stopStream)
+    Label("Video en ventana (PiP)")
+    PipControls(pickVideo = a.pickPipVideo, openStreamViewer = null)
 }
 
 @Composable

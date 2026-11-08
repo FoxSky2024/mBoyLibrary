@@ -20,6 +20,12 @@ class Engine(
     private val savePath: String,
     private val autoStatePath: String,
     private val onError: (String) -> Unit,
+    /** -1 = detectar por la ROM; 0..5 = forzar ese tipo de guardado (ver SaveType). */
+    private val saveOverride: Int = -1,
+    /** 0 = detectar por la ROM, 1 = forzar RTC, 2 = sin RTC. */
+    private val rtcMode: Int = 0,
+    /** Se llama una vez con lo que se uso al cargar: (tipo de guardado, RTC). */
+    private val onDetected: (Int, Boolean) -> Unit = { _, _ -> },
 ) {
     companion object {
         const val SAMPLE_RATE = 44100
@@ -55,6 +61,19 @@ class Engine(
 
     @Volatile
     var muted = false
+
+    // Rendimiento (se pueden cambiar en vivo desde la UI)
+    /** 30 = dibuja un cuadro de cada dos, 60 = normal, 0 = sin limite de velocidad. */
+    @Volatile
+    var fpsLimit = 60
+
+    /** Salta el dibujo de cuadros cuando el telefono no alcanza (solo dibujo, la emulacion sigue). */
+    @Volatile
+    var frameSkip = false
+
+    /** ON: el ritmo lo marca el audio (como siempre). OFF: temporizador, el audio no bloquea. */
+    @Volatile
+    var audioSync = true
 
     /** Cuadros por segundo reales de emulacion (se actualiza cada segundo). */
     @Volatile
@@ -162,11 +181,22 @@ class Engine(
                 onError("No se pudo leer la ROM")
                 return
             }
-            saveType = SaveType.detect(rom)
-            Log.i("Engine", "Tipo de guardado detectado: ${SaveType.label(saveType)}")
-            if (!Native.load(rom, savePath, saveType)) {
+            val found = SaveType.analyze(rom, File(savePath).length())
+            saveType = if (saveOverride >= 0) saveOverride else found.type
+            val rtc = when (rtcMode) {
+                1 -> true
+                2 -> false
+                else -> found.rtc
+            }
+            Log.i("Engine", "Guardado: ${SaveType.label(saveType)} (override=$saveOverride), RTC=$rtc (modo $rtcMode)")
+            if (!Native.load(rom, savePath, saveType, rtc)) {
                 onError("mGBA no pudo cargar esta ROM")
                 return
+            }
+            try {
+                onDetected(saveType, rtc)
+            } catch (t: Throwable) {
+                Log.w("Engine", "onDetected", t)
             }
             if (File(autoStatePath).exists()) {
                 Native.loadState(autoStatePath)
@@ -179,6 +209,8 @@ class Engine(
             val audio = ShortArray(4096)
             var next = System.nanoTime()
             var frameCounter = 0L
+            var lagging = false
+            var skipStreak = 0
             var fpsCount = 0
             var fpsStamp = System.nanoTime()
 
@@ -213,9 +245,19 @@ class Engine(
                     if (on && keys and GbaKey.TURBO_B != 0) keys = keys or GbaKey.B
                 }
                 Native.setKeys(keys and GbaKey.GBA_MASK)
-                val render = sp == 1 || frameCounter % sp == 0L
+                val limit = fpsLimit
+                var render = sp == 1 || frameCounter % sp == 0L
+                if (render && limit == 30 && frameCounter % 2L == 1L) render = false
+                if (render && frameSkip && lagging && skipStreak < 2) {
+                    render = false
+                    skipStreak++
+                } else {
+                    skipStreak = 0
+                }
+                val frameStart = System.nanoTime()
                 val frames = Native.step(audio, render)
 
+                lagging = System.nanoTime() - frameStart > FRAME_NANOS + FRAME_NANOS / 10
                 fpsCount++
                 val nowNs = System.nanoTime()
                 if (nowNs - fpsStamp >= 1_000_000_000L) {
@@ -224,7 +266,8 @@ class Engine(
                     fpsStamp = nowNs
                 }
 
-                if (sp == 1) {
+                val unlimited = limit == 0 && sp == 1
+                if (sp == 1 && audioSync && !unlimited) {
                     if (frames > 0) {
                         val gain = if (muted) 0 else volume.coerceIn(0, 100)
                         if (gain < 100) {
@@ -235,6 +278,21 @@ class Engine(
                         t.write(audio, 0, frames * 2, AudioTrack.WRITE_BLOCKING)
                     }
                     next = System.nanoTime()
+                } else if (sp == 1) {
+                    // Sin sincronizacion de audio (o sin limite): el audio no bloquea.
+                    if (frames > 0) {
+                        val gain = if (muted) 0 else volume.coerceIn(0, 100)
+                        for (i in 0 until frames * 2) audio[i] = ((audio[i] * gain) / 100).toShort()
+                        t.write(audio, 0, frames * 2, AudioTrack.WRITE_NON_BLOCKING)
+                    }
+                    if (unlimited) {
+                        next = System.nanoTime()
+                    } else {
+                        next += FRAME_NANOS
+                        val wait = next - System.nanoTime()
+                        if (wait > 0) Thread.sleep(wait / 1_000_000, (wait % 1_000_000).toInt())
+                        else if (wait < -100_000_000L) next = System.nanoTime()
+                    }
                 } else {
                     next += FRAME_NANOS / sp
                     val wait = next - System.nanoTime()
