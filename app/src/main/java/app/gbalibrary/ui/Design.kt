@@ -28,6 +28,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -222,7 +223,7 @@ fun SwitchRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
 
 /** Slider con etiqueta y valor. */
 @Composable
-fun SliderRow(label: String, value: Float, range: ClosedFloatingPointRange<Float>, shown: String, onChange: (Float) -> Unit, onFinished: (() -> Unit)? = null) {
+fun SliderRow(label: String, value: Float, range: ClosedFloatingPointRange<Float>, shown: String, onFinished: (() -> Unit)? = null, onChange: (Float) -> Unit) {
     val p = LocalPalette.current
     Column {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

@@ -246,7 +246,7 @@ private fun PauseControls(layout: ControlLayout, padConnected: Boolean, forceTou
         a.persistLayout()
     }
     if (layout.moveType == MoveType.STICK) {
-        SliderRow("Zona muerta", layout.deadzone, 0.05f..0.7f, "${(layout.deadzone * 100).toInt()}%", { layout.deadzone = it }, onFinished = a.persistLayout)
+        SliderRow("Zona muerta", layout.deadzone, 0.05f..0.7f, "${(layout.deadzone * 100).toInt()}%", onFinished = a.persistLayout) { layout.deadzone = it }
     }
     ButtonFlow {
         AppButton("Editar controles", a.editControls, kind = BtnKind.PRIMARY)

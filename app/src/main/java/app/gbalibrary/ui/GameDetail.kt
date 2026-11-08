@@ -131,7 +131,6 @@ fun GameDetail(
                     Modifier.fillMaxWidth().background(p.panel).padding(horizontal = Ds.Pad, vertical = Ds.GapL),
                     horizontalArrangement = Arrangement.spacedBy(Ds.GapL),
                     verticalArrangement = Arrangement.spacedBy(Ds.GapL),
-                    itemVerticalAlignment = Alignment.CenterVertically,
                 ) {
                     AppButton("JUGAR", onPlay, Modifier.widthIn(min = 180.dp), kind = BtnKind.PRIMARY, big = true, icon = "▶")
                     AppButton("Continuar", { onPlaySlot("auto") }, Modifier.widthIn(min = 130.dp), enabled = hasAuto)
