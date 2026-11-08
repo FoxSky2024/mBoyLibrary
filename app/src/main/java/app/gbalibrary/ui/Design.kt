@@ -211,7 +211,7 @@ fun SwitchRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
 
 /** Slider con etiqueta y valor. */
 @Composable
-fun SliderRow(label: String, value: Float, range: ClosedFloatingPointRange<Float>, shown: String, onFinished: (() -> Unit)? = null, onChange: (Float) -> Unit) {
+fun SliderRow(label: String, value: Float, range: ClosedFloatingPointRange<Float>, shown: String, onChange: (Float) -> Unit, onFinished: (() -> Unit)? = null) {
     val p = LocalPalette.current
     Column {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

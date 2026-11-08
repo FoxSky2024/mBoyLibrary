@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.1-beta
+- **Menú de pausa y ajustes dentro del juego, estilo Hollow Knight**: fondo oscuro, lista centrada de texto serif sin botones ni tarjetas, rombos ornamentales y punteros a los lados de la opción seleccionada (con brillo), valores con flechas ◂ ▸ y deslizadores de muescas. Pantallas: Pausa (Continuar, Guardar, Cargar, Reiniciar, Ajustes, Salir), Guardar/Cargar (ranuras), Ajustes > Video, Audio, Controles, Juego y Ventana de video. Se mantienen todas las opciones existentes (calidad de imagen, brillo, escala, FPS, sonido y volumen, botones táctiles, tamaño/opacidad, cruceta/joystick, zona muerta, editor de controles y layouts, velocidad, música dentro del juego, rendimiento, captura, PiP).
+- Se maneja con toque, mando (D-Pad / stick = mover y cambiar valores, A = aceptar, B = atrás, Start = continuar) o teclado (flechas, Enter, Esc). El botón Atrás de Android vuelve un nivel y, en la pausa, continúa el juego.
+- **Ajustes de la biblioteca**: vuelve el diseño clásico (barra "← Volver" y dos columnas con un solo scroll), conservando las opciones nuevas: Imagen, Sonido del juego, Rendimiento, Ventana PiP, Interfaz, Animaciones, Escala, etc.
+
+
 ## 0.4.0-beta
 - Eliminado Transmitir/Streaming (StreamHost, visor, QR, permisos, dependencia ZXing) y el reproductor de YouTube. El video en ventana ahora solo reproduce videos de la galeria.
 - Sistema de diseno unico (ui/Design.kt): botones, chips, tarjetas, interruptores y deslizadores comunes; temas con contraste verificado.

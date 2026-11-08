@@ -59,80 +59,51 @@ private val SolidColors = listOf(
     0xFF1B2838, 0xFF000000, 0xFF263238, 0xFF0D2B3E, 0xFF1B3A1F, 0xFF3A1F1F, 0xFF2E1F47, 0xFF3E2C1C,
 ).map { it.toInt() }
 
-private val SETTINGS_TABS = listOf(
-    "Perfil" to "👤", "Controles" to "🎮", "Video" to "🖥", "Audio" to "🔊", "Guardado" to "💾", "Tema" to "🎨",
-)
-
 /**
- * Ajustes: menu lateral con secciones (Perfil, Controles, Video, Audio, Guardado, Tema) y una sola
- * columna de tarjetas solidas a la derecha. Sin dos columnas desiguales (no quedan huecos al hacer
- * scroll) y sin fondo visible por detras.
+ * Ajustes (diseno clasico): barra superior "← Volver" y DOS columnas de secciones con un solo
+ * scroll, como antes de la version con menu lateral. Conserva todas las opciones nuevas
+ * (imagen, sonido del juego, rendimiento, ventana PiP, interfaz, animaciones...).
  */
 @Composable
 fun SettingsScreen(vm: LibraryViewModel, actions: LibraryActions, onBack: () -> Unit) {
     val p = LocalPalette.current
     var editingPad by remember { mutableStateOf(false) }
-    var tab by rememberSaveable { mutableIntStateOf(0) }
     val globalLayout = remember { ControlLayout().also { it.load("global") } }
 
     BackHandler(enabled = editingPad) { globalLayout.save("global"); editingPad = false }
 
     Box(Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxSize().background(p.bg)) {
-            ScreenHeader(title = "Ajustes", onBack = onBack)
-            BoxWithConstraints(Modifier.fillMaxSize()) {
-                val wide = maxWidth >= 560.dp
-                val content: @Composable () -> Unit = {
-                    Column(
-                        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Ds.Pad),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Column(Modifier.widthIn(max = 720.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Ds.GapL)) {
-                            when (tab) {
-                                0 -> ProfileSection(actions)
-                                1 -> ControlsSection(globalLayout) { editingPad = true }
-                                2 -> {
-                                    Section("Imagen") { VideoSettings() }
-                                    PerfSection()
-                                    PipSection(actions)
-                                }
-                                3 -> {
-                                    Section("Sonido del juego") { AudioSettings() }
-                                    MusicSection(actions)
-                                }
-                                4 -> {
-                                    LibrarySection(vm, actions)
-                                    CoversSection(vm)
-                                    DataSection(actions)
-                                }
-                                else -> {
-                                    AppearanceSection(actions)
-                                    ScaleSection()
-                                    InterfaceSection()
-                                    AnimationsSection()
-                                }
-                            }
-                            Box(Modifier.height(32.dp))
-                        }
-                    }
+        Column(Modifier.fillMaxSize()) {
+            Row(
+                Modifier.fillMaxWidth().height(48.dp).opacityPanel(p.panel).padding(horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text("← Volver", color = p.accent, fontWeight = FontWeight.Bold, maxLines = 1, modifier = Modifier.clickable(onClick = onBack).padding(8.dp))
+                Text("Ajustes y personalización", color = p.text, fontWeight = FontWeight.Bold, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            Row(
+                Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+                    .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 48.dp),
+                horizontalArrangement = Arrangement.spacedBy(20.dp),
+            ) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    ProfileSection(actions)
+                    ScaleSection()
+                    AppearanceSection(actions)
+                    InterfaceSection()
+                    AnimationsSection()
+                    Section("Imagen") { VideoSettings() }
+                    PipSection(actions)
                 }
-                if (wide) {
-                    Row(Modifier.fillMaxSize()) {
-                        Column(Modifier.width(176.dp).fillMaxHeight().background(p.panel).verticalScroll(rememberScrollState()).padding(vertical = Ds.Gap)) {
-                            SETTINGS_TABS.forEachIndexed { i, (name, icon) -> RailItem(name, icon, i == tab) { tab = i } }
-                        }
-                        Box(Modifier.weight(1f).fillMaxHeight()) { content() }
-                    }
-                } else {
-                    Column(Modifier.fillMaxSize()) {
-                        Row(
-                            Modifier.fillMaxWidth().background(p.panel).horizontalScroll(rememberScrollState()).padding(horizontal = Ds.GapL, vertical = Ds.Gap),
-                            horizontalArrangement = Arrangement.spacedBy(Ds.Gap),
-                        ) {
-                            SETTINGS_TABS.forEachIndexed { i, (name, _) -> AppChip(name, i == tab, { tab = i }) }
-                        }
-                        Box(Modifier.weight(1f).fillMaxWidth()) { content() }
-                    }
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    MusicSection(actions)
+                    Section("Sonido del juego") { AudioSettings() }
+                    ControlsSection(globalLayout) { editingPad = true }
+                    PerfSection()
+                    LibrarySection(vm, actions)
+                    CoversSection(vm)
+                    DataSection(actions)
                 }
             }
         }

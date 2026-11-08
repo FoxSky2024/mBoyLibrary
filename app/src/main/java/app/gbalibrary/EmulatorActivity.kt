@@ -72,6 +72,8 @@ import app.gbalibrary.data.DataDir
 import app.gbalibrary.data.RomImport
 import app.gbalibrary.input.PadInput
 import app.gbalibrary.ui.EntrySplash
+import app.gbalibrary.ui.MenuNav
+import app.gbalibrary.ui.NavKey
 import app.gbalibrary.ui.Pip
 import app.gbalibrary.ui.PipOverlay
 import app.gbalibrary.ui.Music
@@ -187,7 +189,8 @@ class EmulatorActivity : ComponentActivity() {
         onBackPressedDispatcher.addCallback(this) {
             when {
                 editing.value -> finishEditing()
-                else -> setMenu(!menuOpen.value)
+                menuOpen.value -> MenuNav.send(NavKey.BACK) // el menu decide: volver un nivel o continuar
+                else -> setMenu(true)
             }
         }
 
@@ -384,7 +387,26 @@ class EmulatorActivity : ComponentActivity() {
     }
 
     /** Boton de mando segun el perfil Mando 1 / Mando 2 (acciones, turbo, menu, guardado rapido). */
+    private var lastMenuNavAt = 0L
+
+    /** Con el menu abierto, D-Pad / A / B / Start / Enter / flechas / Esc manejan el menu y no el juego. */
+    private fun menuNav(code: Int, down: Boolean, repeat: Int): Boolean {
+        if (!menuOpen.value || editing.value) return false
+        val k = MenuNav.fromKey(code)
+        if (k == NavKey.NONE) return false
+        if (down) {
+            val now = SystemClock.uptimeMillis()
+            val dir = MenuNav.isDirection(k)
+            if (repeat == 0 || (dir && now - lastMenuNavAt > 120)) {
+                lastMenuNavAt = now
+                MenuNav.send(k)
+            }
+        }
+        return true
+    }
+
     private fun applyPadKey(deviceId: Int, code: Int, down: Boolean, first: Boolean) {
+        if (menuNav(code, down, if (first) 0 else 1)) return
         val action = PadInput.actionFor(deviceId, code)
         if (action == 0) return
         if (action and GbaKey.MENU != 0) {
@@ -400,6 +422,7 @@ class EmulatorActivity : ComponentActivity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
+        if (!PadInput.isPadKey(event) && menuNav(keyCode, true, event.repeatCount)) return true
         if (PadInput.isPadKey(event)) {
             applyPadKey(event.deviceId, keyCode, true, event.repeatCount == 0)
             return true
@@ -413,6 +436,7 @@ class EmulatorActivity : ComponentActivity() {
     }
 
     override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
+        if (!PadInput.isPadKey(event) && menuOpen.value && MenuNav.fromKey(keyCode) != NavKey.NONE) return true
         if (PadInput.isPadKey(event)) {
             applyPadKey(event.deviceId, keyCode, false, false)
             return true
@@ -441,6 +465,12 @@ class EmulatorActivity : ComponentActivity() {
             if (x == 0f && y == 0f) {
                 x = event.getAxisValue(MotionEvent.AXIS_X)
                 y = event.getAxisValue(MotionEvent.AXIS_Y)
+            }
+            if (menuOpen.value && !editing.value) {
+                // Menu abierto: el stick / hat mueve la seleccion del menu en vez del juego.
+                val k = MenuNav.stick(x, y, SystemClock.uptimeMillis())
+                if (k != NavKey.NONE) MenuNav.send(k)
+                return true
             }
             var dirs = 0
             if (x > 0.5f) dirs = dirs or GbaKey.RIGHT
