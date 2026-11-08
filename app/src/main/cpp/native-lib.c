@@ -54,7 +54,7 @@ static void unloadCore(void) {
 
 static void publishFrame(void) {
     unsigned w = 0, h = 0;
-    gCore->baseVideoSize(gCore, &w, &h);
+    w = 240; h = 160; // GBA fixed, baseVideoSize removed in mGBA 0.10.5
     if (w == 0 || h == 0 || w > MAX_W || h > MAX_H) return;
     pthread_mutex_lock(&gFrameLock);
     gFrameW = w;
@@ -160,7 +160,7 @@ Java_app_gbalibrary_emu_Native_load(JNIEnv* env, jobject thiz, jbyteArray rom, j
 
     // Tamano real de la imagen de este nucleo (GBA 240x160, GB/GBC 160x144).
     unsigned w = 0, h = 0;
-    gCore->baseVideoSize(gCore, &w, &h);
+    w = 240; h = 160; // GBA fixed, baseVideoSize removed in mGBA 0.10.5
     pthread_mutex_lock(&gFrameLock);
     gFrameW = w ? w : 240;
     gFrameH = h ? h : 160;
