@@ -17,10 +17,18 @@ jobs:
         run: |
           echo "y" | sdkmanager "ndk;27.2.12479018" || echo "y" | sdkmanager "ndk;27.2.12479018"
           echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/27.2.12479018" >> $GITHUB_ENV
-      - name: Download melonDS libretro core (best effort)
+      - name: Descargar nucleo de Nintendo DS (melonDS, libretro)
+        continue-on-error: true
         run: |
-          mkdir -p app/src/main/jniLibs/arm64-v8a app/src/main/jniLibs/armeabi-v7a
-          curl -L --fail -o /tmp/melonds.zip "https://buildbot.libretro.com/nightly/android/arm64-v8a/latest/melonDS_libretro_android.so.zip" && unzip -o /tmp/melonds.zip -d /tmp/melonds && cp /tmp/melonds/*.so app/src/main/jniLibs/arm64-v8a/libmelonds.so && echo "melonDS OK" || echo "melonDS NOT FOUND, building without DS"
+          for abi in arm64-v8a armeabi-v7a x86_64; do
+            mkdir -p app/src/main/jniLibs/$abi
+            if curl -fsSL "https://buildbot.libretro.com/nightly/android/$abi/latest/melonds_libretro_android.so.zip" -o /tmp/melonds-$abi.zip && unzip -o -j /tmp/melonds-$abi.zip -d /tmp/melonds-$abi; then
+              mv /tmp/melonds-$abi/melonds_libretro_android.so app/src/main/jniLibs/$abi/libmelonds.so
+              echo "Nucleo DS listo para $abi"
+            else
+              echo "AVISO: no se pudo descargar el nucleo DS para $abi (la app compila igual, sin DS)"
+            fi
+          done
           ls -lh app/src/main/jniLibs/arm64-v8a/ || true
       - name: Build release APK
         run: |
