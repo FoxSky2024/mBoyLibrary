@@ -297,7 +297,7 @@ fun Ic(
     androidx.compose.material3.Icon(
         imageVector = icon,
         contentDescription = contentDescription,
-        modifier = modifier.then(androidx.compose.foundation.layout.size(size)),
+        modifier = modifier.then(androidx.compose.ui.Modifier.size(size)),
         tint = tint
     )
 }
