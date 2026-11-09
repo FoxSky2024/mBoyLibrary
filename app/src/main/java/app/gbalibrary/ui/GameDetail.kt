@@ -2,6 +2,10 @@
 
 package app.gbalibrary.ui
 
+import androidx.compose.material.icons.filled.StarBorder
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.Icons
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -114,7 +118,7 @@ fun GameDetail(
                             Text(formatSize(game.sizeBytes), color = p.dim, fontSize = Ds.LabelSp.sp, maxLines = 1)
                             Text("Última vez: ${formatAgo(game.lastPlayed)}", color = p.dim, fontSize = Ds.LabelSp.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
-                        AppButton("JUGAR", onPlay, Modifier.fillMaxWidth(), kind = BtnKind.PRIMARY, big = true, icon = "▶")
+                        AppButton("JUGAR", onPlay, Modifier.fillMaxWidth(), kind = BtnKind.PRIMARY, big = true, icon = Icons.Filled.PlayArrow)
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Ds.Gap)) {
                             AppButton("Continuar", { onPlaySlot("auto") }, Modifier.weight(1f), enabled = hasAuto)
                             AppButton("Guardados", { panel = if (panel == DetailPanel.SAVES) DetailPanel.INFO else DetailPanel.SAVES }, Modifier.weight(1f))
@@ -240,7 +244,7 @@ private fun SettingsPanel(
 ) {
     SectionCard("Juego") {
         ButtonFlow {
-            AppButton(if (game.favorite) "★ Favorito" else "☆ Favorito", { vm.toggleFavorite(game.id) })
+            AppButton("Favorito", { vm.toggleFavorite(game.id) }, icon = if (game.favorite) Icons.Filled.Star else Icons.Filled.StarBorder)
             AppButton("Renombrar", onRename)
         }
     }

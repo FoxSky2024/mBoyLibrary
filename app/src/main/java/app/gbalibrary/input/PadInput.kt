@@ -32,10 +32,10 @@ object PadInput {
         PadSlot(KeyEvent.KEYCODE_BUTTON_START, "Start", 0.59f, 0.36f),
         PadSlot(KeyEvent.KEYCODE_BUTTON_THUMBL, "L3", 0.24f, 0.42f),
         PadSlot(KeyEvent.KEYCODE_BUTTON_THUMBR, "R3", 0.60f, 0.72f),
-        PadSlot(KeyEvent.KEYCODE_DPAD_UP, "↑", 0.38f, 0.60f),
-        PadSlot(KeyEvent.KEYCODE_DPAD_DOWN, "↓", 0.38f, 0.82f),
-        PadSlot(KeyEvent.KEYCODE_DPAD_LEFT, "←", 0.30f, 0.71f),
-        PadSlot(KeyEvent.KEYCODE_DPAD_RIGHT, "→", 0.46f, 0.71f),
+        PadSlot(KeyEvent.KEYCODE_DPAD_UP, "Arr", 0.38f, 0.60f),
+        PadSlot(KeyEvent.KEYCODE_DPAD_DOWN, "Abj", 0.38f, 0.82f),
+        PadSlot(KeyEvent.KEYCODE_DPAD_LEFT, "Izq", 0.30f, 0.71f),
+        PadSlot(KeyEvent.KEYCODE_DPAD_RIGHT, "Der", 0.46f, 0.71f),
         PadSlot(KeyEvent.KEYCODE_BUTTON_Y, "Y", 0.76f, 0.28f),
         PadSlot(KeyEvent.KEYCODE_BUTTON_X, "X", 0.69f, 0.42f),
         PadSlot(KeyEvent.KEYCODE_BUTTON_B, "B", 0.83f, 0.42f),
@@ -70,9 +70,9 @@ object PadInput {
         0 -> "—"
         GbaKey.A -> "A"; GbaKey.B -> "B"; GbaKey.L -> "L"; GbaKey.R -> "R"
         GbaKey.START -> "ST"; GbaKey.SELECT -> "SE"
-        GbaKey.UP -> "↑"; GbaKey.DOWN -> "↓"; GbaKey.LEFT -> "←"; GbaKey.RIGHT -> "→"
+        GbaKey.UP -> "Arr"; GbaKey.DOWN -> "Abj"; GbaKey.LEFT -> "Izq"; GbaKey.RIGHT -> "Der"
         GbaKey.TURBO_A -> "A»"; GbaKey.TURBO_B -> "B»"
-        GbaKey.MENU -> "☰"; GbaKey.QUICK -> "⚡"
+        GbaKey.MENU -> "Menú"; GbaKey.QUICK -> "Rápido"
         else -> "?"
     }
 

@@ -2,6 +2,8 @@
 
 package app.gbalibrary.ui
 
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.Icons
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -244,7 +246,7 @@ private fun MusicSection(actions: LibraryActions) {
         ToggleRow("Activar música", Settings.musicOn.value) { Settings.setMusicOn(it) }
         ToggleRow("Seguir escuchando música dentro del juego", Settings.musicInGame.value) { Settings.setMusicInGame(it) }
         Text(
-            if (Settings.musicInGame.value) "ON: la música sigue al entrar a jugar; pausa con el botón ♪ flotante o desde el menú de pausa."
+            if (Settings.musicInGame.value) "ON: la música sigue al entrar a jugar; pausa con el botón flotante de música o desde el menú de pausa."
             else "OFF: la música se pausa al entrar al juego y vuelve al salir.",
             color = LocalPalette.current.dim, fontSize = 12.sp,
         )
@@ -256,7 +258,7 @@ private fun MusicSection(actions: LibraryActions) {
         Text(
             when {
                 folder.isNotEmpty() -> "Carpeta: " + folderLabel(folder)
-                Settings.musicUri.value.isNotEmpty() -> "Archivo de música elegido ✓"
+                Settings.musicUri.value.isNotEmpty() -> "Archivo de música elegido"
                 else -> "Ninguna carpeta ni archivo elegido"
             },
             color = p.dim, fontSize = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis,
@@ -268,7 +270,7 @@ private fun MusicSection(actions: LibraryActions) {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             AppChip("En orden", !Settings.musicShuffle.value, { Settings.setMusicShuffle(false) })
             AppChip("Aleatorio", Settings.musicShuffle.value, { Settings.setMusicShuffle(true) })
-            AppButton("Siguiente ⏭", { Music.next() })
+            AppButton("Siguiente", { Music.next() }, icon = Icons.Filled.SkipNext)
         }
         ToggleRow("Silenciar música", Settings.musicMuted.value) { Settings.setMusicMuted(it) }
         Text("Volumen de la música", color = p.text, fontSize = 13.sp)
@@ -349,7 +351,7 @@ private fun DataSection(actions: LibraryActions) {
     Section("Datos (carpeta persistente)") {
         Text(DataDir.root(ctx).path, color = p.text, fontSize = 12.sp)
         Text(
-            if (perm) "Permiso de almacenamiento: concedido ✓ (se conserva al reinstalar)"
+            if (perm) "Permiso de almacenamiento: concedido (se conserva al reinstalar)"
             else "Sin permiso de almacenamiento: se usa una carpeta que Android borra al desinstalar.",
             color = if (perm) p.dim else p.accent, fontSize = 12.sp,
         )

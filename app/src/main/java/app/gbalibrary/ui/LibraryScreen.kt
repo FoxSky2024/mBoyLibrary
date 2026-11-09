@@ -2,6 +2,15 @@
 
 package app.gbalibrary.ui
 
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.SportsEsports
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.Icons
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -193,6 +202,7 @@ fun LibraryApp(vm: LibraryViewModel, actions: LibraryActions, onPlay: (Game) -> 
         },
     ) {
         LibraryBackground()
+        IncomingHost()
         // El contenido respeta barra de estado, notch y barra de navegacion (el fondo ocupa todo).
         Box(Modifier.fillMaxSize().safeDrawingPadding().padding(Settings.uiMargin.intValue.dp)) {
             when {
@@ -200,6 +210,7 @@ fun LibraryApp(vm: LibraryViewModel, actions: LibraryActions, onPlay: (Game) -> 
                 showGallery -> GalleryScreen(onBack = { showGallery = false })
                 showProfile -> ProfileScreen(
                     vm = vm,
+                    onPickAvatar = actions.pickAvatar,
                     onBack = { showProfile = false },
                     onOpenGame = { Sfx.click(); showProfile = false; detailId = it.id },
                     onGallery = { showGallery = true },
@@ -422,7 +433,7 @@ private fun TopBar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text("◆", color = p.accent, fontSize = 20.sp)
+        Ic(Icons.Filled.SportsEsports, size = 22.dp, tint = p.accent)
         Text(Settings.appName.value, color = p.text, fontWeight = FontWeight.Black, fontSize = 18.sp, maxLines = 1, softWrap = false, modifier = Modifier.widthIn(max = 150.dp), overflow = TextOverflow.Ellipsis)
 
         Box(
@@ -446,7 +457,10 @@ private fun TopBar(
         }
 
         Box {
-            Text("Orden: ${sort.label} ▾", color = p.text, fontSize = 13.sp, maxLines = 1, softWrap = false, modifier = Modifier.clickable { sortMenu = true }.padding(6.dp))
+            Row(Modifier.clickable { sortMenu = true }.padding(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("Orden: ${sort.label}", color = p.text, fontSize = 13.sp, maxLines = 1, softWrap = false)
+                Ic(Icons.Filled.ArrowDropDown, size = 18.dp)
+            }
             DropdownMenu(expanded = sortMenu, onDismissRequest = { sortMenu = false }) {
                 SortMode.entries.forEach { m ->
                     DropdownMenuItem(text = { Text(m.label) }, onClick = { onSort(m); sortMenu = false })
@@ -465,7 +479,7 @@ private fun TopBar(
 
         StatusIndicators()
 
-        Text("🖼", fontSize = 18.sp, maxLines = 1, modifier = Modifier.clickable { onGallery() }.padding(horizontal = 6.dp, vertical = 4.dp))
+        Ic(Icons.Filled.PhotoLibrary, size = 22.dp, tint = p.dim, modifier = Modifier.clickable { onGallery() }.padding(horizontal = 6.dp, vertical = 4.dp))
         Row(
             Modifier.clip(RoundedCornerShape(24.dp)).clickable(onClick = onProfile).padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -474,7 +488,7 @@ private fun TopBar(
             Text(Settings.profileName.value, color = p.text, fontSize = 13.sp, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 90.dp))
             Avatar(32)
         }
-        Text("⚙", color = p.dim, fontSize = 20.sp, maxLines = 1, modifier = Modifier.clickable(onClick = onSettings).padding(horizontal = 8.dp, vertical = 4.dp))
+        Ic(Icons.Filled.Settings, size = 22.dp, tint = p.dim, modifier = Modifier.clickable(onClick = onSettings).padding(horizontal = 8.dp, vertical = 4.dp))
     }
 }
 
@@ -522,14 +536,14 @@ private fun CoverMenu(g: Game, vm: LibraryViewModel, actions: LibraryActions, on
 }
 
 @Composable
-fun Avatar(sizeDp: Int) {
+fun Avatar(sizeDp: Int, ring: Color? = null) {
     val p = LocalPalette.current
     val ctx = LocalContext.current
     val bmp by produceState<ImageBitmap?>(null, Settings.avatarStamp.intValue) {
         value = withContext(Dispatchers.IO) { Covers.load(Covers.avatarFile(ctx)) }
     }
     Box(
-        Modifier.size(sizeDp.dp).clip(CircleShape).background(p.card).border(2.dp, p.accent, CircleShape),
+        Modifier.size(sizeDp.dp).clip(CircleShape).background(p.card).border(2.dp, ring ?: p.accent, CircleShape),
         contentAlignment = Alignment.Center,
     ) {
         val b = bmp
@@ -604,11 +618,11 @@ private fun SystemFilterRow(all: List<Game>, selected: String, onSelect: (String
 @Composable
 private fun EmptyLibrary(actions: LibraryActions) {
     EmptyState(
-        icon = "🎮",
+        icon = Icons.Filled.SportsEsports,
         title = "Tu biblioteca está vacía",
         body = "Agrega la carpeta donde guardas tus ROMs (.gba, .gbc, .gb, .zip, .7z). Solo juegos que poseas.",
     ) {
-        AppButton("Agregar carpeta de ROMs", actions.addFolder, kind = BtnKind.PRIMARY, big = true, icon = "📁")
+        AppButton("Agregar carpeta de ROMs", actions.addFolder, kind = BtnKind.PRIMARY, big = true, icon = Icons.Filled.FolderOpen)
         AppButton("Agregar archivos", actions.addFiles)
     }
 }
@@ -677,7 +691,7 @@ private fun GameGrid(
                         Modifier.fillMaxWidth().padding(vertical = 40.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        Text("🔍", fontSize = 36.sp)
+                        Ic(Icons.Filled.Search, size = 40.dp, tint = p.dim)
                         Text("Ningún juego coincide", color = p.text, fontSize = Ds.TitleSp.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 8.dp))
                         Text("Prueba con otra búsqueda o cambia el filtro de sistema.", color = p.dim, fontSize = Ds.BodySp.sp)
                     }
@@ -704,9 +718,14 @@ private fun FeatureCard(g: Game, focused: Boolean, onOpen: (Game) -> Unit, onPla
         }
         Box(
             Modifier.align(Alignment.BottomEnd).padding(10.dp).clip(RoundedCornerShape(6.dp)).background(p.play).clickable { onPlay(g) }.padding(horizontal = 14.dp, vertical = 7.dp),
-        ) { Text("▶ JUGAR", color = p.onPlay, fontWeight = FontWeight.Bold, fontSize = 12.sp) }
+        ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Ic(Icons.Filled.PlayArrow, size = 16.dp, tint = p.onPlay)
+                        Text("JUGAR", color = p.onPlay, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    }
+                }
         SystemBadge(systemOf(g), Modifier.align(Alignment.TopStart).padding(10.dp))
-        if (g.favorite) Text("★", color = Color(0xFFFFD54F), fontSize = 18.sp, modifier = Modifier.align(Alignment.TopEnd).padding(10.dp))
+        if (g.favorite) Ic(Icons.Filled.Star, size = 20.dp, tint = Color(0xFFFFD54F), modifier = Modifier.align(Alignment.TopEnd).padding(10.dp))
     }
 }
 
@@ -717,11 +736,11 @@ private fun GameCard(g: Game, focused: Boolean, onOpen: (Game) -> Unit, onPlay: 
         Box(Modifier.fillMaxWidth().aspectRatio(3f / 4f).clip(RoundedCornerShape(8.dp))) {
             CoverImage(g, Modifier.fillMaxSize())
             SystemBadge(systemOf(g), Modifier.align(Alignment.TopStart).padding(6.dp))
-            if (g.favorite) Text("★", color = Color(0xFFFFD54F), fontSize = 18.sp, modifier = Modifier.align(Alignment.TopEnd).padding(6.dp))
+            if (g.favorite) Ic(Icons.Filled.Star, size = 20.dp, tint = Color(0xFFFFD54F), modifier = Modifier.align(Alignment.TopEnd).padding(6.dp))
             Box(
                 Modifier.align(Alignment.BottomEnd).padding(6.dp).size(34.dp).clip(CircleShape).background(p.play).clickable { onPlay(g) },
                 contentAlignment = Alignment.Center,
-            ) { Text("▶", color = p.onPlay, fontSize = 14.sp) }
+            ) { Ic(Icons.Filled.PlayArrow, size = 18.dp, tint = p.onPlay) }
         }
         FitTitle(g.title, p.text, FontWeight.SemiBold, maxSp = 13f, minSp = 9f, modifier = Modifier.padding(top = 6.dp, start = 6.dp, end = 6.dp).fillMaxWidth())
         Text(

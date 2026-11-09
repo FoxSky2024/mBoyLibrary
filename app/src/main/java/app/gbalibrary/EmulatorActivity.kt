@@ -1,5 +1,9 @@
 package app.gbalibrary
 
+import app.gbalibrary.ui.Ic
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.Icons
 import android.content.ContentValues
 import android.graphics.Bitmap
 import android.net.Uri
@@ -522,7 +526,7 @@ class EmulatorActivity : ComponentActivity() {
                         .clip(CircleShape).background(Color(0xAA000000))
                         .clickable { Music.toggle(this@EmulatorActivity) },
                     contentAlignment = Alignment.Center,
-                ) { Text(if (Music.playing.value) "⏸" else "♪", color = Color.White) }
+                ) { Ic(if (Music.playing.value) Icons.Filled.Pause else Icons.Filled.MusicNote, size = 20.dp, tint = Color.White) }
             }
 
             // Animacion de entrada (se puede desactivar en Ajustes > Animaciones).

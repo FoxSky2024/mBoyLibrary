@@ -2,6 +2,12 @@
 
 package app.gbalibrary.ui
 
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.material.icons.filled.ArrowDropUp
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.FlashOn
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.Icons
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -109,8 +115,8 @@ private fun PlacedItem(
             Kind.MOVE ->
                 if (layout.moveType == MoveType.STICK) Stick(engine, live, layout.deadzone, source = source)
                 else DPad(engine, live, source = source)
-            Kind.MENU -> RoundTap("☰", live, onMenu)
-            Kind.QUICK -> RoundTap("⚡", live, onQuick)
+            Kind.MENU -> RoundTap(Icons.Filled.Menu, live, onMenu)
+            Kind.QUICK -> RoundTap(Icons.Filled.FlashOn, live, onQuick)
             Kind.L, Kind.R -> PadButton(Kind.glyph(item.kind), Kind.mask(item.kind), engine, live, shape = RoundedCornerShape(14.dp), source = source)
             Kind.START, Kind.SELECT ->
                 PadButton(Kind.glyph(item.kind), Kind.mask(item.kind), engine, live, shape = RoundedCornerShape(17.dp), fontSize = 11, source = source)
@@ -135,11 +141,11 @@ private fun PlacedItem(
 }
 
 @Composable
-private fun RoundTap(glyph: String, enabled: Boolean, onClick: () -> Unit) {
+private fun RoundTap(glyph: ImageVector, enabled: Boolean, onClick: () -> Unit) {
     Box(
         Modifier.fillMaxSize().clip(CircleShape).background(Color(0x66000000)).clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center,
-    ) { Text(glyph, color = Color.White) }
+    ) { Ic(glyph, size = 22.dp, tint = Color.White) }
 }
 
 /**
@@ -170,7 +176,7 @@ fun ControlsEditorPanel(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Editar controles — arrastra para mover, toca para seleccionar", color = Color.White, fontSize = 12.sp, modifier = Modifier.weight(1f))
-            OutlinedButton(onClick = { collapsed = !collapsed }) { Text(if (collapsed) "▾" else "▴") }
+            OutlinedButton(onClick = { collapsed = !collapsed }) { Ic(if (collapsed) Icons.Filled.ArrowDropDown else Icons.Filled.ArrowDropUp, size = 22.dp, tint = p.accent) }
             if (collapsed) Button(onClick = onDone) { Text("Listo") }
         }
         if (!collapsed) EditorBody(layout, gameName, sel, addOpen, { addOpen = it }, onSaveGlobal, onSaveGame, onReset, onDone)

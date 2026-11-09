@@ -2,6 +2,7 @@
 
 package app.gbalibrary.ui
 
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -79,7 +80,7 @@ fun AppButton(
     kind: BtnKind = BtnKind.SECONDARY,
     big: Boolean = false,
     enabled: Boolean = true,
-    icon: String? = null,
+    icon: ImageVector? = null,
 ) {
     val p = LocalPalette.current
     val bg = when (kind) {
@@ -105,7 +106,7 @@ fun AppButton(
         contentAlignment = Alignment.Center,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (icon != null) Text(icon, color = fg, fontSize = (if (big) 24 else 18).sp)
+            if (icon != null) Ic(icon, size = if (big) 26.dp else 20.dp, tint = fg)
             Text(
                 text, color = fg, fontSize = (if (big) 20 else Ds.ButtonSp.toInt()).sp, fontWeight = FontWeight.Bold,
                 maxLines = 2, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center,
@@ -233,7 +234,7 @@ fun ButtonFlow(content: @Composable () -> Unit) {
 
 /** Estado vacio con icono grande, mensaje y acciones. */
 @Composable
-fun EmptyState(icon: String, title: String, body: String, modifier: Modifier = Modifier, actions: @Composable () -> Unit = {}) {
+fun EmptyState(icon: ImageVector, title: String, body: String, modifier: Modifier = Modifier, actions: @Composable () -> Unit = {}) {
     val p = LocalPalette.current
     Column(
         modifier.fillMaxSize().padding(24.dp),
@@ -241,7 +242,7 @@ fun EmptyState(icon: String, title: String, body: String, modifier: Modifier = M
         verticalArrangement = Arrangement.Center,
     ) {
         Box(Modifier.size(88.dp).clip(CircleShape).background(p.card), contentAlignment = Alignment.Center) {
-            Text(icon, fontSize = 40.sp)
+            Ic(icon, size = 44.dp, tint = p.dim)
         }
         Text(title, color = p.text, fontSize = Ds.TitleSp.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 16.dp))
         Text(body, color = p.dim, fontSize = Ds.BodySp.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 6.dp, bottom = 18.dp).fillMaxWidth(0.9f))
@@ -269,7 +270,7 @@ fun ScreenHeader(title: String, onBack: () -> Unit, trailing: @Composable RowSco
 
 /** Elemento de menu lateral (rail) de Ajustes. */
 @Composable
-fun RailItem(label: String, icon: String, selected: Boolean, onClick: () -> Unit) {
+fun RailItem(label: String, icon: ImageVector?, selected: Boolean, onClick: () -> Unit) {
     val p = LocalPalette.current
     Row(
         Modifier.fillMaxWidth().heightIn(min = 52.dp)
@@ -280,7 +281,7 @@ fun RailItem(label: String, icon: String, selected: Boolean, onClick: () -> Unit
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Box(Modifier.size(width = 4.dp, height = 24.dp).background(if (selected) p.accent else Color.Transparent))
-        if (icon.isNotEmpty()) Text(icon, fontSize = 18.sp)
+        if (icon != null) Ic(icon, size = 20.dp, tint = if (selected) p.accent else p.dim)
         Text(label, color = if (selected) p.accent else p.text, fontSize = Ds.BodySp.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }

@@ -165,9 +165,22 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun handleLink(i: Intent?) {
+        val u = i?.data
+        if (u != null && u.scheme == "mboy") app.gbalibrary.ui.Incoming.uri.value = u
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleLink(intent)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Settings.init(this) // GbaApp ya lo hizo; es idempotente
+        app.gbalibrary.data.Profile.init(this)
+        handleLink(intent)
         PadInput.init(this)
         Archive.clearCache(this) // restos de una sesion anterior
         val actions = LibraryActions(

@@ -1,5 +1,7 @@
 package app.gbalibrary.ui
 
+import androidx.compose.material.icons.filled.SportsEsports
+import androidx.compose.material.icons.Icons
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -57,7 +59,7 @@ fun EntrySplash(gameTitle: String, onDone: () -> Unit) {
             Modifier.graphicsLayer { scaleX = s.value; scaleY = s.value; alpha = a.value },
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text("◆", color = Color(0xFF66C0F4), fontSize = 44.sp)
+            Ic(Icons.Filled.SportsEsports, size = 48.dp, tint = Color(0xFF66C0F4))
             Text(Settings.appName.value, color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Black, maxLines = 1)
             Text(
                 gameTitle, color = Color(0xFFB0BEC5), fontSize = 15.sp, textAlign = TextAlign.Center,

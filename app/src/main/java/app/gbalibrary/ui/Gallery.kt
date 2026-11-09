@@ -1,5 +1,8 @@
 package app.gbalibrary.ui
 
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.Icons
 import android.content.Context
 import android.content.Intent
 import android.graphics.BitmapFactory
@@ -127,10 +130,10 @@ fun ShotViewer(shots: List<Shots.Shot>, start: Int, onClose: () -> Unit, onDelet
                 if (bmp != null) Image(bmp, null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit, filterQuality = androidx.compose.ui.graphics.FilterQuality.None)
             }
             Row(Modifier.padding(10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                OutlinedButton(onClick = { if (idx > 0) idx-- }, enabled = idx > 0) { Text("◀") }
+                OutlinedButton(onClick = { if (idx > 0) idx-- }, enabled = idx > 0) { Ic(Icons.Filled.ChevronLeft, tint = p.accent) }
                 Button(onClick = { share(ctx, shot) }) { Text("Compartir") }
                 OutlinedButton(onClick = { confirm = true }) { Text("Borrar", color = Color(0xFFFF8A80)) }
-                OutlinedButton(onClick = { if (idx < shots.lastIndex) idx++ }, enabled = idx < shots.lastIndex) { Text("▶") }
+                OutlinedButton(onClick = { if (idx < shots.lastIndex) idx++ }, enabled = idx < shots.lastIndex) { Ic(Icons.Filled.ChevronRight, tint = p.accent) }
             }
         }
         if (confirm) {

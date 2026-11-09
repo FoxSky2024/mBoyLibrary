@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -55,6 +56,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 
+private const val ROW_DP = 40
+
 /**
  * Disco de vinilo abajo a la derecha (solo biblioteca / menus, nunca dentro del juego).
  * Al cambiar de cancion: disco grande + caratula + nombre; a los 5 s se desvanece y queda un mini
@@ -73,9 +76,10 @@ fun VinylOverlay(modifier: Modifier = Modifier) {
     val flip = remember { Animatable(0f) }
     var dragY by remember { mutableStateOf(0f) }
     var dragging by remember { mutableStateOf(false) }
-    var peekTitle by remember { mutableStateOf("") }
     LaunchedEffect(Unit) { DiscClick.init(ctx) }
-    val thresholdPx = with(density) { 40.dp.toPx() }
+    // Cada 40 dp de arrastre = una cancion mas; se puede seguir deslizando por toda la lista.
+    val rowPx = with(density) { ROW_DP.dp.toPx() }
+    val steps = (-dragY / rowPx).toInt() // + = siguientes (arrastrar hacia arriba), - = anteriores
     val gesture = Modifier.pointerInput(Unit) {
         detectVerticalDragGestures(
             onDragStart = {
@@ -87,16 +91,12 @@ fun VinylOverlay(modifier: Modifier = Modifier) {
                 if (!dragging) return@detectVerticalDragGestures
                 change.consume()
                 dragY += amount
-                // arriba = siguiente, abajo = anterior
-                val d = if (dragY < 0f) 1 else -1
-                if (kotlin.math.abs(dragY) > 8f) peekTitle = Music.peek(d)
             },
             onDragEnd = {
-                val total = dragY
+                val delta = (-dragY / rowPx).toInt()
                 dragging = false
                 dragY = 0f
-                if (kotlin.math.abs(total) >= thresholdPx && !flip.isRunning) {
-                    val delta = if (total < 0f) 1 else -1
+                if (delta != 0 && !flip.isRunning) {
                     scope.launch {
                         var fired = false
                         flip.snapTo(0f)
@@ -177,21 +177,38 @@ fun VinylOverlay(modifier: Modifier = Modifier) {
                     contentAlignment = Alignment.Center,
                 ) { Disc(size = 34, angle = angle, flipY = flip.value) }
             }
-            // Vista previa de la cancion de destino (alpha 0.35) mientras se arrastra.
-            if (dragging && kotlin.math.abs(dragY) > 8f) {
-                val maxPx = with(density) { 48.dp.toPx() }
-                val off = dragY.coerceIn(-maxPx, maxPx)
-                Row(
+            // Rueda de canciones: maximo 3 a la vez (anterior / elegida / siguiente), con desplazamiento continuo.
+            if (dragging) {
+                val offsetUp = if (showName) 76.dp else 56.dp
+                val residual = dragY + steps * rowPx
+                val titles = remember(steps) { (-1..1).map { Music.peek(steps + it) } }
+                Column(
                     Modifier
-                        .offset { androidx.compose.ui.unit.IntOffset(0, (off * 0.6f).toInt() + (if (dragY < 0f) -maxPx.toInt() else maxPx.toInt())) }
-                        .alpha(0.35f),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        .offset(y = -offsetUp)
+                        .height((ROW_DP * 3).dp)
+                        .clip(RoundedCornerShape(20.dp)),
+                    horizontalAlignment = Alignment.End,
                 ) {
-                    if (peekTitle.isNotEmpty()) {
-                        Text(peekTitle, color = Color.White, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 160.dp))
+                    titles.forEachIndexed { idx, t ->
+                        val center = idx == 1
+                        Box(
+                            Modifier
+                                .height(ROW_DP.dp)
+                                .graphicsLayer { translationY = residual }
+                                .alpha(if (center) 0.95f else 0.35f),
+                            contentAlignment = Alignment.CenterEnd,
+                        ) {
+                            Text(
+                                t.ifEmpty { "—" }, color = Color.White, fontSize = if (center) 13.sp else 12.sp,
+                                fontWeight = if (center) FontWeight.Bold else FontWeight.Normal,
+                                maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier
+                                    .widthIn(max = 220.dp)
+                                    .background(Color(0xE6101418), RoundedCornerShape(20.dp))
+                                    .padding(horizontal = 14.dp, vertical = 7.dp),
+                            )
+                        }
                     }
-                    Disc(size = 34, angle = 0f, flipY = 0f)
                 }
             }
         }

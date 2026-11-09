@@ -2,6 +2,9 @@
 
 package app.gbalibrary.ui
 
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DragHandle
+import androidx.compose.material.icons.Icons
 import android.annotation.SuppressLint
 import android.net.Uri
 import android.view.ViewGroup
@@ -110,8 +113,11 @@ fun PipOverlay(modifier: Modifier = Modifier) {
                     },
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("⠿ arrastra", color = Color(0xFF90A4AE), fontSize = 10.sp, modifier = Modifier.weight(1f).padding0())
-                Text("✕", color = Color.White, fontSize = 14.sp, modifier = Modifier.clickable { Pip.close() }.padding0())
+                Row(Modifier.weight(1f).padding0(), verticalAlignment = Alignment.CenterVertically) {
+                    Ic(Icons.Filled.DragHandle, size = 14.dp, tint = Color(0xFF90A4AE))
+                    Text(" arrastra", color = Color(0xFF90A4AE), fontSize = 10.sp)
+                }
+                Ic(Icons.Filled.Close, size = 16.dp, tint = Color.White, modifier = Modifier.clickable { Pip.close() }.padding0())
             }
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                 when (kind) {
@@ -153,7 +159,7 @@ fun PipControls(pickVideo: () -> Unit) {
         }
         Text("Posición", color = p.accent, fontSize = 12.sp, fontWeight = FontWeight.Bold)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            listOf("↖ Sup. izq.", "↗ Sup. der.", "↙ Inf. izq.", "↘ Inf. der.").forEachIndexed { i, n ->
+            listOf("Sup. izq.", "Sup. der.", "Inf. izq.", "Inf. der.").forEachIndexed { i, n ->
                 FilterChip(selected = Settings.pipCorner.intValue == i && Pip.custom.value == null, onClick = { Settings.setPipCorner(i); Pip.custom.value = null }, label = { Text(n) })
             }
         }
@@ -169,6 +175,6 @@ fun PipControls(pickVideo: () -> Unit) {
             Text("Siempre encima (sobre los botones táctiles)", color = p.text, modifier = Modifier.weight(1f))
             Switch(checked = Settings.pipOnTop.value, onCheckedChange = { Settings.setPipOnTop(it) })
         }
-        Text("Arrastra la ventana desde su barra superior; ✕ la cierra.", color = p.dim, fontSize = 11.sp)
+        Text("Arrastra la ventana desde su barra superior; con la X se cierra.", color = p.dim, fontSize = 11.sp)
     }
 }

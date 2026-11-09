@@ -42,7 +42,7 @@ object Kind {
     /** Texto corto dentro del boton. */
     fun glyph(k: String) = when (k) {
         START -> "START"; SELECT -> "SELECT"; TURBO_A -> "A»"; TURBO_B -> "B»"
-        UP -> "▲"; DOWN -> "▼"; LEFT -> "◀"; RIGHT -> "▶"
+        UP -> "↑"; DOWN -> "↓"; LEFT -> "←"; RIGHT -> "→"
         else -> k.uppercase()
     }
 

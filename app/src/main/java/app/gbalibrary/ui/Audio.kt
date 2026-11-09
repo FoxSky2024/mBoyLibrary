@@ -207,15 +207,19 @@ object Music {
     }
 
     /** Nombre de la cancion vecina (para la vista previa al arrastrar el disco). */
+    private val titleCache = HashMap<String, String>()
+
     fun peek(delta: Int): String {
         val ctx = appCtx ?: return ""
         val n = order.size
         if (n == 0) return ""
         val uri = tracks.getOrNull(order[((pos + delta) % n + n) % n]) ?: return ""
-        return try {
-            DocumentFile.fromSingleUri(ctx, uri)?.name?.substringBeforeLast('.') ?: ""
-        } catch (e: Exception) {
-            ""
+        return titleCache.getOrPut(uri.toString()) {
+            try {
+                DocumentFile.fromSingleUri(ctx, uri)?.name?.substringBeforeLast('.') ?: ""
+            } catch (e: Exception) {
+                ""
+            }
         }
     }
 

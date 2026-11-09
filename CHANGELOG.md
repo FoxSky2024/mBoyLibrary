@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.0-beta
+- **Perfil estilo Steam**: cabecera con avatar, marco, fondo, lema, estado (En línea/Ausente/No molestar/Invisible), nivel y XP. Pestañas General (resumen, estadísticas, insignias, escaparate), Juegos, Notas y Editar (nombre, foto, lema, ubicación, resumen, marco, fondo, escaparate de 3 juegos, privacidad).
+- **Icono QR monocromo** arriba a la derecha del perfil: muestra un QR (y enlace `mboy://p?d=...`) con tu perfil. Quien lo abra ve tu perfil y puede **dejar una nota** (genera un QR/enlace de nota que se te entrega y se guarda en tu pestaña Notas). Sin servidor: todo viaja dentro del enlace. Notas solo se aceptan si van dirigidas a tu perfil, sin duplicados.
+- **Todos los emojis reemplazados por iconos monocromos** (Material Icons) en biblioteca, ficha, galería, PiP, controles tactiles, ajustes y emulador.
+- **Disco**: al deslizar para cambiar de canción se ven como maximo 3 a la vez y puedes seguir deslizando hasta soltar en la elegida.
+- Dependencias: material-icons-extended, zxing core 3.5.3 (solo generar QR).
+
 ## 0.4.1-beta
 - **Menú de pausa y ajustes dentro del juego, estilo Hollow Knight**: fondo oscuro, lista centrada de texto serif sin botones ni tarjetas, rombos ornamentales y punteros a los lados de la opción seleccionada (con brillo), valores con flechas ◂ ▸ y deslizadores de muescas. Pantallas: Pausa (Continuar, Guardar, Cargar, Reiniciar, Ajustes, Salir), Guardar/Cargar (ranuras), Ajustes > Video, Audio, Controles, Juego y Ventana de video. Se mantienen todas las opciones existentes (calidad de imagen, brillo, escala, FPS, sonido y volumen, botones táctiles, tamaño/opacidad, cruceta/joystick, zona muerta, editor de controles y layouts, velocidad, música dentro del juego, rendimiento, captura, PiP).
 - Se maneja con toque, mando (D-Pad / stick = mover y cambiar valores, A = aceptar, B = atrás, Start = continuar) o teclado (flechas, Enter, Esc). El botón Atrás de Android vuelve un nivel y, en la pausa, continúa el juego.
