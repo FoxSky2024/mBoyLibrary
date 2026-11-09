@@ -285,3 +285,19 @@ fun RailItem(label: String, icon: ImageVector?, selected: Boolean, onClick: () -
         Text(label, color = if (selected) p.accent else p.text, fontSize = Ds.BodySp.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
+
+
+@Composable
+fun Ic(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    size: androidx.compose.ui.unit.Dp = 20.dp,
+    tint: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color.Unspecified,
+    contentDescription: String? = null
+) {
+    androidx.compose.material3.Icon(
+        imageVector = icon,
+        contentDescription = contentDescription,
+        modifier = androidx.compose.foundation.layout.size(size),
+        tint = tint
+    )
+}

@@ -362,12 +362,3 @@ private fun Pill(text: String, selected: Boolean, onClick: () -> Unit) {
             .padding(horizontal = 12.dp, vertical = 8.dp),
     ) { Text(text, color = if (selected) p.onAccent else p.text, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1) }
 }
-
-@Composable
-private fun SwitchRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
-    val p = LocalPalette.current
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(label, color = p.text, fontSize = 14.sp, modifier = Modifier.weight(1f))
-        Switch(checked = checked, onCheckedChange = onChange)
-    }
-}
