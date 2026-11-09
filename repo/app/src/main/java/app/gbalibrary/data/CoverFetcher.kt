@@ -39,12 +39,14 @@ object CoverFetcher {
     private fun platformDir(game: Game): String = when (game.fileName.substringAfterLast('.', "").lowercase()) {
         "gbc" -> "Nintendo - Game Boy Color"
         "gb" -> "Nintendo - Game Boy"
+        "nds" -> "Nintendo - Nintendo DS"
         else -> "Nintendo - Game Boy Advance"
     }
 
     private fun platformWord(game: Game): String = when (game.fileName.substringAfterLast('.', "").lowercase()) {
         "gbc" -> "Game Boy Color"
         "gb" -> "Game Boy"
+        "nds" -> "Nintendo DS"
         else -> "Game Boy Advance"
     }
 

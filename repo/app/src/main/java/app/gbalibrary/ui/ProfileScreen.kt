@@ -379,12 +379,25 @@ private fun ProfileSidebar(st: ProfileStats, status: StatusDef, ring: Color, sho
                 Text("${st.level}", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
             }
         }
-        Text("${st.xp} XP", color = p.dim, fontSize = 12.sp)
         LinearProgressIndicator(progress = { st.levelFrac }, modifier = Modifier.fillMaxWidth().height(4.dp), color = ring)
+        // Insignia destacada (la ultima conseguida), como "Years of Service" en Steam.
+        val feat = st.badges.lastOrNull()
+        Row(
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).background(Color(0x66000000)).padding(10.dp),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Box(Modifier.size(44.dp).clip(RoundedCornerShape(6.dp)).background(p.card), contentAlignment = Alignment.Center) {
+                Ic(feat?.icon ?: Icons.Filled.EmojiEvents, size = 28.dp, tint = if (Profile.platinumDone) Color(0xFFFFD54F) else p.accent)
+            }
+            Column {
+                Text(if (Profile.platinumDone) "Platino" else feat?.name ?: "Sin insignias", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                Text("${st.xp} XP", color = p.dim, fontSize = 12.sp)
+            }
+        }
         Text("Editar perfil", color = p.text, fontSize = 13.sp, modifier = Modifier.clip(RoundedCornerShape(4.dp)).background(p.card).clickable { Sfx.click(); onTab(3) }.padding(horizontal = 10.dp, vertical = 6.dp))
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Box(Modifier.size(10.dp).clip(CircleShape).background(status.color))
-            Text(status.name, color = status.color, fontSize = 18.sp)
+            Text(if (status.name == "En línea") "Conectado ahora" else status.name, color = status.color, fontSize = 20.sp)
         }
         SideCount("Logros", "${Profile.unlocked.size}/${AllBadges.size}") { onTab(0) }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -396,6 +409,7 @@ private fun ProfileSidebar(st: ProfileStats, status: StatusDef, ring: Color, sho
         SideCount("Capturas de pantalla", "$shots") { onGallery() }
         SideCount("Notas", "${Profile.notes.size}") { onTab(2) }
         SideCount("Favoritos", "${st.favorites}") { }
+        SideCount("Fuentes de noticias", "${app.gbalibrary.data.Feeds.sources.size}") { }
         SideCount("Juegos completados", "${st.completed}") { }
     }
 }

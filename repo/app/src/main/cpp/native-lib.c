@@ -94,7 +94,7 @@ static void applyCompat(void) {
 }
 
 JNIEXPORT jboolean JNICALL
-Java_app_gbalibrary_emu_Native_load(JNIEnv* env, jobject thiz, jbyteArray rom, jstring savePath, jint saveType, jboolean rtc) {
+Java_app_gbalibrary_emu_Mgba_load(JNIEnv* env, jobject thiz, jbyteArray rom, jstring savePath, jint saveType, jboolean rtc) {
     (void) thiz;
     unloadCore();
     gSaveType = saveType;
@@ -177,14 +177,14 @@ Java_app_gbalibrary_emu_Native_load(JNIEnv* env, jobject thiz, jbyteArray rom, j
 }
 
 JNIEXPORT void JNICALL
-Java_app_gbalibrary_emu_Native_unload(JNIEnv* env, jobject thiz) {
+Java_app_gbalibrary_emu_Mgba_unload(JNIEnv* env, jobject thiz) {
     (void) env;
     (void) thiz;
     unloadCore();
 }
 
 JNIEXPORT void JNICALL
-Java_app_gbalibrary_emu_Native_reset(JNIEnv* env, jobject thiz) {
+Java_app_gbalibrary_emu_Mgba_reset(JNIEnv* env, jobject thiz) {
     (void) env;
     (void) thiz;
     if (gCore) {
@@ -194,7 +194,7 @@ Java_app_gbalibrary_emu_Native_reset(JNIEnv* env, jobject thiz) {
 }
 
 JNIEXPORT void JNICALL
-Java_app_gbalibrary_emu_Native_setKeys(JNIEnv* env, jobject thiz, jint keys) {
+Java_app_gbalibrary_emu_Mgba_setKeys(JNIEnv* env, jobject thiz, jint keys) {
     (void) env;
     (void) thiz;
     if (gCore) gCore->setKeys(gCore, (uint32_t) keys);
@@ -203,7 +203,7 @@ Java_app_gbalibrary_emu_Native_setKeys(JNIEnv* env, jobject thiz, jint keys) {
 // Ejecuta un frame, lo dibuja (si render) y vuelca el audio estereo
 // intercalado en `audio`. Devuelve el numero de frames de audio escritos.
 JNIEXPORT jint JNICALL
-Java_app_gbalibrary_emu_Native_step(JNIEnv* env, jobject thiz, jshortArray audio, jboolean render) {
+Java_app_gbalibrary_emu_Mgba_step(JNIEnv* env, jobject thiz, jshortArray audio, jboolean render) {
     (void) thiz;
     if (!gCore) return 0;
 
@@ -228,7 +228,7 @@ Java_app_gbalibrary_emu_Native_step(JNIEnv* env, jobject thiz, jshortArray audio
 // Copia el ultimo frame (bytes R,G,B,X, compacto ancho x alto) al ByteBuffer directo `dst`.
 // Devuelve 0 si no hay frame nuevo; si lo hay, (ancho << 16) | alto.
 JNIEXPORT jint JNICALL
-Java_app_gbalibrary_emu_Native_copyFrame(JNIEnv* env, jobject thiz, jobject dst) {
+Java_app_gbalibrary_emu_Mgba_copyFrame(JNIEnv* env, jobject thiz, jobject dst) {
     (void) thiz;
     void* p = (*env)->GetDirectBufferAddress(env, dst);
     jlong cap = (*env)->GetDirectBufferCapacity(env, dst);
@@ -247,21 +247,21 @@ Java_app_gbalibrary_emu_Native_copyFrame(JNIEnv* env, jobject thiz, jobject dst)
 
 // Ancho / alto actual de la imagen (para capturas de pantalla).
 JNIEXPORT jint JNICALL
-Java_app_gbalibrary_emu_Native_videoWidth(JNIEnv* env, jobject thiz) {
+Java_app_gbalibrary_emu_Mgba_videoWidth(JNIEnv* env, jobject thiz) {
     (void) env;
     (void) thiz;
     return (jint) gFrameW;
 }
 
 JNIEXPORT jint JNICALL
-Java_app_gbalibrary_emu_Native_videoHeight(JNIEnv* env, jobject thiz) {
+Java_app_gbalibrary_emu_Mgba_videoHeight(JNIEnv* env, jobject thiz) {
     (void) env;
     (void) thiz;
     return (jint) gFrameH;
 }
 
 JNIEXPORT jboolean JNICALL
-Java_app_gbalibrary_emu_Native_saveState(JNIEnv* env, jobject thiz, jstring path) {
+Java_app_gbalibrary_emu_Mgba_saveState(JNIEnv* env, jobject thiz, jstring path) {
     (void) thiz;
     if (!gCore) return JNI_FALSE;
     const char* p = (*env)->GetStringUTFChars(env, path, NULL);
@@ -274,7 +274,7 @@ Java_app_gbalibrary_emu_Native_saveState(JNIEnv* env, jobject thiz, jstring path
 }
 
 JNIEXPORT jboolean JNICALL
-Java_app_gbalibrary_emu_Native_loadState(JNIEnv* env, jobject thiz, jstring path) {
+Java_app_gbalibrary_emu_Mgba_loadState(JNIEnv* env, jobject thiz, jstring path) {
     (void) thiz;
     if (!gCore) return JNI_FALSE;
     const char* p = (*env)->GetStringUTFChars(env, path, NULL);
@@ -288,7 +288,7 @@ Java_app_gbalibrary_emu_Native_loadState(JNIEnv* env, jobject thiz, jstring path
 
 // Ultimo frame como ARGB_8888 (ancho x alto segun videoWidth / videoHeight).
 JNIEXPORT jintArray JNICALL
-Java_app_gbalibrary_emu_Native_screenshot(JNIEnv* env, jobject thiz) {
+Java_app_gbalibrary_emu_Mgba_screenshot(JNIEnv* env, jobject thiz) {
     (void) thiz;
     if (!gCore) return NULL;
     static jint pixels[MAX_W * MAX_H];

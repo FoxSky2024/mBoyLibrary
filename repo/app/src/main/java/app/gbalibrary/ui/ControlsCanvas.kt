@@ -72,7 +72,10 @@ fun ControlsCanvas(
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val sw = constraints.maxWidth.toFloat()
         val sh = constraints.maxHeight.toFloat()
+        val ds = app.gbalibrary.emu.Native.isDs
+        if (ds) layout.ensureDsButtons()
         for (item in layout.items.toList()) {
+            if ((item.kind == Kind.X || item.kind == Kind.Y) && !ds && !editing) continue
             val isSystem = item.kind == Kind.MENU
             if (!isSystem && !showPad && !editing) continue
             if (item.hidden && !editing) continue

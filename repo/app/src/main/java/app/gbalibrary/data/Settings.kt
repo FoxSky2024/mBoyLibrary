@@ -23,6 +23,8 @@ object Settings {
     // Controles tactiles
     val padOpacity = mutableFloatStateOf(0.55f)
     val padSize = mutableFloatStateOf(1f)
+    /** Nintendo DS: 0 arriba/abajo, 1 izquierda/derecha, 2 solo arriba, 3 solo abajo. */
+    val dsLayout = mutableIntStateOf(1)
     val padVisible = mutableStateOf(true)
     val perGameLayout = mutableStateOf(false)
 
@@ -108,6 +110,7 @@ object Settings {
         muted.value = p.getBoolean("muted", false)
         padOpacity.floatValue = p.getFloat("padOpacity", 0.55f)
         padSize.floatValue = p.getFloat("padSize", 1f)
+        dsLayout.intValue = p.getInt("dsLayout", 1)
         padVisible.value = p.getBoolean("padVisible", true)
         perGameLayout.value = p.getBoolean("perGameLayout", false)
         theme.intValue = p.getInt("theme", 0)
@@ -160,6 +163,7 @@ object Settings {
     fun setVolume(v: Int) { volume.intValue = v; edit { putInt("volume", v) } }
     fun setMuted(v: Boolean) { muted.value = v; edit { putBoolean("muted", v) } }
     fun setPadOpacity(v: Float) { padOpacity.floatValue = v; edit { putFloat("padOpacity", v) } }
+    fun setDsLayout(v: Int) { dsLayout.intValue = v; edit { putInt("dsLayout", v) } }
     fun setPadSize(v: Float) { padSize.floatValue = v; edit { putFloat("padSize", v) } }
     fun setPadVisible(v: Boolean) { padVisible.value = v; edit { putBoolean("padVisible", v) } }
     fun setPerGameLayout(v: Boolean) { perGameLayout.value = v; edit { putBoolean("perGameLayout", v) } }

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.0-beta
+- **Motor multi-núcleo**: `Native` elige el núcleo por ROM. mGBA sigue igual (JNI renombrado a `Mgba`); nuevo host libretro (`Retro`, `cpp/retro_host.c`) para cargar cualquier núcleo libretro.
+- **Nintendo DS** con melonDS: dos pantallas (arriba/abajo, lado a lado, solo una), pantalla táctil tocando la imagen, botones X/Y (en pantalla y mando), estados, partidas guardadas (.dsv), captura, audio remuestreado a 44.1 kHz. Biblioteca, ficha, filtros y portadas reconocen `.nds`.
+- CI: el workflow descarga el núcleo melonDS a jniLibs; si falla, la app compila sin DS.
+- Perfil: insignia destacada, estado "Conectado ahora", fuentes de noticias.
+- `largeHeap` activado (ROMs de DS grandes).
+
 ## 0.6.0-beta
 - Ficha del juego: carátula en 3D (arrastra para girarla; atrás muestra título/sistema/tiempo) y los botones JUGAR, Continuar, Guardados y Ajustes debajo de ella.
 - Noticias (icono RSS en la biblioteca): agrega enlaces de páginas (RSS/Atom autodetectado, Steam app, GitHub releases, subreddits) y ve sus publicaciones estilo Steam; abrir una publicación la abre en el navegador. Widgets: estadísticas, último jugado, logros, reloj y nota rápida.

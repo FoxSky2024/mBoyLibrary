@@ -5,6 +5,11 @@ object RomHeader {
     class Info(val title: String, val code: String, val maker: String, val valid: Boolean)
 
     fun parse(head: ByteArray, length: Int): Info? {
+        // Nintendo DS: CRC del logo (0xCF56) en 0x15C; titulo en 0x00, codigo en 0x0C, fabricante en 0x10.
+        if (length >= 0x160 && (head[0x15C].toInt() and 0xFF) == 0x56 && (head[0x15D].toInt() and 0xFF) == 0xCF) {
+            fun a(off: Int, n: Int) = String(head, off, n, Charsets.US_ASCII).filter { it.code in 32..126 }.trim()
+            return Info(title = a(0, 12), code = a(0x0C, 4), maker = a(0x10, 2), valid = true)
+        }
         // Game Boy / Color: logo de Nintendo en 0x104 (CE ED ...); titulo en 0x134.
         if (length >= 0x150 && (head[0x104].toInt() and 0xFF) == 0xCE && (head[0x105].toInt() and 0xFF) == 0xED) {
             val t = String(head, 0x134, 15, Charsets.US_ASCII).filter { it.code in 32..126 }.trim()

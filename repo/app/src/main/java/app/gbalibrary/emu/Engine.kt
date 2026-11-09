@@ -230,7 +230,7 @@ class Engine(
             }
             Log.i("Engine", "Guardado: ${SaveType.label(saveType)} (override=$saveOverride), RTC=$rtc (modo $rtcMode)")
             if (!Native.load(rom, savePath, saveType, rtc)) {
-                onError("mGBA no pudo cargar esta ROM")
+                onError(Native.lastError.ifEmpty { "mGBA no pudo cargar esta ROM" })
                 return
             }
             try {
@@ -238,6 +238,7 @@ class Engine(
             } catch (t: Throwable) {
                 Log.w("Engine", "onDetected", t)
             }
+            Native.setDsLayout(app.gbalibrary.data.Settings.dsLayout.intValue)
             if (File(autoStatePath).exists()) {
                 Native.loadState(autoStatePath)
             }
@@ -284,7 +285,7 @@ class Engine(
                     if (on && keys and GbaKey.TURBO_A != 0) keys = keys or GbaKey.A
                     if (on && keys and GbaKey.TURBO_B != 0) keys = keys or GbaKey.B
                 }
-                Native.setKeys(keys and GbaKey.GBA_MASK)
+                Native.setKeys(keys)
                 val limit = fpsLimit
                 var render = sp == 1 || frameCounter % sp == 0L
                 if (render && limit == 30 && frameCounter % 2L == 1L) render = false

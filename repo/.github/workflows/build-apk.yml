@@ -1,10 +1,8 @@
 name: Build APK
-
 on:
   push:
     branches: [main, master]
   workflow_dispatch:
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -14,6 +12,16 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
+      - uses: android-actions/setup-android@v3
+      - name: Install NDK 27.2.12479018
+        run: |
+          echo "y" | sdkmanager "ndk;27.2.12479018" || echo "y" | sdkmanager "ndk;27.2.12479018"
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/27.2.12479018" >> $GITHUB_ENV
+      - name: Download melonDS libretro core (best effort)
+        run: |
+          mkdir -p app/src/main/jniLibs/arm64-v8a app/src/main/jniLibs/armeabi-v7a
+          curl -L --fail -o /tmp/melonds.zip "https://buildbot.libretro.com/nightly/android/arm64-v8a/latest/melonDS_libretro_android.so.zip" && unzip -o /tmp/melonds.zip -d /tmp/melonds && cp /tmp/melonds/*.so app/src/main/jniLibs/arm64-v8a/libmelonds.so && echo "melonDS OK" || echo "melonDS NOT FOUND, building without DS"
+          ls -lh app/src/main/jniLibs/arm64-v8a/ || true
       - name: Build release APK
         run: |
           chmod +x gradlew

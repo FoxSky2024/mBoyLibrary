@@ -7,13 +7,14 @@ plugins {
 android {
     namespace = "app.gbalibrary"
     compileSdk = 35
+    ndkVersion = "27.2.12479018"
 
     defaultConfig {
         applicationId = "app.gbalibrary"
         minSdk = 24
         targetSdk = 35
-        versionCode = 12
-        versionName = "0.6.1-beta"
+        versionCode = 13
+        versionName = "0.7.0-beta"
 
         ndk {
             abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")

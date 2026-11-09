@@ -119,6 +119,7 @@ fun AppButton(
 fun systemOf(g: Game): String {
     val name = (g.entry.ifEmpty { g.fileName }).lowercase()
     return when {
+        name.endsWith(".nds") -> "DS"
         name.endsWith(".gbc") -> "GBC"
         name.endsWith(".gb") -> "GB"
         name.endsWith(".gba") || name.endsWith(".agb") -> "GBA"
@@ -132,6 +133,7 @@ fun SystemBadge(system: String, modifier: Modifier = Modifier) {
     val bg = when (system) {
         "GBA" -> Color(0xFF3949AB)
         "GBC" -> Color(0xFF00897B)
+        "DS" -> Color(0xFF8E24AA)
         else -> Color(0xFF6D6D6D)
     }
     Text(

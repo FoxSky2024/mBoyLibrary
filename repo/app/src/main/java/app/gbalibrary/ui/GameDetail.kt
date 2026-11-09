@@ -186,7 +186,7 @@ private fun InfoPanel(game: Game) {
     val p = LocalPalette.current
     val sys = systemOf(game)
     SectionCard("Información") {
-        InfoRow("Sistema", when (sys) { "GBA" -> "Game Boy Advance"; "GBC" -> "Game Boy Color"; else -> "Game Boy" })
+        InfoRow("Sistema", when (sys) { "GBA" -> "Game Boy Advance"; "GBC" -> "Game Boy Color"; "DS" -> "Nintendo DS"; else -> "Game Boy" })
         InfoRow("Tamaño", formatSize(game.sizeBytes))
         InfoRow("Tiempo jugado", formatPlayTime(game.playSeconds))
         InfoRow("Última vez", formatAgo(game.lastPlayed))

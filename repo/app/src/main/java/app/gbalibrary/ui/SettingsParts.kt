@@ -36,6 +36,9 @@ fun VideoSettings() {
                 else -> "Llena toda la pantalla recortando los bordes."
             },
         )
+        Subtitle("Nintendo DS: pantallas")
+        ChipRow(listOf("Arriba / abajo", "Lado a lado", "Solo arriba", "Solo abajo"), Settings.dsLayout.intValue) { Settings.setDsLayout(it) }
+        Hint("Se aplica al abrir un juego de DS. La pantalla inferior es táctil: toca la imagen directamente. 'Lado a lado' aprovecha mejor el teléfono en horizontal.")
         SwitchRow("Mostrar FPS", Settings.showFps.value) { Settings.setShowFps(it) }
     }
 }
