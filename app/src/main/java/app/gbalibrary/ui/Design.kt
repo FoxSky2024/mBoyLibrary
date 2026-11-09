@@ -286,18 +286,18 @@ fun RailItem(label: String, icon: ImageVector?, selected: Boolean, onClick: () -
     }
 }
 
-
 @Composable
 fun Ic(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     size: androidx.compose.ui.unit.Dp = 20.dp,
     tint: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color.Unspecified,
-    contentDescription: String? = null
+    contentDescription: String? = null,
+    modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier
 ) {
     androidx.compose.material3.Icon(
         imageVector = icon,
         contentDescription = contentDescription,
-        modifier = androidx.compose.foundation.layout.size(size),
+        modifier = modifier.then(androidx.compose.foundation.layout.size(size)),
         tint = tint
     )
 }
