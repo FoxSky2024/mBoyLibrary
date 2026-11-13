@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -354,15 +355,6 @@ private fun Pill(text: String, selected: Boolean, onClick: () -> Unit) {
         Modifier.clip(RoundedCornerShape(20.dp)).background(if (selected) p.accent else p.card).clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 8.dp),
     ) { Text(text, color = if (selected) p.onAccent else p.text, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1) }
-}
-
-@Composable
-private fun SwitchRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
-    val p = LocalPalette.current
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(label, color = p.text, fontSize = 14.sp, modifier = Modifier.weight(1f))
-        Switch(checked = checked, onCheckedChange = onChange)
-    }
 }
 
 /** Columna derecha estilo Steam: nivel, estado, insignias y contadores. */
