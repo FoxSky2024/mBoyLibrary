@@ -64,7 +64,7 @@ ExternalProject_Add(mgba_ep
 set(MGBA_SRC ${MGBA_EP_ROOT}/src/mgba_ep)
 set(MGBA_BIN ${MGBA_EP_ROOT}/src/mgba_ep-build)
 
-add_library(gbalib SHARED native-lib.c)
+add_library(gbalib SHARED native-lib.c retro_host.c)
 add_dependencies(gbalib mgba_ep)
 
 target_include_directories(gbalib PRIVATE
@@ -82,5 +82,6 @@ target_link_libraries(gbalib PRIVATE
     ${MGBA_PREFIX}/lib/libmgba.a
     android
     log
+    dl
     m
 )

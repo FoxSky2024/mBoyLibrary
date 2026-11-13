@@ -28,12 +28,14 @@ object Kind {
     const val RIGHT = "right"
     const val MENU = "menu"
     const val QUICK = "quick"
+    const val X = "x" // solo Nintendo DS
+    const val Y = "y" // solo Nintendo DS
 
     /** A que se puede mapear un boton extra. */
-    val ASSIGNABLE = listOf(A, B, L, R, START, SELECT, TURBO_A, TURBO_B, UP, DOWN, LEFT, RIGHT)
+    val ASSIGNABLE = listOf(A, B, X, Y, L, R, START, SELECT, TURBO_A, TURBO_B, UP, DOWN, LEFT, RIGHT)
 
     fun label(k: String) = when (k) {
-        MOVE -> "Movimiento"; A -> "A"; B -> "B"; L -> "L"; R -> "R"
+        MOVE -> "Movimiento"; A -> "A"; B -> "B"; X -> "X (DS)"; Y -> "Y (DS)"; L -> "L"; R -> "R"
         START -> "Start"; SELECT -> "Select"; TURBO_A -> "Turbo A"; TURBO_B -> "Turbo B"
         UP -> "D-Pad ↑"; DOWN -> "D-Pad ↓"; LEFT -> "D-Pad ←"; RIGHT -> "D-Pad →"
         MENU -> "Menú"; QUICK -> "Guardar"; else -> k
@@ -47,7 +49,7 @@ object Kind {
     }
 
     fun mask(k: String): Int = when (k) {
-        A -> GbaKey.A; B -> GbaKey.B; L -> GbaKey.L; R -> GbaKey.R
+        A -> GbaKey.A; B -> GbaKey.B; L -> GbaKey.L; R -> GbaKey.R; X -> GbaKey.X; Y -> GbaKey.Y
         START -> GbaKey.START; SELECT -> GbaKey.SELECT
         TURBO_A -> GbaKey.TURBO_A; TURBO_B -> GbaKey.TURBO_B
         UP -> GbaKey.UP; DOWN -> GbaKey.DOWN; LEFT -> GbaKey.LEFT; RIGHT -> GbaKey.RIGHT
@@ -55,12 +57,12 @@ object Kind {
     }
 
     fun baseW(k: String) = when (k) {
-        MOVE -> 150; A, B, TURBO_A, TURBO_B -> 72; L, R -> 96; START, SELECT -> 84
+        MOVE -> 150; A, B, X, Y, TURBO_A, TURBO_B -> 72; L, R -> 96; START, SELECT -> 84
         MENU, QUICK -> 44; else -> 56
     }
 
     fun baseH(k: String) = when (k) {
-        MOVE -> 150; A, B, TURBO_A, TURBO_B -> 72; L, R -> 46; START, SELECT -> 34
+        MOVE -> 150; A, B, X, Y, TURBO_A, TURBO_B -> 72; L, R -> 46; START, SELECT -> 34
         MENU, QUICK -> 44; else -> 56
     }
 }
@@ -128,6 +130,12 @@ class ControlLayout {
         moveType = MoveType.CROSS
         deadzone = 0.25f
         selected = null
+    }
+
+    /** Los juegos de DS usan X e Y: se anaden (una vez) a layouts guardados antes de existir DS. */
+    fun ensureDsButtons() {
+        if (items.none { it.kind == Kind.X }) items.add(PadItem(Kind.X, Kind.X, if (portrait) 0.88f else 0.86f, if (portrait) 0.66f else 0.34f))
+        if (items.none { it.kind == Kind.Y }) items.add(PadItem(Kind.Y, Kind.Y, if (portrait) 0.78f else 0.77f, if (portrait) 0.76f else 0.52f))
     }
 
     fun find(id: String?): PadItem? = items.firstOrNull { it.id == id }

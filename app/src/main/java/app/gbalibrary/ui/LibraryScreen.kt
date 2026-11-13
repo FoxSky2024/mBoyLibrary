@@ -9,6 +9,8 @@ import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.RssFeed
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.Icons
 import androidx.activity.compose.BackHandler
@@ -125,11 +127,12 @@ fun LibraryApp(vm: LibraryViewModel, actions: LibraryActions, onPlay: (Game) -> 
     var showSettings by rememberSaveable { mutableStateOf(false) }
     var showProfile by rememberSaveable { mutableStateOf(false) }
     var showGallery by rememberSaveable { mutableStateOf(false) }
+    var showNews by rememberSaveable { mutableStateOf(false) }
     val detail = all.firstOrNull { it.id == detailId }
 
     // Modo de navegacion con mando segun la pantalla visible.
     val navMode = when {
-        showSettings || showGallery || showProfile -> MenuNav.Mode.FOCUS
+        showSettings || showGallery || showProfile || showNews -> MenuNav.Mode.FOCUS
         detail != null -> MenuNav.Mode.DETAIL
         else -> MenuNav.Mode.HOME
     }
@@ -148,8 +151,9 @@ fun LibraryApp(vm: LibraryViewModel, actions: LibraryActions, onPlay: (Game) -> 
         }
     }
 
-    BackHandler(enabled = detail != null || showSettings || showProfile || showGallery) {
+    BackHandler(enabled = detail != null || showSettings || showProfile || showGallery || showNews) {
         when {
+            showNews -> showNews = false
             showGallery -> showGallery = false
             showSettings -> showSettings = false
             showProfile -> showProfile = false
@@ -201,13 +205,23 @@ fun LibraryApp(vm: LibraryViewModel, actions: LibraryActions, onPlay: (Game) -> 
             }
         },
     ) {
-        LibraryBackground()
+        val shelfFull = Settings.shelfView.value && !showSettings && !showGallery && !showNews && !showProfile && detail == null
+        if (!shelfFull) LibraryBackground()
         IncomingHost()
+        run {
+            val shots = remember(all) { app.gbalibrary.data.Shots.list(ctx).size }
+            val saves = remember(all) { val d = app.gbalibrary.data.DataDir.saves(ctx); all.count { g -> java.io.File(d, "${g.id}.sav").let { it.exists() && it.length() > 0 } } }
+            LaunchedEffect(all, shots, saves) {
+                AchSound.init(ctx)
+                if (all.isNotEmpty()) Achievements.check(ProfileStats.of(all, shots, saves))
+            }
+        }
         // El contenido respeta barra de estado, notch y barra de navegacion (el fondo ocupa todo).
-        Box(Modifier.fillMaxSize().safeDrawingPadding().padding(Settings.uiMargin.intValue.dp)) {
+        Box(if (shelfFull) Modifier.fillMaxSize() else Modifier.fillMaxSize().safeDrawingPadding().padding(Settings.uiMargin.intValue.dp)) {
             when {
                 showSettings -> SettingsScreen(vm, actions, onBack = { showSettings = false })
                 showGallery -> GalleryScreen(onBack = { showGallery = false })
+                showNews -> NewsScreen(vm, onBack = { showNews = false })
                 showProfile -> ProfileScreen(
                     vm = vm,
                     onPickAvatar = actions.pickAvatar,
@@ -231,10 +245,12 @@ fun LibraryApp(vm: LibraryViewModel, actions: LibraryActions, onPlay: (Game) -> 
                     onSettings = { Sfx.click(); showSettings = true },
                     onProfile = { Sfx.click(); showProfile = true },
                     onGallery = { Sfx.click(); showGallery = true },
+                    onNews = { Sfx.click(); showNews = true },
                 )
             }
         }
         PipOverlay()
+        AchievementToastHost()
         // Vinilo abajo a la derecha (biblioteca y ajustes; nunca dentro del juego)
         VinylOverlay(Modifier.align(Alignment.BottomEnd))
     }
@@ -268,6 +284,7 @@ private fun LibraryHome(
     onSettings: () -> Unit,
     onProfile: () -> Unit,
     onGallery: () -> Unit,
+    onNews: () -> Unit,
 ) {
     val p = LocalPalette.current
     val all by vm.games.collectAsState()
@@ -289,7 +306,7 @@ private fun LibraryHome(
     val featState = rememberLazyListState()
     val focusManager = LocalFocusManager.current
     val featured = remember(all) { featuredOf(all) }
-    val showFeatured = category == CAT_ALL && query.isBlank() && featured.isNotEmpty()
+    val showFeatured = category == CAT_ALL && query.isBlank() && featured.isNotEmpty() && !Settings.shelfView.value
     val sideKeys = remember(collections) { listOf(CAT_ALL, CAT_FAV, CAT_RECENT, CAT_TOP) + collections }
     val showFocus = MenuNav.active.value || PadInput.connected.value
     DisposableEffect(Unit) { onDispose { MenuNav.textFocus = false } }
@@ -317,7 +334,7 @@ private fun LibraryHome(
             }
             else -> when (nav.zone) {
                 Zone.GRID -> when (k) {
-                    NavKey.LEFT -> if (nav.grid % cols == 0) enterSide() else nav.grid--
+                    NavKey.LEFT -> if (nav.grid % cols == 0) { if (!Settings.shelfView.value) enterSide() } else nav.grid--
                     NavKey.RIGHT -> if (nav.grid < n - 1 && nav.grid % cols != cols - 1) nav.grid++
                     NavKey.UP -> if (nav.grid >= cols) nav.grid -= cols else if (showFeatured) nav.zone = Zone.FEATURED
                     NavKey.DOWN -> if (nav.grid + cols < n) nav.grid += cols else if (nav.grid / cols < (n - 1) / cols) nav.grid = n - 1
@@ -373,7 +390,27 @@ private fun LibraryHome(
     }
 
     Box(Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxSize()) {
+        if (Settings.shelfView.value && all.isNotEmpty()) {
+            SideEffect { nav.cols = 100000 } // en la estanteria izquierda/derecha mueven siempre de uno en uno
+            ShelfView(
+                games = games,
+                all = all,
+                selected = nav.grid,
+                onSelect = { nav.grid = it },
+                onOpen = onOpen,
+                onPlay = onPlay,
+                onLong = { menuGame = it },
+                query = query,
+                onQuery = { vm.query.value = it },
+                systemFilter = systemFilter,
+                onSystemFilter = { vm.systemFilter.value = it },
+                onSettings = onSettings,
+                onToggleView = { Settings.setShelfView(false) },
+                onAddFolder = actions.addFolder,
+                onAddFiles = actions.addFiles,
+                onRescan = { vm.rescan() },
+            )
+        } else Column(Modifier.fillMaxSize()) {
             TopBar(
                 query = query,
                 onQuery = { vm.query.value = it },
@@ -384,10 +421,10 @@ private fun LibraryHome(
                 onSettings = onSettings,
                 onProfile = onProfile,
                 onGallery = onGallery,
+                onNews = onNews,
             )
             if (scanning) LinearProgressIndicator(Modifier.fillMaxWidth().height(3.dp), color = p.accent)
             if (all.isNotEmpty()) SystemFilterRow(all, systemFilter) { vm.systemFilter.value = it }
-
             Row(Modifier.fillMaxSize()) {
                 SidePanel(all, collections, category, if (showFocus && nav.zone == Zone.SIDE) nav.side else -1, sideKeys) { vm.category.value = it }
                 if (all.isEmpty()) {
@@ -424,6 +461,7 @@ private fun TopBar(
     onSettings: () -> Unit,
     onProfile: () -> Unit,
     onGallery: () -> Unit,
+    onNews: () -> Unit,
 ) {
     val p = LocalPalette.current
     var sortMenu by remember { mutableStateOf(false) }
@@ -469,16 +507,17 @@ private fun TopBar(
         }
 
         Box {
-            Text("＋", color = p.accent, fontSize = 24.sp, maxLines = 1, modifier = Modifier.clickable { Sfx.click(); addMenu = true }.padding(horizontal = 10.dp, vertical = 4.dp))
+            Ic(Icons.Filled.Add, size = 26.dp, tint = p.accent, modifier = Modifier.clickable { Sfx.click(); addMenu = true }.padding(horizontal = 10.dp, vertical = 4.dp))
             DropdownMenu(expanded = addMenu, onDismissRequest = { addMenu = false }) {
                 DropdownMenuItem(text = { Text("Agregar carpeta de ROMs") }, onClick = { addMenu = false; actions.addFolder() })
-                DropdownMenuItem(text = { Text("Agregar archivos (.gba .gbc .gb .zip .7z)") }, onClick = { addMenu = false; actions.addFiles() })
+                DropdownMenuItem(text = { Text("Agregar archivos (.gba .gbc .gb .nds .zip .7z)") }, onClick = { addMenu = false; actions.addFiles() })
                 DropdownMenuItem(text = { Text("Volver a escanear carpetas") }, onClick = { addMenu = false; onRescan() })
             }
         }
 
         StatusIndicators()
 
+        Ic(Icons.Filled.RssFeed, size = 22.dp, tint = p.dim, modifier = Modifier.clickable { onNews() }.padding(horizontal = 6.dp, vertical = 4.dp))
         Ic(Icons.Filled.PhotoLibrary, size = 22.dp, tint = p.dim, modifier = Modifier.clickable { onGallery() }.padding(horizontal = 6.dp, vertical = 4.dp))
         Row(
             Modifier.clip(RoundedCornerShape(24.dp)).clickable(onClick = onProfile).padding(horizontal = 8.dp, vertical = 4.dp),
@@ -536,14 +575,14 @@ private fun CoverMenu(g: Game, vm: LibraryViewModel, actions: LibraryActions, on
 }
 
 @Composable
-fun Avatar(sizeDp: Int, ring: Color? = null) {
+fun Avatar(sizeDp: Int, ring: Color? = null, shape: androidx.compose.ui.graphics.Shape = CircleShape) {
     val p = LocalPalette.current
     val ctx = LocalContext.current
     val bmp by produceState<ImageBitmap?>(null, Settings.avatarStamp.intValue) {
         value = withContext(Dispatchers.IO) { Covers.load(Covers.avatarFile(ctx)) }
     }
     Box(
-        Modifier.size(sizeDp.dp).clip(CircleShape).background(p.card).border(2.dp, ring ?: p.accent, CircleShape),
+        Modifier.size(sizeDp.dp).clip(shape).background(p.card).border(2.dp, ring ?: p.accent, shape),
         contentAlignment = Alignment.Center,
     ) {
         val b = bmp
@@ -601,7 +640,8 @@ private fun SideItem(label: String, count: Int, selected: Boolean, focused: Bool
 @Composable
 private fun SystemFilterRow(all: List<Game>, selected: String, onSelect: (String) -> Unit) {
     val p = LocalPalette.current
-    val systems = listOf("" to "Todos", "GBA" to "GBA", "GBC" to "GBC", "GB" to "GB")
+    val systems = listOf("" to "Todos", "GBA" to "GBA", "GBC" to "GBC", "GB" to "GB", "DS" to "DS") +
+        app.gbalibrary.data.Systems.external.map { it.short to it.short }
     Row(
         Modifier.fillMaxWidth().background(p.panel.copy(alpha = Settings.boxOpacity.floatValue))
             .horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 6.dp),
@@ -610,8 +650,14 @@ private fun SystemFilterRow(all: List<Game>, selected: String, onSelect: (String
     ) {
         systems.forEach { (key, name) ->
             val n = if (key.isEmpty()) all.size else all.count { systemOf(it) == key }
-            if (key.isEmpty() || n > 0 || selected == key) AppChip("$name  $n", selected == key, { onSelect(key) })
+            if (key.isEmpty() || n > 0 || selected == key || key in setOf("GBA", "GBC", "GB", "DS")) AppChip("$name  $n", selected == key, { onSelect(key) })
         }
+        // Cambia entre la cuadricula estilo Steam y la estanteria 3D
+        AppChip(
+            if (Settings.shelfView.value) "Vista Steam" else "Estantería 3D",
+            false,
+            { Settings.setShelfView(!Settings.shelfView.value) },
+        )
     }
 }
 
@@ -620,7 +666,7 @@ private fun EmptyLibrary(actions: LibraryActions) {
     EmptyState(
         icon = Icons.Filled.SportsEsports,
         title = "Tu biblioteca está vacía",
-        body = "Agrega la carpeta donde guardas tus ROMs (.gba, .gbc, .gb, .zip, .7z). Solo juegos que poseas.",
+        body = "Agrega la carpeta donde guardas tus ROMs (.gba, .gbc, .gb, .nds, .zip, .7z). Solo juegos que poseas.",
     ) {
         AppButton("Agregar carpeta de ROMs", actions.addFolder, kind = BtnKind.PRIMARY, big = true, icon = Icons.Filled.FolderOpen)
         AppButton("Agregar archivos", actions.addFiles)

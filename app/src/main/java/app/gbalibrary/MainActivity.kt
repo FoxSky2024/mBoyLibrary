@@ -165,6 +165,24 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    // Modo inmersivo: las barras del sistema se esconden solas unos segundos despues de entrar o de mostrarse (deslizar desde el borde).
+    private val immersiveHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val hideBars = Runnable {
+        val c = androidx.core.view.WindowInsetsControllerCompat(window, window.decorView)
+        c.systemBarsBehavior = androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        c.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+    }
+
+    private fun scheduleHideBars(delayMs: Long = 3000L) {
+        immersiveHandler.removeCallbacks(hideBars)
+        immersiveHandler.postDelayed(hideBars, delayMs)
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) scheduleHideBars()
+    }
+
     private fun handleLink(i: Intent?) {
         val u = i?.data
         if (u != null && u.scheme == "mboy") app.gbalibrary.ui.Incoming.uri.value = u
@@ -180,7 +198,12 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         Settings.init(this) // GbaApp ya lo hizo; es idempotente
         app.gbalibrary.data.Profile.init(this)
+        app.gbalibrary.data.Feeds.init(this)
         handleLink(intent)
+        @Suppress("DEPRECATION")
+        window.decorView.setOnSystemUiVisibilityChangeListener { vis ->
+            if (vis and android.view.View.SYSTEM_UI_FLAG_HIDE_NAVIGATION == 0) scheduleHideBars()
+        }
         PadInput.init(this)
         Archive.clearCache(this) // restos de una sesion anterior
         val actions = LibraryActions(
@@ -215,15 +238,68 @@ class MainActivity : ComponentActivity() {
                         dismissButton = { TextButton(onClick = { askStorage = false; flags.edit().putBoolean("storage_asked", true).apply() }) { Text("Más tarde") } },
                     )
                 }
-                LibraryApp(
-                    vm = vm,
-                    actions = actions,
-                    onPlay = { game -> launchGame(game.id, "") },
-                    onPlaySlot = { game, slot -> launchGame(game.id, slot) },
-                )
+                androidx.compose.foundation.layout.Box {
+                    LibraryApp(
+                        vm = vm,
+                        actions = actions,
+                        onPlay = { game -> play(game, "") },
+                        onPlaySlot = { game, slot -> play(game, slot) },
+                    )
+                    bootGame?.let { g ->
+                        app.gbalibrary.ui.BootScreen(
+                            game = g,
+                            onDone = { bootGame = null; launchAny(g, bootSlot) },
+                            onCancel = { bootGame = null },
+                        )
+                    }
+                }
               }
             }
         }
+    }
+
+    // ---- Pantalla de arranque + juegos de sistemas con emulador externo ----
+    private var bootGame by mutableStateOf<app.gbalibrary.data.Game?>(null)
+    private var bootSlot = ""
+    private var extGameId: String? = null
+    private var extStartedAt = 0L
+
+    private fun play(g: app.gbalibrary.data.Game, slot: String) {
+        if (Settings.bootScreen.value) { bootSlot = slot; bootGame = g } else launchAny(g, slot)
+    }
+
+    private fun launchAny(g: app.gbalibrary.data.Game, slot: String) {
+        if (g.external.isEmpty()) launchGame(g.id, slot) else launchExternal(g)
+    }
+
+    private fun launchExternal(g: app.gbalibrary.data.Game) {
+        val console = app.gbalibrary.data.Systems.externalById(g.external) ?: return
+        when (val r = app.gbalibrary.emu.ExternalLauncher.launch(this, g, console)) {
+            is app.gbalibrary.emu.ExternalResult.Ok -> {
+                Music.pause()
+                val now = System.currentTimeMillis()
+                app.gbalibrary.data.GameStore.get(applicationContext).addLaunch(g.id, now)
+                extGameId = g.id
+                extStartedAt = SystemClock.elapsedRealtime()
+            }
+            is app.gbalibrary.emu.ExternalResult.NoEmulatorAvailable ->
+                Toast.makeText(this, "No hay emulador de ${console.name} para Android todavía", Toast.LENGTH_LONG).show()
+            is app.gbalibrary.emu.ExternalResult.NotInstalled -> {
+                val e = console.emulators.first()
+                Toast.makeText(this, "Instala ${e.label} para jugar a ${console.name}", Toast.LENGTH_LONG).show()
+                app.gbalibrary.emu.ExternalLauncher.openStorePage(this, e)
+            }
+            is app.gbalibrary.emu.ExternalResult.Failed ->
+                Toast.makeText(this, r.reason, Toast.LENGTH_LONG).show()
+        }
+    }
+
+    /** Al volver del emulador externo: suma el tiempo jugado a la ficha del juego. */
+    private fun endExternalSession() {
+        val id = extGameId ?: return
+        extGameId = null
+        val secs = (SystemClock.elapsedRealtime() - extStartedAt) / 1000
+        if (secs > 0) app.gbalibrary.data.GameStore.get(applicationContext).addPlay(id, secs, System.currentTimeMillis())
     }
 
     private fun launchGame(gameId: String, slot: String) {
@@ -238,6 +314,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        endExternalSession()
         if (DataDir.refresh(this)) vm.reloadFromDisk()
         Music.userPaused = false
         Music.sync(this)
@@ -250,6 +327,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
+        immersiveHandler.removeCallbacks(hideBars)
         super.onDestroy()
         if (isFinishing) {
             Music.release()

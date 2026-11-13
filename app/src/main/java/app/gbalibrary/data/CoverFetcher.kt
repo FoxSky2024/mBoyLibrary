@@ -36,16 +36,28 @@ object CoverFetcher {
     var networkFailed: Boolean = false
         private set
 
-    private fun platformDir(game: Game): String = when (game.fileName.substringAfterLast('.', "").lowercase()) {
-        "gbc" -> "Nintendo - Game Boy Color"
-        "gb" -> "Nintendo - Game Boy"
-        else -> "Nintendo - Game Boy Advance"
+    private fun platformDir(game: Game): String {
+        if (game.external.isNotEmpty()) {
+            app.gbalibrary.data.Systems.externalById(game.external)?.libretroDir?.takeIf { it.isNotEmpty() }?.let { return it }
+        }
+        return when (game.fileName.substringAfterLast('.', "").lowercase()) {
+            "gbc" -> "Nintendo - Game Boy Color"
+            "gb" -> "Nintendo - Game Boy"
+            "nds" -> "Nintendo - Nintendo DS"
+            else -> "Nintendo - Game Boy Advance"
+        }
     }
 
-    private fun platformWord(game: Game): String = when (game.fileName.substringAfterLast('.', "").lowercase()) {
-        "gbc" -> "Game Boy Color"
-        "gb" -> "Game Boy"
-        else -> "Game Boy Advance"
+    private fun platformWord(game: Game): String {
+        if (game.external.isNotEmpty()) {
+            app.gbalibrary.data.Systems.externalById(game.external)?.name?.let { return it }
+        }
+        return when (game.fileName.substringAfterLast('.', "").lowercase()) {
+            "gbc" -> "Game Boy Color"
+            "gb" -> "Game Boy"
+            "nds" -> "Nintendo DS"
+            else -> "Game Boy Advance"
+        }
     }
 
     // ---------------------------------------------------------------- API publica
@@ -103,6 +115,74 @@ object CoverFetcher {
             Log.w(TAG, "fetchFor fallo", e)
             false
         }
+    }
+
+    // ---------------------------------------------------------------- Contraportada (extras)
+
+    fun snapFile(ctx: Context, id: String) = File(Covers.cacheDir(ctx), "$id.snap.jpg")
+    fun descFile(ctx: Context, id: String) = File(Covers.cacheDir(ctx), "$id.desc.txt")
+
+    /** Contraportada real (si el usuario la puso a mano en GBALibrary/Covers/.cache/<id>.back.jpg). */
+    fun backFile(ctx: Context, id: String) = File(Covers.cacheDir(ctx), "$id.back.jpg")
+
+    /**
+     * Datos para la contraportada, con las mismas fuentes que la portada: captura de pantalla del juego
+     * (Libretro Named_Snaps, mismo indice que los boxarts) y descripcion (Wikipedia).
+     * Ninguna de estas fuentes (ni SteamGridDB) ofrece escaneos de contraportadas; por eso la caja genera
+     * una contraportada propia con estos datos. Se intenta una vez cada [RETRY_AFTER_MS].
+     */
+    suspend fun fetchBackExtras(ctx: Context, game: Game): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val snap = snapFile(ctx, game.id)
+            val desc = descFile(ctx, game.id)
+            if (snap.exists() && desc.exists()) return@withContext true
+            val tried = File(Covers.cacheDir(ctx), "${game.id}.backtried")
+            if (tried.exists() && System.currentTimeMillis() - tried.lastModified() < RETRY_AFTER_MS) {
+                return@withContext snap.exists() || desc.exists()
+            }
+            networkFailed = false
+            val toks = tokens(RomHeader.searchName(game.title))
+            if (toks.isEmpty()) return@withContext false
+            val platform = platformDir(game)
+            if (!snap.exists()) {
+                val index = libretroIndex(ctx, platform)
+                for (q in variantsOf(toks)) {
+                    val match = bestMatch(index, q) ?: continue
+                    val url = "https://thumbnails.libretro.com/${enc(platform)}/Named_Snaps/${enc(match)}"
+                    val bytes = httpGet(url, MAX_IMAGE) ?: continue
+                    if (Covers.importBytes(bytes, snap, 640)) break
+                }
+            }
+            if (!desc.exists()) {
+                for (q in variantsOf(toks)) {
+                    val text = wikiExtract(q, platformWord(game)) ?: continue
+                    desc.writeText(text)
+                    break
+                }
+            }
+            if (!networkFailed) tried.writeText(System.currentTimeMillis().toString())
+            snap.exists() || desc.exists()
+        } catch (e: Exception) {
+            Log.w(TAG, "fetchBackExtras fallo", e)
+            false
+        }
+    }
+
+    /** Introduccion (3 frases) del articulo de Wikipedia que nombra el juego. */
+    private fun wikiExtract(q: List<String>, platformWord: String): String? {
+        val search = enc(q.joinToString(" ") + " $platformWord video game")
+        val url = "https://en.wikipedia.org/w/api.php?action=query&format=json&generator=search" +
+            "&gsrsearch=$search&gsrlimit=4&prop=extracts&exintro=1&explaintext=1&exsentences=3"
+        val body = httpGet(url, 1_000_000) ?: return null
+        val pages = JSONObject(String(body, Charsets.UTF_8)).optJSONObject("query")?.optJSONObject("pages") ?: return null
+        val list = pages.keys().asSequence().map { pages.getJSONObject(it) }.sortedBy { it.optInt("index", 99) }.toList()
+        for (p in list) {
+            val ex = p.optString("extract").trim()
+            if (ex.isBlank()) continue
+            val tt = tokens(p.optString("title").substringBefore(" ("))
+            if (q.all { it in tt }) return ex.take(420)
+        }
+        return null
     }
 
     /** Descarga la portada desde una direccion pegada por el usuario. */

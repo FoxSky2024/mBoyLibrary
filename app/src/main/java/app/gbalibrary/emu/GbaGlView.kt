@@ -32,6 +32,29 @@ object VideoScale {
  * brillo y escala se cambian en vivo (campos @Volatile leidos por el hilo de GL).
  */
 class GbaGlView(context: Context) : GLSurfaceView(context) {
+    // Rectangulo (en pixeles de la vista) donde se dibuja la imagen; sirve para convertir toques en coordenadas de la DS.
+    @Volatile private var destX = 0f
+    @Volatile private var destY = 0f
+    @Volatile private var destW = 1f
+    @Volatile private var destH = 1f
+
+    /** Pantalla tactil de la DS: el toque se manda al nucleo como puntero (0..1 sobre toda la imagen). */
+    @android.annotation.SuppressLint("ClickableViewAccessibility")
+    override fun onTouchEvent(event: android.view.MotionEvent): Boolean {
+        if (!Native.isDs) return super.onTouchEvent(event)
+        val idx = event.actionIndex
+        when (event.actionMasked) {
+            android.view.MotionEvent.ACTION_DOWN, android.view.MotionEvent.ACTION_MOVE -> {
+                val nx = ((event.x - destX) / destW).coerceIn(0f, 1f)
+                val ny = ((event.y - destY) / destH).coerceIn(0f, 1f)
+                Native.setTouch(nx, ny, true)
+            }
+            android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> Native.setTouch(0f, 0f, false)
+            else -> if (idx < 0) return false
+        }
+        return true
+    }
+
     @Volatile var filter = VideoFilter.PIXEL
     @Volatile var scaleMode = VideoScale.FIT
     @Volatile var brightness = 1.0f
@@ -63,7 +86,7 @@ class GbaGlView(context: Context) : GLSurfaceView(context) {
         private var surfaceH = 1
         private var appliedFilter = -1
         private val pixels: ByteBuffer =
-            ByteBuffer.allocateDirect(256 * 224 * 4).order(ByteOrder.nativeOrder())
+            ByteBuffer.allocateDirect(1024 * 512 * 4).order(ByteOrder.nativeOrder())
         private val quad: FloatBuffer = ByteBuffer.allocateDirect(16 * 4)
             .order(ByteOrder.nativeOrder()).asFloatBuffer().apply {
                 // x, y, u, v  (v invertida: la fila 0 de la imagen va arriba)
@@ -187,6 +210,7 @@ class GbaGlView(context: Context) : GLSurfaceView(context) {
             val x = ((sw - dw) / 2f).toInt()
             val y = ((sh - dh) / 2f).toInt()
             GLES20.glViewport(x, y, dw.toInt(), dh.toInt())
+            destX = x.toFloat(); destY = y.toFloat(); destW = dw; destH = dh
 
             GLES20.glUseProgram(program)
             GLES20.glUniform1i(uTex, 0)

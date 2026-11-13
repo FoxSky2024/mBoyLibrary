@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import org.json.JSONArray
 import org.json.JSONObject
@@ -32,6 +33,10 @@ object Profile {
     val showTime = mutableStateOf(true)
     val acceptNotes = mutableStateOf(true)
     val notes = mutableStateListOf<ProfileNote>()
+    /** Logros desbloqueados: id -> fecha (ms). */
+    val unlocked = mutableStateMapOf<String, Long>()
+    var platinumDone = false
+        private set
 
     @Synchronized
     fun init(ctx: Context) {
@@ -54,6 +59,12 @@ object Profile {
         showGames.value = p.getBoolean("showGames", true)
         showTime.value = p.getBoolean("showTime", true)
         acceptNotes.value = p.getBoolean("acceptNotes", true)
+        unlocked.clear()
+        (p.getString("unlocked", "") ?: "").split(',').forEach { e ->
+            val kv = e.split(':')
+            if (kv.size == 2) kv[1].toLongOrNull()?.let { unlocked[kv[0]] = it }
+        }
+        platinumDone = p.getBoolean("platinumDone", false)
         loadNotes(ctx.applicationContext)
     }
 
@@ -80,6 +91,16 @@ object Profile {
         showcase.value = s
         edit { putString("showcase", s) }
     }
+
+    /** Marca un logro como desbloqueado; false si ya lo estaba. */
+    fun unlock(badgeId: String): Boolean {
+        if (unlocked.containsKey(badgeId)) return false
+        unlocked[badgeId] = System.currentTimeMillis()
+        edit { putString("unlocked", unlocked.entries.joinToString(",") { "${it.key}:${it.value}" }) }
+        return true
+    }
+
+    fun markPlatinum() { platinumDone = true; edit { putBoolean("platinumDone", true) } }
 
     // ---- Notas ----
 

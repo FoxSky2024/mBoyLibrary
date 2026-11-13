@@ -117,8 +117,10 @@ fun AppButton(
 
 /** Etiqueta del sistema de un juego: GBA / GBC / GB. */
 fun systemOf(g: Game): String {
+    if (g.external.isNotEmpty()) return app.gbalibrary.data.Systems.externalById(g.external)?.short ?: g.external
     val name = (g.entry.ifEmpty { g.fileName }).lowercase()
     return when {
+        name.endsWith(".nds") -> "DS"
         name.endsWith(".gbc") -> "GBC"
         name.endsWith(".gb") -> "GB"
         name.endsWith(".gba") || name.endsWith(".agb") -> "GBA"
@@ -132,7 +134,8 @@ fun SystemBadge(system: String, modifier: Modifier = Modifier) {
     val bg = when (system) {
         "GBA" -> Color(0xFF3949AB)
         "GBC" -> Color(0xFF00897B)
-        else -> Color(0xFF6D6D6D)
+        "DS" -> Color(0xFF8E24AA)
+        else -> app.gbalibrary.data.Systems.byShort(system)?.accent?.copy(alpha = 0.85f) ?: Color(0xFF6D6D6D)
     }
     Text(
         system, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 1,
@@ -284,20 +287,4 @@ fun RailItem(label: String, icon: ImageVector?, selected: Boolean, onClick: () -
         if (icon != null) Ic(icon, size = 20.dp, tint = if (selected) p.accent else p.dim)
         Text(label, color = if (selected) p.accent else p.text, fontSize = Ds.BodySp.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
-}
-
-@Composable
-fun Ic(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    size: androidx.compose.ui.unit.Dp = 20.dp,
-    tint: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color.Unspecified,
-    contentDescription: String? = null,
-    modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier
-) {
-    androidx.compose.material3.Icon(
-        imageVector = icon,
-        contentDescription = contentDescription,
-        modifier = modifier.then(androidx.compose.ui.Modifier.size(size)),
-        tint = tint
-    )
 }

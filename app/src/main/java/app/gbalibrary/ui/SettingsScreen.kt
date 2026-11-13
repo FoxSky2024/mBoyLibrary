@@ -94,6 +94,7 @@ fun SettingsScreen(vm: LibraryViewModel, actions: LibraryActions, onBack: () -> 
                     ScaleSection()
                     AppearanceSection(actions)
                     InterfaceSection()
+                    ShelfDeckSection()
                     AnimationsSection()
                     Section("Imagen") { VideoSettings() }
                     PipSection(actions)
@@ -297,7 +298,7 @@ private fun LibrarySection(vm: LibraryViewModel, actions: LibraryActions) {
             AppButton("Agregar archivos", actions.addFiles)
             AppButton("Volver a escanear", { vm.rescan() })
         }
-        Text("Acepta .gba, .gbc, .gb, .zip y .7z (se descomprimen solo en la caché y se limpian al salir).", color = p.dim, fontSize = 12.sp)
+        Text("Acepta .gba, .gbc, .gb, .nds, .zip y .7z (se descomprimen solo en la caché y se limpian al salir).", color = p.dim, fontSize = 12.sp)
         Text("Esta app no incluye ROMs ni BIOS. Usa solo juegos que poseas legalmente.", color = p.dim, fontSize = 12.sp)
     }
 }

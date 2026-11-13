@@ -8,6 +8,8 @@ import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Verified
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -27,6 +29,7 @@ class ProfileStats(
     val favorites: Int,
     val completed: Int,
     val saves: Int,
+    val maxLaunches: Int = 0,
 ) {
     val xp: Int = (seconds / 360).toInt() + games * 20 + shots * 5 + saves * 15 + completed * 50
     val level: Int = sqrt(xp / 25.0).toInt() + 1
@@ -38,6 +41,7 @@ class ProfileStats(
 
     companion object {
         fun of(all: List<Game>, shots: Int, saves: Int) = ProfileStats(
+            maxLaunches = all.maxOfOrNull { it.launches } ?: 0,
             games = all.size,
             seconds = all.sumOf { it.playSeconds },
             shots = shots,
@@ -56,6 +60,8 @@ val AllBadges: List<BadgeDef> = listOf(
     BadgeDef("shot", "Fotógrafo", "10 capturas", Icons.Filled.PhotoCamera) { it.shots >= 10 },
     BadgeDef("fav", "Favoritos", "3 juegos favoritos", Icons.Filled.Favorite) { it.favorites >= 3 },
     BadgeDef("done", "Completista", "Un juego al 100%", Icons.Filled.Verified) { it.completed >= 1 },
+    BadgeDef("save", "Guardián", "Partidas guardadas en 3 juegos", Icons.Filled.Save) { it.saves >= 3 },
+    BadgeDef("hab", "Habitual", "Abre un mismo juego 10 veces", Icons.Filled.Replay) { it.maxLaunches >= 10 },
     BadgeDef("lv10", "Nivel 10", "Llega al nivel 10", Icons.Filled.Star) { it.level >= 10 },
 )
 

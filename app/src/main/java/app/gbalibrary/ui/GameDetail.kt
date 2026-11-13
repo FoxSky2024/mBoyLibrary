@@ -105,9 +105,14 @@ fun GameDetail(
             ScreenHeader(title = "Ficha del juego", onBack = onBack)
             BoxWithConstraints(Modifier.fillMaxSize()) {
                 val wide = maxWidth >= 600.dp
-                val coverBox: @Composable (Modifier) -> Unit = { m ->
-                    Box(m.aspectRatio(3f / 4f).clip(RoundedCornerShape(Ds.RadiusM)).border(2.dp, p.card, RoundedCornerShape(Ds.RadiusM))) {
-                        CoverImage(game, Modifier.fillMaxSize())
+                val coverBox: @Composable (Modifier) -> Unit = { m -> Cover3D(game, m) }
+                val actionBtns: @Composable () -> Unit = {
+                    Column(verticalArrangement = Arrangement.spacedBy(Ds.Gap)) {
+                        AppButton("JUGAR", onPlay, Modifier.fillMaxWidth(), kind = BtnKind.PRIMARY, big = true, icon = Icons.Filled.PlayArrow)
+                        AppButton("Continuar", { onPlaySlot("auto") }, Modifier.fillMaxWidth(), enabled = hasAuto)
+                        AppButton("Guardados", { panel = if (panel == DetailPanel.SAVES) DetailPanel.INFO else DetailPanel.SAVES }, Modifier.fillMaxWidth())
+                        AppButton("Ajustes del juego", { panel = if (panel == DetailPanel.SETTINGS) DetailPanel.INFO else DetailPanel.SETTINGS }, Modifier.fillMaxWidth())
+                        if (!hasAuto) Hint("Aún no hay partida automática: JUGAR empieza desde el principio y se guarda solo al salir.")
                     }
                 }
                 val main: @Composable () -> Unit = {
@@ -118,13 +123,6 @@ fun GameDetail(
                             Text(formatSize(game.sizeBytes), color = p.dim, fontSize = Ds.LabelSp.sp, maxLines = 1)
                             Text("Última vez: ${formatAgo(game.lastPlayed)}", color = p.dim, fontSize = Ds.LabelSp.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
-                        AppButton("JUGAR", onPlay, Modifier.fillMaxWidth(), kind = BtnKind.PRIMARY, big = true, icon = Icons.Filled.PlayArrow)
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Ds.Gap)) {
-                            AppButton("Continuar", { onPlaySlot("auto") }, Modifier.weight(1f), enabled = hasAuto)
-                            AppButton("Guardados", { panel = if (panel == DetailPanel.SAVES) DetailPanel.INFO else DetailPanel.SAVES }, Modifier.weight(1f))
-                            AppButton("Ajustes del juego", { panel = if (panel == DetailPanel.SETTINGS) DetailPanel.INFO else DetailPanel.SETTINGS }, Modifier.weight(1f))
-                        }
-                        if (!hasAuto) Hint("Aún no hay partida automática: JUGAR empieza desde el principio y se guarda solo al salir.")
                         when (panel) {
                             DetailPanel.INFO -> InfoPanel(game)
                             DetailPanel.SAVES -> SavesPanel(game, onPlaySlot)
@@ -138,12 +136,13 @@ fun GameDetail(
                 }
                 if (wide) {
                     Row(Modifier.fillMaxSize().padding(Ds.Pad), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                        Column(Modifier.width(220.dp).verticalScroll(rememberScrollState())) { coverBox(Modifier.fillMaxWidth()) }
+                        Column(Modifier.width(240.dp).fillMaxHeight().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(Ds.GapL)) { coverBox(Modifier.fillMaxWidth()); actionBtns() }
                         Column(Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState())) { main() }
                     }
                 } else {
                     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Ds.Pad), verticalArrangement = Arrangement.spacedBy(Ds.GapL)) {
                         coverBox(Modifier.width(180.dp).align(Alignment.CenterHorizontally))
+                        actionBtns()
                         main()
                     }
                 }
@@ -187,12 +186,12 @@ private fun InfoPanel(game: Game) {
     val p = LocalPalette.current
     val sys = systemOf(game)
     SectionCard("Información") {
-        InfoRow("Sistema", when (sys) { "GBA" -> "Game Boy Advance"; "GBC" -> "Game Boy Color"; else -> "Game Boy" })
+        InfoRow("Sistema", if (game.external.isNotEmpty()) consoleOf(game).name else when (sys) { "GBA" -> "Game Boy Advance"; "GBC" -> "Game Boy Color"; "DS" -> "Nintendo DS"; else -> "Game Boy" })
         InfoRow("Tamaño", formatSize(game.sizeBytes))
         InfoRow("Tiempo jugado", formatPlayTime(game.playSeconds))
         InfoRow("Última vez", formatAgo(game.lastPlayed))
         InfoRow("Veces abierto", game.launches.toString())
-        InfoRow("Guardado detectado", if (game.detSave >= 0) SaveType.label(game.detSave) else "— (se detecta al abrir)")
+        if (game.external.isEmpty()) InfoRow("Guardado detectado", if (game.detSave >= 0) SaveType.label(game.detSave) else "— (se detecta al abrir)")
         if (sys == "GBA") InfoRow("Código del juego", game.code.ifBlank { "—" })
         InfoRow("Archivo", game.fileName)
     }

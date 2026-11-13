@@ -36,6 +36,13 @@ fun VideoSettings() {
                 else -> "Llena toda la pantalla recortando los bordes."
             },
         )
+        Subtitle("Nintendo DS: pantallas")
+        ChipRow(listOf("Arriba / abajo", "Lado a lado", "Solo arriba", "Solo abajo", "Grande + pequeña"), Settings.dsLayout.intValue) { Settings.setDsLayout(it) }
+        SwitchRow("Intercambiar pantallas", Settings.dsSwap.value) { Settings.setDsSwap(it) }
+        Subtitle("Nintendo DS: calidad")
+        ChipRow(listOf("Automática", "Alta", "Rendimiento"), Settings.dsQuality.intValue) { Settings.setDsQuality(it) }
+        Hint("Automática baja la calidad sola si el teléfono no llega a 60 fps. 'Grande + pequeña': el toque en ese modo depende del núcleo.")
+        Hint("Se aplica al abrir un juego de DS. La pantalla inferior es táctil: toca la imagen directamente. 'Lado a lado' aprovecha mejor el teléfono en horizontal.")
         SwitchRow("Mostrar FPS", Settings.showFps.value) { Settings.setShowFps(it) }
     }
 }

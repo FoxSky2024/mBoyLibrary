@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.8.0-beta (fusión con ShelfDeck)
+- **Estantería 3D** (botón "Estantería 3D" al final de la fila de sistemas, o Ajustes): cajas giradas con reflejo, deslizar / D-pad, tocar la central abre la ficha. La cuadrícula estilo Steam sigue disponible.
+- **Más sistemas con emulador externo**: GameCube, Wii, Wii U, Switch, PSP, PS2, Xbox 360, 3DS y Vita. Se escanean desde la misma carpeta de ROMs (sin copiar ni leer el archivo) y se abren con Dolphin, PPSSPP, Azahar, NetherSX2, Vita3K o Eden si están instalados. Se suma el tiempo jugado al volver.
+- **Pantalla de arranque por consola** ("Booting GameCube - Starting in Dolphin"), desactivable en Ajustes.
+- Ajustes: sección "Estantería 3D y sistemas" con el estado de cada emulador.
+- Portadas automáticas también para los nuevos sistemas (miniaturas libretro).
+- Motor propio sin cambios: mGBA (GBA/GB/GBC) y melonDS (DS).
+- Limitaciones: Wii U y Xbox 360 no tienen emulador usable en Android; los .iso se clasifican por el nombre de la carpeta (GameCube/, Wii/, PSP/, PS2/...); nombres de paquete de emuladores en `data/Systems.kt`. No compilado aquí (sin Android SDK).
+
+
+## 0.7.0-beta
+- **Motor multi-núcleo**: `Native` elige el núcleo por ROM. mGBA sigue igual (JNI renombrado a `Mgba`); nuevo host libretro (`Retro`, `cpp/retro_host.c`) para cargar cualquier núcleo libretro.
+- **Nintendo DS** con melonDS: dos pantallas (arriba/abajo, lado a lado, solo una), pantalla táctil tocando la imagen, botones X/Y (en pantalla y mando), estados, partidas guardadas (.dsv), captura, audio remuestreado a 44.1 kHz. Biblioteca, ficha, filtros y portadas reconocen `.nds`.
+- CI: el workflow descarga el núcleo melonDS a jniLibs; si falla, la app compila sin DS.
+- Perfil: insignia destacada, estado "Conectado ahora", fuentes de noticias.
+- `largeHeap` activado (ROMs de DS grandes).
+
+## 0.6.0-beta
+- Ficha del juego: carátula en 3D (arrastra para girarla; atrás muestra título/sistema/tiempo) y los botones JUGAR, Continuar, Guardados y Ajustes debajo de ella.
+- Noticias (icono RSS en la biblioteca): agrega enlaces de páginas (RSS/Atom autodetectado, Steam app, GitHub releases, subreddits) y ve sus publicaciones estilo Steam; abrir una publicación la abre en el navegador. Widgets: estadísticas, último jugado, logros, reloj y nota rápida.
+- Logros del emulador (10 insignias) con sonido y aviso arriba a la derecha estilo Steam; al conseguirlos todos suena el sonido de Platino y aparece el aviso dorado.
+- Perfil rediseñado como Steam: avatar cuadrado, columna derecha con nivel, estado, insignias y contadores.
+- Modo inmersivo: la barra de estado y de navegación se esconden a los 3 s y reaparecen al deslizar desde el borde.
 ## 0.5.0-beta
 - **Perfil estilo Steam**: cabecera con avatar, marco, fondo, lema, estado (En línea/Ausente/No molestar/Invisible), nivel y XP. Pestañas General (resumen, estadísticas, insignias, escaparate), Juegos, Notas y Editar (nombre, foto, lema, ubicación, resumen, marco, fondo, escaparate de 3 juegos, privacidad).
 - **Icono QR monocromo** arriba a la derecha del perfil: muestra un QR (y enlace `mboy://p?d=...`) con tu perfil. Quien lo abra ve tu perfil y puede **dejar una nota** (genera un QR/enlace de nota que se te entrega y se guarda en tu pestaña Notas). Sin servidor: todo viaja dentro del enlace. Notas solo se aceptan si van dirigidas a tu perfil, sin duplicados.
@@ -89,3 +112,10 @@
 - Ajustes y biblioteca: interfaz 0.2.0, barra superior sin encimarse, titulos en 2 lineas sin "...".
 - El emulador abre .gba, .gbc y .gb (nucleo GB activado en mGBA; tamano de imagen dinamico).
 - Disco de musica: giro de moneda, clic, deslizar arriba/abajo para cambiar de cancion.
+
+## 1.0.0
+- Estantería 3D rehecha: cajas con grosor, lomo por consola (GBA/GBC/GB/DS), contraportada (libretro Named_Snaps + descripción de Wikipedia, con respaldo generado), giro 360° de la caja seleccionada.
+- Modo Estantería a pantalla completa, sin márgenes ni fondo Steam; solo iconos arriba; nombre + JUGAR + Detalles al tocar una caja.
+- Sin parpadeo: caché LRU en memoria, precarga ±5, crossfade, marcador con shimmer.
+- Brillo holográfico que sigue al carrusel y al arrastre.
+- DS: módulo DsEmulator.kt (distribuciones incl. grande+pequeña, intercambio, calidad automática), pestañas siempre visibles.

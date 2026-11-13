@@ -23,6 +23,10 @@ object Settings {
     // Controles tactiles
     val padOpacity = mutableFloatStateOf(0.55f)
     val padSize = mutableFloatStateOf(1f)
+    /** Nintendo DS: 0 arriba/abajo, 1 izquierda/derecha, 2 solo arriba, 3 solo abajo. */
+    val dsLayout = mutableIntStateOf(1)
+    val dsSwap = mutableStateOf(false)
+    val dsQuality = mutableIntStateOf(0)
     val padVisible = mutableStateOf(true)
     val perGameLayout = mutableStateOf(false)
 
@@ -79,6 +83,10 @@ object Settings {
     // Orden de la biblioteca (nombre del SortMode)
     val sortMode = mutableStateOf("RECENT")
 
+    // Estanteria 3D (en vez de cuadricula) y pantalla de arranque por consola
+    val shelfView = mutableStateOf(false)
+    val bootScreen = mutableStateOf(true)
+
     private var appCtx: Context? = null
 
     fun init(ctx: Context) {
@@ -108,6 +116,9 @@ object Settings {
         muted.value = p.getBoolean("muted", false)
         padOpacity.floatValue = p.getFloat("padOpacity", 0.55f)
         padSize.floatValue = p.getFloat("padSize", 1f)
+        dsLayout.intValue = p.getInt("dsLayout", 1)
+        dsSwap.value = p.getBoolean("dsSwap", false)
+        dsQuality.intValue = p.getInt("dsQuality", 0)
         padVisible.value = p.getBoolean("padVisible", true)
         perGameLayout.value = p.getBoolean("perGameLayout", false)
         theme.intValue = p.getInt("theme", 0)
@@ -144,6 +155,8 @@ object Settings {
         autoCovers.value = p.getBoolean("autoCovers", true)
         sgdbKey.value = p.getString("sgdbKey", "") ?: ""
         sortMode.value = p.getString("sortMode", "RECENT") ?: "RECENT"
+        shelfView.value = p.getBoolean("shelfView", false)
+        bootScreen.value = p.getBoolean("bootScreen", true)
     }
 
     // ---- Guardado (cada setter actualiza el estado y persiste) ----
@@ -160,6 +173,9 @@ object Settings {
     fun setVolume(v: Int) { volume.intValue = v; edit { putInt("volume", v) } }
     fun setMuted(v: Boolean) { muted.value = v; edit { putBoolean("muted", v) } }
     fun setPadOpacity(v: Float) { padOpacity.floatValue = v; edit { putFloat("padOpacity", v) } }
+    fun setDsLayout(v: Int) { dsLayout.intValue = v; edit { putInt("dsLayout", v) } }
+    fun setDsSwap(v: Boolean) { dsSwap.value = v; edit { putBoolean("dsSwap", v) } }
+    fun setDsQuality(v: Int) { dsQuality.intValue = v; edit { putInt("dsQuality", v) } }
     fun setPadSize(v: Float) { padSize.floatValue = v; edit { putFloat("padSize", v) } }
     fun setPadVisible(v: Boolean) { padVisible.value = v; edit { putBoolean("padVisible", v) } }
     fun setPerGameLayout(v: Boolean) { perGameLayout.value = v; edit { putBoolean("perGameLayout", v) } }
@@ -198,6 +214,8 @@ object Settings {
     fun setAutoCovers(v: Boolean) { autoCovers.value = v; edit { putBoolean("autoCovers", v) } }
     fun setSgdbKey(v: String) { sgdbKey.value = v.trim(); edit { putString("sgdbKey", v.trim()) } }
     fun setSortMode(v: String) { sortMode.value = v; edit { putString("sortMode", v) } }
+    fun setShelfView(v: Boolean) { shelfView.value = v; edit { putBoolean("shelfView", v) } }
+    fun setBootScreen(v: Boolean) { bootScreen.value = v; edit { putBoolean("bootScreen", v) } }
 
     fun loadRaw(key: String): String? = sp?.getString(key, null)
     fun saveRaw(key: String, data: String) = edit { putString(key, data) }

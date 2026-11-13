@@ -37,3 +37,10 @@
 - GitHub Actions: push, workflow `.github` ejecuta `./gradlew :app:assembleRelease`.
 - Android Studio: abrir la carpeta, Sync, Run en un dispositivo (API 26+).
 - Sin ROMs ni BIOS incluidos: usa solo juegos que poseas.
+
+
+---
+## v0.8.0 - Fusión ShelfDeck (NO compilado ni probado)
+Archivos nuevos: `data/Systems.kt`, `data/ExternalScanner.kt`, `emu/ExternalLauncher.kt`, `ui/ShelfView.kt`, `ui/BootScreen.kt`, `ui/ShelfSettings.kt`.
+Tocados: `Game.kt` (campo `external`), `Settings.kt` (`shelfView`, `bootScreen`), `Design.kt` (`systemOf`, insignia), `LibraryScreen.kt` (filtro, toggle, vista estantería), `LibraryViewModel.kt` (escaneo externo), `CoverFetcher.kt`, `GameDetail.kt`, `MainActivity.kt` (arranque + lanzamiento externo + tiempo jugado), `SettingsScreen.kt`, `AndroidManifest.xml` (queries), `app/build.gradle.kts` (versión).
+Siguiente paso: subir a GitHub, esperar la build y pegar aquí cualquier error de compilación.

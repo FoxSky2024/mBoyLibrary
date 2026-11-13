@@ -17,7 +17,7 @@ import java.util.zip.ZipInputStream
  */
 object Archive {
     private const val TAG = "Archive"
-    private val ROM_EXT = setOf("gba", "agb", "gbc", "gb")
+    private val ROM_EXT = setOf("gba", "agb", "gbc", "gb", "nds")
 
     enum class Kind { NONE, ZIP, SEVENZ }
 

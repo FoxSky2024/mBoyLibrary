@@ -38,6 +38,8 @@ data class Game(
     val detRtc: Int = -1,
     /** Progreso del juego en % puesto por el usuario (-1 = sin definir). */
     val progress: Int = -1,
+    /** Id de la consola si el juego se lanza con un emulador externo (ver Systems); vacio = motor propio. */
+    val external: String = "",
 ) {
     fun toJson(): JSONObject = JSONObject().apply {
         put("id", id)
@@ -65,6 +67,7 @@ data class Game(
         put("detSave", detSave)
         put("detRtc", detRtc)
         put("progress", progress)
+        put("external", external)
     }
 
     companion object {
@@ -98,6 +101,7 @@ data class Game(
                 detSave = o.optInt("detSave", -1),
                 detRtc = o.optInt("detRtc", -1),
                 progress = o.optInt("progress", -1),
+                external = o.optString("external", ""),
             )
         }
     }

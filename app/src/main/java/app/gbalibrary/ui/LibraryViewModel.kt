@@ -14,6 +14,7 @@ import app.gbalibrary.data.Game
 import app.gbalibrary.data.Settings
 import app.gbalibrary.data.GameStore
 import app.gbalibrary.data.RomScanner
+import app.gbalibrary.data.ExternalScanner
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -158,7 +159,7 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
             when {
                 queue.isNotEmpty() -> message.value = if (found.isEmpty()) "Elige cual ROM abrir" else "$added juego(s) nuevo(s). Elige cual ROM abrir"
                 found.isEmpty() -> message.value =
-                    if (emptyArchives > 0) "El archivo comprimido no trae ninguna ROM (.gba .gbc .gb)" else "Ninguno de los archivos parece una ROM de GBA/GBC"
+                    if (emptyArchives > 0) "El archivo comprimido no trae ninguna ROM (.gba .gbc .gb .nds)" else "Ninguno de los archivos parece una ROM de GBA/GBC/DS"
                 else -> message.value = "$added juego(s) nuevo(s)"
             }
             // Un solo .zip/.7z con un solo .gba: se abre directamente.
@@ -209,6 +210,13 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
                         store.remove(id)
                         removed++
                     }
+                }
+                // Juegos de sistemas con emulador externo (GameCube, Wii, PSP, 3DS...): solo se referencian.
+                val ext = ExternalScanner.scanTree(appContext, f, store.games.value)
+                added += store.addScanned(ext.games)
+                for (id in ext.removedIds) {
+                    store.remove(id)
+                    removed++
                 }
             }
             scanning.value = false
@@ -281,6 +289,7 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
                 if (ok) {
                     store.setCover(g.id, true)
                     found++
+                    CoverFetcher.fetchBackExtras(appContext, g) // lomo/atras de la caja 3D
                 }
                 if (CoverFetcher.networkFailed) {
                     offline = true
@@ -306,6 +315,7 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
             coverStatus.value = null
             if (ok) {
                 store.setCover(id, true)
+                CoverFetcher.fetchBackExtras(appContext, g)
                 message.value = "Portada encontrada"
             } else {
                 message.value = if (CoverFetcher.networkFailed) "Sin conexion" else "No se encontro portada para ${g.title}"

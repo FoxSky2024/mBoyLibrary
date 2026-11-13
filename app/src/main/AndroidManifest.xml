@@ -17,9 +17,21 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
 
+    <!-- Android 11+: poder detectar los emuladores externos instalados -->
+    <queries>
+        <package android:name="org.dolphinemu.dolphinemu" />
+        <package android:name="org.ppsspp.ppsspp" />
+        <package android:name="org.ppsspp.ppssppgold" />
+        <package android:name="org.azahar_emu.azahar" />
+        <package android:name="xyz.aethersx2.android" />
+        <package android:name="org.vita3k.emulator" />
+        <package android:name="dev.eden.eden_emulator" />
+    </queries>
+
     <application
         android:name=".GbaApp"
         android:requestLegacyExternalStorage="true"
+        android:largeHeap="true"
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
         android:label="GBA Library"

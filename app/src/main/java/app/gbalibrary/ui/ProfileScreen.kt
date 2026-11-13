@@ -18,12 +18,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.PhotoCamera
@@ -91,7 +93,7 @@ fun ProfileScreen(
     val banner = Banners[Profile.banner.intValue.coerceIn(0, Banners.lastIndex)].second
     val status = Statuses[Profile.status.intValue.coerceIn(0, Statuses.lastIndex)]
 
-    Column(Modifier.fillMaxSize()) {
+    Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(banner[0].copy(alpha = 0.6f), Color.Transparent)))) {
         Row(
             Modifier.fillMaxWidth().height(52.dp).background(p.panel.copy(alpha = Settings.boxOpacity.floatValue)).padding(horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -102,35 +104,24 @@ fun ProfileScreen(
             }
             Text("Mi Perfil", color = p.text, fontWeight = FontWeight.Bold, fontSize = 16.sp)
         }
-        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            // ---- Cabecera ----
+        Row(Modifier.fillMaxSize()) {
+        LazyColumn(Modifier.weight(1f).fillMaxHeight(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            // ---- Cabecera (estilo Steam) ----
             item {
-                Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Brush.horizontalGradient(banner))) {
-                    Row(
-                        Modifier.fillMaxWidth().background(Color.Black.copy(alpha = 0.25f)).padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    ) {
-                        Avatar(88, ring)
-                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                            Text(
-                                Settings.profileName.value.ifBlank { "Jugador" }, color = Color.White, fontSize = 22.sp,
-                                fontWeight = FontWeight.Black, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.padding(end = 40.dp),
-                            )
-                            if (Profile.headline.value.isNotBlank()) Text(Profile.headline.value, color = Color.White.copy(alpha = 0.85f), fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Box(Modifier.size(10.dp).clip(CircleShape).background(status.color))
-                                Text(status.name, color = Color.White, fontSize = 12.sp)
-                                Text("·  Nivel ${st.level}", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                            }
-                            if (Profile.location.value.isNotBlank()) Text(Profile.location.value, color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
+                Box(Modifier.fillMaxWidth()) {
+                    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Avatar(116, ring, RoundedCornerShape(4.dp))
+                        Column(Modifier.weight(1f).padding(end = 44.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(Settings.profileName.value.ifBlank { "Jugador" }, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            if (Profile.location.value.isNotBlank()) Text(Profile.location.value, color = p.dim, fontSize = 12.sp)
+                            if (Profile.headline.value.isNotBlank()) Text(Profile.headline.value, color = p.text, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 2)
+                            if (Profile.bio.value.isNotBlank()) Text(Profile.bio.value, color = p.dim, fontSize = 12.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
                         }
                     }
                     // Icono QR monocromo, arriba a la derecha del perfil.
                     Ic(
-                        Icons.Filled.QrCode2, size = 28.dp, tint = Color.White,
-                        modifier = Modifier.align(Alignment.TopEnd).padding(8.dp).clip(RoundedCornerShape(8.dp))
-                            .clickable { Sfx.click(); showQr = true }.padding(6.dp),
+                        Icons.Filled.QrCode2, size = 28.dp, tint = p.text,
+                        modifier = Modifier.align(Alignment.TopEnd).clip(RoundedCornerShape(8.dp)).clickable { Sfx.click(); showQr = true }.padding(6.dp),
                     )
                 }
             }
@@ -320,6 +311,8 @@ fun ProfileScreen(
                 }
             }
         }
+        ProfileSidebar(st, status, ring, shotCount, onTab = { tab = it }, onGallery = onGallery, modifier = Modifier.width(250.dp).fillMaxHeight())
+        }
     }
     if (showQr) {
         val link = remember(all, st, showQr, Profile.status.intValue, Profile.headline.value, Profile.bio.value, Profile.location.value, Profile.frame.intValue, Profile.banner.intValue, Profile.showcase.value, Profile.showGames.value, Profile.showTime.value, Profile.acceptNotes.value, Settings.profileName.value) {
@@ -361,4 +354,71 @@ private fun Pill(text: String, selected: Boolean, onClick: () -> Unit) {
         Modifier.clip(RoundedCornerShape(20.dp)).background(if (selected) p.accent else p.card).clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 8.dp),
     ) { Text(text, color = if (selected) p.onAccent else p.text, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1) }
+}
+
+@Composable
+private fun SwitchRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+    val p = LocalPalette.current
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(label, color = p.text, fontSize = 14.sp, modifier = Modifier.weight(1f))
+        Switch(checked = checked, onCheckedChange = onChange)
+    }
+}
+
+/** Columna derecha estilo Steam: nivel, estado, insignias y contadores. */
+@Composable
+private fun ProfileSidebar(st: ProfileStats, status: StatusDef, ring: Color, shots: Int, onTab: (Int) -> Unit, onGallery: () -> Unit, modifier: Modifier) {
+    val p = LocalPalette.current
+    Column(
+        modifier.background(p.panel.copy(alpha = 0.55f)).verticalScroll(androidx.compose.foundation.rememberScrollState()).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Nivel", color = Color.White, fontSize = 22.sp)
+            Box(Modifier.clip(RoundedCornerShape(14.dp)).border(2.dp, ring, RoundedCornerShape(14.dp)).padding(horizontal = 9.dp, vertical = 2.dp)) {
+                Text("${st.level}", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+        LinearProgressIndicator(progress = { st.levelFrac }, modifier = Modifier.fillMaxWidth().height(4.dp), color = ring)
+        // Insignia destacada (la ultima conseguida), como "Years of Service" en Steam.
+        val feat = st.badges.lastOrNull()
+        Row(
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).background(Color(0x66000000)).padding(10.dp),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Box(Modifier.size(44.dp).clip(RoundedCornerShape(6.dp)).background(p.card), contentAlignment = Alignment.Center) {
+                Ic(feat?.icon ?: Icons.Filled.EmojiEvents, size = 28.dp, tint = if (Profile.platinumDone) Color(0xFFFFD54F) else p.accent)
+            }
+            Column {
+                Text(if (Profile.platinumDone) "Platino" else feat?.name ?: "Sin insignias", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                Text("${st.xp} XP", color = p.dim, fontSize = 12.sp)
+            }
+        }
+        Text("Editar perfil", color = p.text, fontSize = 13.sp, modifier = Modifier.clip(RoundedCornerShape(4.dp)).background(p.card).clickable { Sfx.click(); onTab(3) }.padding(horizontal = 10.dp, vertical = 6.dp))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Box(Modifier.size(10.dp).clip(CircleShape).background(status.color))
+            Text(if (status.name == "En línea") "Conectado ahora" else status.name, color = status.color, fontSize = 20.sp)
+        }
+        SideCount("Logros", "${Profile.unlocked.size}/${AllBadges.size}") { onTab(0) }
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            val got = st.badges
+            got.take(8).forEach { b -> Box(Modifier.size(44.dp).clip(RoundedCornerShape(8.dp)).background(p.card), contentAlignment = Alignment.Center) { Ic(b.icon, size = 26.dp, tint = p.accent) } }
+            if (Profile.platinumDone) Box(Modifier.size(44.dp).clip(RoundedCornerShape(8.dp)).background(Color(0x33FFD54F)), contentAlignment = Alignment.Center) { Ic(Icons.Filled.EmojiEvents, size = 26.dp, tint = Color(0xFFFFD54F)) }
+        }
+        SideCount("Juegos", "${st.games}") { onTab(1) }
+        SideCount("Capturas de pantalla", "$shots") { onGallery() }
+        SideCount("Notas", "${Profile.notes.size}") { onTab(2) }
+        SideCount("Favoritos", "${st.favorites}") { }
+        SideCount("Fuentes de noticias", "${app.gbalibrary.data.Feeds.sources.size}") { }
+        SideCount("Juegos completados", "${st.completed}") { }
+    }
+}
+
+@Composable
+private fun SideCount(label: String, value: String, onClick: () -> Unit) {
+    val p = LocalPalette.current
+    Row(Modifier.fillMaxWidth().clickable(onClick = onClick), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(label, color = p.text, fontSize = 13.sp, modifier = Modifier.weight(1f, fill = false))
+        Text(value, color = p.dim, fontSize = 20.sp)
+    }
 }
