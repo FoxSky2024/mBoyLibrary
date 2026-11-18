@@ -66,7 +66,11 @@ private object ThumbCache {
 private fun rememberShotBitmap(shot: Shots.Shot, maxSide: Int): ImageBitmap? {
     val key = "${shot.file.path}@$maxSide@${shot.file.lastModified()}"
     val bmp by produceState<ImageBitmap?>(ThumbCache.cache.get(key), key) {
-        if (value == null) {
+        // produceState conserva el valor anterior al cambiar la clave: siempre se recalcula (cache primero).
+        val hit = ThumbCache.cache.get(key)
+        if (hit != null) {
+            value = hit
+        } else {
             value = withContext(Dispatchers.IO) {
                 try {
                     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }

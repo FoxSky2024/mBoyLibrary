@@ -129,6 +129,8 @@ static void logCb(int level, const char* fmt, ...) {
     __android_log_print(pr, "RetroCore", "%s", buf);
 }
 
+static bool selectOption(int i, const char* want);
+
 static int findVar(const char* key) {
     for (int i = 0; i < gVarCount; i++) if (strcmp(gVars[i].key, key) == 0) return i;
     return -1;
@@ -159,6 +161,11 @@ static bool envCb(unsigned cmd, void* data) {
                 memcpy(gVars[i].value, opts, n);
                 gVars[i].value[n] = 0;
                 logCb(1, "opcion del nucleo: %s = [%s]", gVars[i].key, gVars[i].opts);
+                // La app dibuja las pantallas y manda el toque como puntero: el nucleo debe entregar
+                // "arriba/abajo" sin hueco y leer el toque como "Touch" (por defecto usa "Mouse").
+                if (strcmp(v->key, "melonds_touch_mode") == 0) selectOption(i, "touch");
+                else if (strcmp(v->key, "melonds_screen_layout") == 0) selectOption(i, "topbottom");
+                else if (strcmp(v->key, "melonds_screen_gap") == 0) selectOption(i, "0");
             }
             return true;
         }
@@ -453,8 +460,42 @@ Java_app_gbalibrary_emu_Retro_setTouch(JNIEnv* env, jobject thiz, jfloat nx, jfl
     gTouchDown = down ? 1 : 0;
 }
 
-// Cambia una opcion del nucleo. `wanted` se compara sin distinguir mayusculas ni simbolos
-// ("leftright" encuentra "Left/Right" o "left-right"). Devuelve true si se aplico.
+// Normaliza: minusculas y solo letras/numeros ("Left/Right" -> "leftright").
+static int normStr(const char* in, size_t n, char* out, size_t cap) {
+    int k = 0;
+    for (size_t j = 0; j < n && k < (int) cap - 1; j++) {
+        char c = in[j];
+        if (c >= 'A' && c <= 'Z') c = (char) (c + 32);
+        if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')) out[k++] = c;
+    }
+    out[k] = 0;
+    return k;
+}
+
+// Elige en la opcion [i] el valor que coincide con `want` (normalizado): exacto, o que EMPIECE por want
+// ("1xnative" encuentra "1x native (256x192)"). Devuelve true si cambio.
+static bool selectOption(int i, const char* want) {
+    char w[64];
+    normStr(want, strlen(want), w, sizeof(w));
+    const char* p = gVars[i].opts;
+    int prefixHit = -1; size_t pOff = 0, pLen = 0;
+    size_t off = 0;
+    while (1) {
+        const char* bar = strchr(p + off, '|');
+        size_t n = bar ? (size_t) (bar - (p + off)) : strlen(p + off);
+        char norm[96];
+        normStr(p + off, n, norm, sizeof(norm));
+        if (strcmp(norm, w) == 0 && n < sizeof(gVars[i].value)) {
+            memcpy(gVars[i].value, p + off, n); gVars[i].value[n] = 0; gVarsDirty = 1; return true;
+        }
+        if (prefixHit < 0 && strncmp(norm, w, strlen(w)) == 0 && n < sizeof(gVars[i].value)) { prefixHit = 1; pOff = off; pLen = n; }
+        if (!bar) break;
+        off += n + 1;
+    }
+    if (prefixHit >= 0) { memcpy(gVars[i].value, p + pOff, pLen); gVars[i].value[pLen] = 0; gVarsDirty = 1; return true; }
+    return false;
+}
+
 JNIEXPORT jboolean JNICALL
 Java_app_gbalibrary_emu_Retro_setOption(JNIEnv* env, jobject thiz, jstring key, jstring wanted) {
     (void) thiz;
@@ -462,27 +503,11 @@ Java_app_gbalibrary_emu_Retro_setOption(JNIEnv* env, jobject thiz, jstring key, 
     jstr(env, key, k, sizeof(k));
     jstr(env, wanted, w, sizeof(w));
     int i = findVar(k);
-    if (i < 0) { logCb(2, "setOption: el nucleo no tiene la opcion '%s'", k); return JNI_FALSE; }
-    char want[64]; int wn = 0;
-    for (const char* c = w; *c && wn < 63; c++) if ((*c >= 'a' && *c <= 'z') || (*c >= 'A' && *c <= 'Z') || (*c >= '0' && *c <= '9')) want[wn++] = (char) ((*c >= 'A' && *c <= 'Z') ? *c + 32 : *c);
-    want[wn] = 0;
-    const char* p = gVars[i].opts;
-    while (*p) {
-        const char* bar = strchr(p, '|');
-        size_t n = bar ? (size_t) (bar - p) : strlen(p);
-        char norm[64]; int nn = 0;
-        for (size_t j = 0; j < n && nn < 63; j++) { char c = p[j]; if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')) norm[nn++] = c; else if (c >= 'A' && c <= 'Z') norm[nn++] = (char) (c + 32); }
-        norm[nn] = 0;
-        if (strcmp(norm, want) == 0 && n < sizeof(gVars[i].value)) {
-            memcpy(gVars[i].value, p, n); gVars[i].value[n] = 0;
-            gVarsDirty = 1;
-            return JNI_TRUE;
-        }
-        if (!bar) break;
-        p = bar + 1;
-    }
-    logCb(2, "setOption: '%s' no acepta '%s' (valores: %s)", k, w, gVars[i].opts);
-    return JNI_FALSE;
+    if (i < 0) { LOGE("opcion desconocida: %s", k); return JNI_FALSE; }
+    bool ok = selectOption(i, w);
+    if (!ok) LOGE("valor rechazado: %s=%s (validos: %s)", k, w, gVars[i].opts);
+    else LOGI("opcion %s=%s", k, gVars[i].value);
+    return ok ? JNI_TRUE : JNI_FALSE;
 }
 
 JNIEXPORT jint JNICALL

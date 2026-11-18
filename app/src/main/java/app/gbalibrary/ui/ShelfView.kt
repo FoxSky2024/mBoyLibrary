@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -181,7 +182,9 @@ fun ShelfView(
     var lastActive by remember { mutableStateOf<Game?>(null) }
     LaunchedEffect(active) { if (active != null) lastActive = active }
 
+    var inspect by remember { mutableStateOf<Game?>(null) }
     Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to top, 0.70f to Color(0xFF05050A), 1f to Color(0xFF020204)))) {
+        ShelfWaves(console.accent)
         if (cur == null) {
             Text(
                 "No hay juegos con este filtro", color = Color.White.copy(alpha = 0.7f),
@@ -216,7 +219,7 @@ fun ShelfView(
                     val th = Math.toRadians((-near * SIDE_TURN).toDouble())
                     val depth = cardHpx * caseStyleFor(consoleOf(g)).depthRatio
                     val visible = (cw * abs(cos(th)).toFloat() + depth * abs(sin(th)).toFloat()) * scale
-                    val center = wPx / 2f + near * refW * 1.25f + far * refW * 0.36f
+                    val center = wPx / 2f + near * refW * 1.05f + far * refW * 0.30f
                     val topY = floorPx - cardHpx * scale
                     if (abs(x - center) <= visible / 2f && y >= topY && y <= floorPx && abs(d) < bestD) {
                         best = i; bestD = abs(d)
@@ -307,7 +310,7 @@ fun ShelfView(
                                 val far = d - near
                                 val s = scaleOf(d)
                                 transformOrigin = TransformOrigin(0.5f, 1f) // crece hacia arriba: siempre apoyada en la repisa
-                                translationX = near * refW * 1.25f + far * refW * 0.36f
+                                translationX = near * refW * 1.05f + far * refW * 0.30f
                                 scaleX = s
                                 scaleY = s
                                 alpha = (1f - (abs(d) - 4f).coerceAtLeast(0f) * 0.35f).coerceIn(0f, 1f)
@@ -338,7 +341,7 @@ fun ShelfView(
                                     .size(cw, cardH)
                                     .graphicsLayer {
                                         scaleY = -1f
-                                        alpha = 0.26f
+                                        alpha = 0.40f
                                         compositingStrategy = CompositingStrategy.Offscreen
                                     }
                                     .drawWithContent {
@@ -389,6 +392,11 @@ fun ShelfView(
                                 .clickable { onPlay(shown) }.padding(horizontal = 26.dp, vertical = 8.dp),
                         )
                         Text(
+                            "Inspeccionar", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium,
+                            modifier = Modifier.clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = 0.14f))
+                                .clickable { inspect = shown }.padding(horizontal = 22.dp, vertical = 8.dp),
+                        )
+                        Text(
                             "Detalles", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium,
                             modifier = Modifier.clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = 0.14f))
                                 .clickable { onOpen(shown) }.padding(horizontal = 22.dp, vertical = 8.dp),
@@ -397,6 +405,24 @@ fun ShelfView(
                 }
             }
         }
+
+        if (active == null && cur != null) {
+            Column(
+                Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 22.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    cur.title, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.SemiBold,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 24.dp),
+                )
+                Text(
+                    "${console.name} · ${formatPlayTime(cur.playSeconds)} · ${idx + 1}/${games.size}",
+                    color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp,
+                )
+            }
+        }
+
+        inspect?.let { g -> InspectOverlay(g, onClose = { inspect = null }, onPlay = { inspect = null; onPlay(g) }) }
 
         // ---- arriba: solo iconos ----
         ShelfTopIcons(
@@ -494,4 +520,34 @@ private fun ShelfTopIcons(
         Btn(Icons.Filled.GridView, "Vista Steam") { onToggleView() }
         Btn(Icons.Filled.Settings, "Ajustes") { onSettings() }
     }
+}
+
+/** Fondo con ondas suaves en el color de la consola (como el video). */
+@Composable
+private fun ShelfWaves(accent: Color) {
+    val t = androidx.compose.animation.core.rememberInfiniteTransition(label = "waves")
+    val ph by t.animateFloat(
+        0f, (2 * Math.PI).toFloat(),
+        androidx.compose.animation.core.infiniteRepeatable(tween(14000, easing = androidx.compose.animation.core.LinearEasing)),
+        label = "wavePh",
+    )
+    val col by animateColorAsState(accent, tween(450), label = "waveCol")
+    Box(
+        Modifier.fillMaxSize().drawBehind {
+            drawRect(Brush.radialGradient(listOf(col.copy(alpha = 0.28f), Color.Transparent), center = Offset(size.width / 2f, size.height * 0.35f), radius = size.width * 0.7f))
+            for (k in 0 until 4) {
+                val path = androidx.compose.ui.graphics.Path()
+                val base = size.height * (0.22f + 0.11f * k)
+                val amp = size.height * (0.035f + 0.01f * k)
+                var x = 0f
+                path.moveTo(0f, base)
+                while (x <= size.width) {
+                    path.lineTo(x, base + amp * sin(x / size.width * 5.2f + ph + k * 1.3f))
+                    x += 12f
+                }
+                drawPath(path, col.copy(alpha = 0.16f - 0.025f * k), style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.5f))
+            }
+            drawRect(Brush.radialGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.55f)), center = Offset(size.width / 2f, size.height / 2f), radius = size.width * 0.75f))
+        },
+    )
 }

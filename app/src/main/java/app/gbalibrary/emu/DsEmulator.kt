@@ -42,7 +42,9 @@ object DsEmulator : EmulatorCore {
      */
     fun applyLayout() {
         set("melonds_screen_layout", "topbottom")
-        set("melonds_screen_gap", "0px")
+        set("melonds_screen_gap", "0")
+        // Imprescindible: por defecto el nucleo lee el toque como "Mouse"; la app manda puntero (Touch).
+        set("melonds_touch_mode", "touch")
     }
 
     private var autoSkipped = false
@@ -52,7 +54,7 @@ object DsEmulator : EmulatorCore {
     fun applyQuality() {
         val fast = Settings.dsQuality.intValue == QUALITY_FAST || (Settings.dsQuality.intValue == QUALITY_AUTO && Settings.frameSkip.value)
         set("melonds_threaded_renderer", "enabled")
-        set("melonds_opengl_resolution", if (fast) "1x native" else "2x native") // solo aplica con render OpenGL; en software se ignora
+        set("melonds_opengl_resolution", if (fast) "1xnative" else "2xnative") // solo aplica con render OpenGL; en software se ignora
         set("melonds_audio_interpolation", if (fast) "None" else "Cosine")
     }
 

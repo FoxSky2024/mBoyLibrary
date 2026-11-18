@@ -1,3 +1,9 @@
+## 1.1.1
+- DS: pantalla tactil forzada a modo Touch del nucleo melonDS; opciones validadas.
+- Galeria: el visor ya cambia de captura al deslizar.
+- Se quitan las consolas externas (solo GBA/GBC/GB/DS).
+- Estanteria 3D: ondas de fondo, titulo siempre visible, reflejo, inspeccion (dar vuelta, abrir caja, disco, manual PDF/imagenes).
+
 ## 1.1.0
 - **Botones de velocidad y de cargar partida** (todas las consolas): botón de velocidad (toca = 0.5x → 1x → 2x → 3x → 4x; mantener = turbo temporal con el Fast-Forward de Ajustes) y botón "Cargar partida" (guardado rápido). Movibles, escalables, ocultables en el editor de controles; se agregan solos a los layouts guardados. Atajos de mando: L3 = velocidad, R3 = cargar guardado rápido (perfiles nuevos). A 0.5x el audio se silencia.
 - **Nintendo DS**: el núcleo siempre entrega "arriba/abajo" y la app dibuja cada pantalla donde corresponde (arriba/abajo, lado a lado, solo arriba, solo abajo, grande + pequeña, vertical). El toque se calcula desde el rectángulo REAL de la pantalla inferior (con rotación), solo el primer dedo sobre ella, sin falsos toques. Editor de pantallas (menú > Video > Editar pantallas): arrastrar, pellizcar (tamaño), girar con dos dedos, intercambiar, rotar 90°, ocultar, restablecer; se guarda por juego y orientación y respeta el notch.

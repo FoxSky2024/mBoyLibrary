@@ -25,7 +25,7 @@ class GameStore private constructor(private val ctx: Context) {
             val f = file()
             _games.value = if (f.exists()) {
                 val arr = JSONArray(f.readText())
-                (0 until arr.length()).map { Game.fromJson(arr.getJSONObject(it)) }
+                (0 until arr.length()).map { Game.fromJson(arr.getJSONObject(it)) }.filter { it.external.isEmpty() }
             } else {
                 emptyList()
             }

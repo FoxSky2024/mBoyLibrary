@@ -52,39 +52,7 @@ object Systems {
     )
 
     /** Sistemas que se lanzan con un emulador externo. */
-    val external: List<ConsoleDef> = listOf(
-        ConsoleDef("gamecube", "GCN", "GameCube", "Nintendo", setOf("iso", "gcm", "rvz", "gcz", "ciso"),
-            Color(0xFF8C6CFF), Color(0xFF2A2170), Color(0xFF080616), listOf(dolphin), 0.80f,
-            listOf("gamecube", "gc", "ngc"), "Nintendo - GameCube"),
-        ConsoleDef("wii", "Wii", "Wii", "Nintendo", setOf("iso", "wbfs", "rvz", "wad"),
-            Color(0xFF5BC8F5), Color(0xFF2B4A63), Color(0xFF0A1118), listOf(dolphin), 0.74f,
-            listOf("wii"), "Nintendo - Wii"),
-        ConsoleDef("wiiu", "Wii U", "Wii U", "Nintendo", setOf("wud", "wux", "wua", "rpx"),
-            Color(0xFF29B6F6), Color(0xFF4A6075), Color(0xFF0C141B), emptyList(), 0.74f,
-            listOf("wiiu"), "Nintendo - Wii U"),
-        ConsoleDef("switch", "Switch", "Switch", "Nintendo", setOf("nsp", "xci", "nca"),
-            Color(0xFFFF4D5A), Color(0xFF3A1117), Color(0xFF0D0507),
-            listOf(EmulatorDef("Eden", "dev.eden.eden_emulator")), 0.62f,
-            listOf("switch", "nx"), "Nintendo - Nintendo Switch"),
-        ConsoleDef("psp", "PSP", "PlayStation Portable", "Sony", setOf("iso", "cso", "pbp"),
-            Color(0xFF6C7BFF), Color(0xFF1E1B5E), Color(0xFF05041A), listOf(ppsspp, ppssppGold), 0.57f,
-            listOf("psp"), "Sony - PlayStation Portable"),
-        ConsoleDef("ps2", "PS2", "PlayStation 2", "Sony", setOf("iso", "chd", "cso"),
-            Color(0xFF3D6BFF), Color(0xFF111C52), Color(0xFF04060F),
-            listOf(EmulatorDef("NetherSX2", "xyz.aethersx2.android")), 0.72f,
-            listOf("ps2", "playstation2"), "Sony - PlayStation 2"),
-        ConsoleDef("xbox360", "X360", "Xbox 360", "Microsoft", setOf("xex", "god"),
-            Color(0xFF5CFF4A), Color(0xFF14661C), Color(0xFF030A04), emptyList(), 0.72f,
-            listOf("xbox360", "x360"), "Microsoft - Xbox 360"),
-        ConsoleDef("3ds", "3DS", "Nintendo 3DS", "Nintendo", setOf("3ds", "cci", "cxi", "cia"),
-            Color(0xFFFF5A5A), Color(0xFF47202A), Color(0xFF0C0608),
-            listOf(EmulatorDef("Azahar", "org.azahar_emu.azahar")), 0.88f,
-            listOf("3ds", "n3ds"), "Nintendo - Nintendo 3DS"),
-        ConsoleDef("vita", "Vita", "PlayStation Vita", "Sony", setOf("vpk"),
-            Color(0xFF4FA3FF), Color(0xFF14284A), Color(0xFF05080F),
-            listOf(EmulatorDef("Vita3K", "org.vita3k.emulator")), 0.78f,
-            listOf("vita", "psvita"), "Sony - PlayStation Vita"),
-    )
+    val external: List<ConsoleDef> = emptyList()
 
     val all: List<ConsoleDef> get() = builtIn + external
 
