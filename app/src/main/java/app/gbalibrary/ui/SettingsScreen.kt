@@ -339,6 +339,11 @@ private fun CoversSection(vm: LibraryViewModel) {
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
+        Text("ScreenScraper (lomo y reverso reales de las cajas 3D; todo opcional)", color = p.accent, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        OutlinedTextField(Settings.ssDevId.value, { Settings.setScreenScraper(it, Settings.ssDevPass.value, Settings.ssUser.value, Settings.ssPass.value) }, label = { Text("Dev ID (desarrollador)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(Settings.ssDevPass.value, { Settings.setScreenScraper(Settings.ssDevId.value, it, Settings.ssUser.value, Settings.ssPass.value) }, label = { Text("Dev password") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(Settings.ssUser.value, { Settings.setScreenScraper(Settings.ssDevId.value, Settings.ssDevPass.value, it, Settings.ssPass.value) }, label = { Text("Usuario ScreenScraper") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(Settings.ssPass.value, { Settings.setScreenScraper(Settings.ssDevId.value, Settings.ssDevPass.value, Settings.ssUser.value, it) }, label = { Text("Contraseña ScreenScraper") }, singleLine = true, modifier = Modifier.fillMaxWidth())
         Text("Fuentes: Libretro, SteamGridDB (si hay clave) y Wikipedia. Se guardan en GBALibrary/Covers; si no hay, queda la letra. Mantén pulsado un juego para cambiar su portada.", color = p.dim, fontSize = 12.sp)
     }
 }

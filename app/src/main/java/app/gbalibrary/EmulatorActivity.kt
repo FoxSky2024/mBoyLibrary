@@ -63,7 +63,9 @@ import app.gbalibrary.data.Game
 import app.gbalibrary.data.GameStore
 import app.gbalibrary.data.Settings
 import app.gbalibrary.emu.Engine
+import app.gbalibrary.emu.DsScreens
 import app.gbalibrary.emu.GbaGlView
+import app.gbalibrary.ui.DsScreenEditorPanel
 import app.gbalibrary.emu.GbaKey
 import app.gbalibrary.ui.ControlLayout
 import app.gbalibrary.ui.GameMenu
@@ -114,6 +116,58 @@ class EmulatorActivity : ComponentActivity() {
     private val message = mutableStateOf<String?>(null)
     private val speed = mutableIntStateOf(1)
 
+    // Editor de pantallas de la DS
+    private val editingDs = mutableStateOf(false)
+    private val dsSel = mutableIntStateOf(1)
+    private val dsTick = mutableIntStateOf(0)
+
+    private fun startDsEditing() {
+        DsScreens.editing = true
+        editingDs.value = true
+        setMenu(false)
+    }
+
+    private fun finishDsEditing() {
+        DsScreens.editing = false
+        editingDs.value = false
+        DsScreens.save(game.id)
+    }
+
+    private fun applyOrientation() {
+        requestedOrientation = when (Settings.orientation.intValue) {
+            0 -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
+            2 -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
+            else -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+        }
+    }
+
+    // Boton de velocidad: -1 = 0.5x. Tocar cicla; mantener pulsado = turbo temporal (Settings.ffSpeed).
+    private val SPEED_STEPS = intArrayOf(-1, 1, 2, 3, 4)
+    private val speedStep = mutableIntStateOf(1)
+    private val turboHold = mutableStateOf(false)
+
+    private fun applySpeed() {
+        val eng = engine ?: return
+        val v = if (turboHold.value) Settings.ffSpeed.intValue else SPEED_STEPS[speedStep.intValue]
+        if (v < 0) { eng.slow = true; eng.speed = 1; speed.intValue = 1 } else { eng.slow = false; eng.speed = v; speed.intValue = v }
+    }
+
+    private fun speedLabel(): String =
+        if (turboHold.value) "${Settings.ffSpeed.intValue}x»" else SPEED_STEPS[speedStep.intValue].let { if (it < 0) "0.5x" else "${it}x" }
+
+    private fun cycleSpeed() {
+        speedStep.intValue = (speedStep.intValue + 1) % SPEED_STEPS.size
+        applySpeed()
+        flash("Velocidad ${speedLabel()}")
+    }
+
+    private fun doQuickLoad() {
+        engine?.loadState(statePath("quick")) { ok ->
+            flash(if (ok) "Guardado rápido cargado" else "Todavía no hay guardado rápido")
+            if (ok) runOnUiThread { PadInput.rumble(60) }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         applyImmersive()
@@ -126,6 +180,7 @@ class EmulatorActivity : ComponentActivity() {
             return
         }
         game = found
+        applyOrientation() // fija o libera la rotacion segun Ajustes (el juego no se reinicia: configChanges)
 
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         if (Build.VERSION.SDK_INT >= 28) {
@@ -190,6 +245,7 @@ class EmulatorActivity : ComponentActivity() {
 
         onBackPressedDispatcher.addCallback(this) {
             when {
+                editingDs.value -> finishDsEditing()
                 editing.value -> finishEditing()
                 else -> setMenu(!menuOpen.value)
             }
@@ -405,6 +461,14 @@ class EmulatorActivity : ComponentActivity() {
             if (down && first && !menuOpen.value) doSave("quick")
             return
         }
+        if (action and GbaKey.QLOAD != 0) {
+            if (down && first && !menuOpen.value) doQuickLoad()
+            return
+        }
+        if (action and GbaKey.SPEED != 0) {
+            if (down && first && !menuOpen.value) cycleSpeed()
+            return
+        }
         val src = if (PadInput.slotOf(deviceId) == 2) Engine.SOURCE_HARDWARE2 else Engine.SOURCE_HARDWARE
         engine?.setKey(src, action and (GbaKey.GBA_MASK or GbaKey.TURBO_A or GbaKey.TURBO_B), down)
     }
@@ -491,6 +555,7 @@ class EmulatorActivity : ComponentActivity() {
             eng.volume = Settings.volume.intValue
             eng.muted = Settings.muted.value
         }
+        LaunchedEffect(Settings.orientation.intValue) { applyOrientation() }
         // Un layout de controles por orientacion.
         val portrait = androidx.compose.ui.platform.LocalConfiguration.current.orientation ==
             android.content.res.Configuration.ORIENTATION_PORTRAIT
@@ -513,7 +578,15 @@ class EmulatorActivity : ComponentActivity() {
         Box(Modifier.fillMaxSize().background(Color.Black)) {
             AndroidView(
                 modifier = Modifier.fillMaxSize(),
-                factory = { ctx -> GbaGlView(ctx).also { glView = it } },
+                factory = { ctx ->
+                    GbaGlView(ctx).also {
+                        glView = it
+                        it.gameId = game.id
+                        it.onDsEdited = { DsScreens.save(game.id) }
+                        DsScreens.cfg = null
+                        DsScreens.editing = false
+                    }
+                },
                 update = { v ->
                     v.filter = effectiveFilter()
                     v.scaleMode = Settings.scale.intValue
@@ -523,6 +596,29 @@ class EmulatorActivity : ComponentActivity() {
 
             if (!Settings.pipOnTop.value) PipOverlay()
             Controls(eng)
+            if (editingDs.value) {
+                LaunchedEffect(Unit) {
+                    while (true) {
+                        dsSel.intValue = DsScreens.selected
+                        dsTick.intValue = dsTick.intValue + 1
+                        delay(150)
+                    }
+                }
+                @Suppress("UNUSED_VARIABLE") val tick = dsTick.intValue
+                DsScreenEditorPanel(
+                    selected = dsSel.intValue,
+                    topVisible = DsScreens.cfg?.top?.visible ?: true,
+                    bottomVisible = DsScreens.cfg?.bottom?.visible ?: true,
+                    onSelect = { DsScreens.selected = it; dsSel.intValue = it },
+                    onSwap = { DsScreens.swapScreens(); DsScreens.save(game.id) },
+                    onScale = { f -> DsScreens.update(DsScreens.selected) { it.copy(wf = (it.wf * f).coerceIn(0.12f, 1.6f)) }; DsScreens.save(game.id) },
+                    onRotate90 = { DsScreens.update(DsScreens.selected) { it.copy(rot = (it.rot + 90f) % 360f) }; DsScreens.save(game.id) },
+                    onToggleVisible = { DsScreens.update(DsScreens.selected) { it.copy(visible = !it.visible) }; DsScreens.save(game.id) },
+                    onReset = { glView?.let { DsScreens.reset(game.id, it.width.toFloat(), it.height.toFloat()) } },
+                    onDone = { finishDsEditing() },
+                    modifier = Modifier.align(Alignment.TopCenter).padding(top = 6.dp),
+                )
+            }
             if (Settings.pipOnTop.value) PipOverlay()
 
             // Boton flotante de musica (solo si "Seguir escuchando musica dentro del juego" esta ON).
@@ -608,11 +704,12 @@ class EmulatorActivity : ComponentActivity() {
                         persistLayout = { layout.save(layoutScope) },
                         setForceTouch = { forceTouch.value = it },
                         toggleMusic = { Music.toggle(this@EmulatorActivity) },
+                        editDsScreens = { startDsEditing() },
                         slotTime = { slot -> File(statePath(slot)).let { f -> if (f.exists()) f.lastModified() else 0L } },
                         pickPipVideo = { pickPipVideoFile.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.VideoOnly)) },
-                        setSpeed = {
-                            speed.intValue = it
-                            eng.speed = it
+                        setSpeed = { v ->
+                            speedStep.intValue = SPEED_STEPS.indexOf(v).coerceAtLeast(1)
+                            applySpeed()
                         },
                     ),
                 )
@@ -630,6 +727,10 @@ class EmulatorActivity : ComponentActivity() {
             showPad = padShown(),
             onMenu = { setMenu(true) },
             onQuick = { doSave("quick") },
+            speedLabel = speedLabel(),
+            onQuickLoad = { doQuickLoad() },
+            onSpeedTap = { cycleSpeed() },
+            onSpeedHold = { turboHold.value = it; applySpeed() },
         )
       }
     }

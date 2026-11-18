@@ -133,6 +133,7 @@ object CoverFetcher {
      */
     suspend fun fetchBackExtras(ctx: Context, game: Game): Boolean = withContext(Dispatchers.IO) {
         try {
+            BoxArtFetcher.fetchFaces(ctx, game) // frente / lomo / reverso reales (ScreenScraper), mismo cache y misma cola
             val snap = snapFile(ctx, game.id)
             val desc = descFile(ctx, game.id)
             if (snap.exists() && desc.exists()) return@withContext true
@@ -290,7 +291,7 @@ object CoverFetcher {
         return Covers.importBytes(bytes, dest, COVER_SIDE)
     }
 
-    private fun httpGet(url: String, maxBytes: Int, headers: Map<String, String> = emptyMap()): ByteArray? {
+    internal fun httpGet(url: String, maxBytes: Int, headers: Map<String, String> = emptyMap()): ByteArray? {
         var conn: HttpURLConnection? = null
         return try {
             conn = (URL(url).openConnection() as HttpURLConnection).apply {
@@ -325,7 +326,7 @@ object CoverFetcher {
         }
     }
 
-    private fun enc(s: String): String = URLEncoder.encode(s, "UTF-8").replace("+", "%20")
+    internal fun enc(s: String): String = URLEncoder.encode(s, "UTF-8").replace("+", "%20")
 
     /** Palabras en minuscula, sin signos (y sin "the"). */
     private fun tokens(s: String): List<String> =

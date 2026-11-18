@@ -7,6 +7,7 @@ import androidx.compose.material.icons.filled.ArrowDropUp
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.FlashOn
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.Icons
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -67,6 +68,10 @@ fun ControlsCanvas(
     showPad: Boolean,
     onMenu: () -> Unit,
     onQuick: () -> Unit,
+    speedLabel: String = "1x",
+    onQuickLoad: () -> Unit = {},
+    onSpeedTap: () -> Unit = {},
+    onSpeedHold: (Boolean) -> Unit = {},
 ) {
     val live = !editing && engine != null
     BoxWithConstraints(Modifier.fillMaxSize()) {
@@ -74,12 +79,13 @@ fun ControlsCanvas(
         val sh = constraints.maxHeight.toFloat()
         val ds = app.gbalibrary.emu.Native.isDs
         if (ds) layout.ensureDsButtons()
+        layout.ensureQuickButtons()
         for (item in layout.items.toList()) {
             if ((item.kind == Kind.X || item.kind == Kind.Y) && !ds && !editing) continue
             val isSystem = item.kind == Kind.MENU
             if (!isSystem && !showPad && !editing) continue
             if (item.hidden && !editing) continue
-            PlacedItem(item, layout, engine, sw, sh, editing, live, onMenu, onQuick)
+            PlacedItem(item, layout, engine, sw, sh, editing, live, onMenu, onQuick, speedLabel, onQuickLoad, onSpeedTap, onSpeedHold)
         }
     }
 }
@@ -95,6 +101,10 @@ private fun PlacedItem(
     live: Boolean,
     onMenu: () -> Unit,
     onQuick: () -> Unit,
+    speedLabel: String,
+    onQuickLoad: () -> Unit,
+    onSpeedTap: () -> Unit,
+    onSpeedHold: (Boolean) -> Unit,
 ) {
     val d = LocalDensity.current
     val k = Settings.padSize.floatValue * item.size
@@ -120,6 +130,8 @@ private fun PlacedItem(
                 else DPad(engine, live, source = source)
             Kind.MENU -> RoundTap(Icons.Filled.Menu, live, onMenu)
             Kind.QUICK -> RoundTap(Icons.Filled.FlashOn, live, onQuick)
+            Kind.QLOAD -> RoundTap(Icons.Filled.Restore, live, onQuickLoad)
+            Kind.SPEED -> SpeedTap(speedLabel, live, onSpeedTap, onSpeedHold)
             Kind.L, Kind.R -> PadButton(Kind.glyph(item.kind), Kind.mask(item.kind), engine, live, shape = RoundedCornerShape(14.dp), source = source)
             Kind.START, Kind.SELECT ->
                 PadButton(Kind.glyph(item.kind), Kind.mask(item.kind), engine, live, shape = RoundedCornerShape(17.dp), fontSize = 11, source = source)
@@ -141,6 +153,23 @@ private fun PlacedItem(
             )
         }
     }
+}
+
+/** Velocidad: tocar = siguiente (0.5x, 1x, 2x, 3x, 4x); mantener pulsado = turbo temporal. */
+@Composable
+private fun SpeedTap(label: String, enabled: Boolean, onTap: () -> Unit, onHold: (Boolean) -> Unit) {
+    Box(
+        Modifier.fillMaxSize().clip(RoundedCornerShape(14.dp)).background(Color(0x66000000))
+            .pointerInput(enabled) {
+                if (!enabled) return@pointerInput
+                detectTapGestures(
+                    onPress = { tryAwaitRelease(); onHold(false) },
+                    onLongPress = { onHold(true) },
+                    onTap = { onTap() },
+                )
+            },
+        contentAlignment = Alignment.Center,
+    ) { Text(label, color = Color.White, fontSize = 15.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, maxLines = 1) }
 }
 
 @Composable
@@ -240,7 +269,7 @@ private fun EditorBody(
             if (sel.kind != Kind.MENU) {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     OutlinedButton(onClick = { layout.setHidden(sel.id, !sel.hidden) }) { Text(if (sel.hidden) "Mostrar este botón" else "Ocultar este botón") }
-                    OutlinedButton(onClick = { layout.remove(sel.id) }) { Text("Borrar este botón", color = Color(0xFFFF8A80)) }
+                    if (sel.kind != Kind.SPEED && sel.kind != Kind.QLOAD && sel.kind != Kind.QUICK) OutlinedButton(onClick = { layout.remove(sel.id) }) { Text("Borrar este botón", color = Color(0xFFFF8A80)) }
                 }
             }
         }

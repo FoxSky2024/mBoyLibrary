@@ -36,13 +36,16 @@ fun VideoSettings() {
                 else -> "Llena toda la pantalla recortando los bordes."
             },
         )
+        Subtitle("Orientación del emulador")
+        ChipRow(listOf("Automática", "Horizontal", "Vertical"), Settings.orientation.intValue) { Settings.setOrientation(it) }
+        Hint("Vertical: la pantalla arriba y los botones abajo (cada orientación guarda su propio layout). Al rotar el juego no se reinicia.")
         Subtitle("Nintendo DS: pantallas")
         ChipRow(listOf("Arriba / abajo", "Lado a lado", "Solo arriba", "Solo abajo", "Grande + pequeña"), Settings.dsLayout.intValue) { Settings.setDsLayout(it) }
         SwitchRow("Intercambiar pantallas", Settings.dsSwap.value) { Settings.setDsSwap(it) }
         Subtitle("Nintendo DS: calidad")
         ChipRow(listOf("Automática", "Alta", "Rendimiento"), Settings.dsQuality.intValue) { Settings.setDsQuality(it) }
-        Hint("Automática baja la calidad sola si el teléfono no llega a 60 fps. 'Grande + pequeña': el toque en ese modo depende del núcleo.")
-        Hint("Se aplica al abrir un juego de DS. La pantalla inferior es táctil: toca la imagen directamente. 'Lado a lado' aprovecha mejor el teléfono en horizontal.")
+        Hint("Automática baja la calidad y salta fotogramas sola si el teléfono no llega a 60 fps, y se recupera cuando vuelve a ir bien.")
+        Hint("La pantalla inferior es táctil en todas las distribuciones. Para moverla, escalarla o girarla: menú del juego > Video > Editar pantallas.")
         SwitchRow("Mostrar FPS", Settings.showFps.value) { Settings.setShowFps(it) }
     }
 }

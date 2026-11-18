@@ -55,6 +55,10 @@ class Engine(
     @Volatile
     var speed = 1
 
+    /** 0.5x: solo con speed == 1. Va sin audio (silenciado) para no deformar el tono. */
+    @Volatile
+    var slow = false
+
     /** Volumen 0..100 y silencio (se aplican al PCM antes de escribirlo al AudioTrack). */
     @Volatile
     var volume = 100
@@ -277,6 +281,7 @@ class Engine(
                 }
 
                 val sp = speed
+                val slowMode = slow && sp == 1
                 frameCounter++
                 // Turbo A / B: alterna el boton cada 2 cuadros mientras se mantiene pulsado.
                 var keys = allKeys()
@@ -308,8 +313,8 @@ class Engine(
                     fpsStamp = nowNs
                 }
 
-                val unlimited = limit == 0 && sp == 1
-                if (sp == 1 && audioSync && !unlimited) {
+                val unlimited = limit == 0 && sp == 1 && !slowMode
+                if (sp == 1 && audioSync && !unlimited && !slowMode) {
                     if (frames > 0) {
                         val gain = if (muted) 0 else volume.coerceIn(0, 100)
                         if (gain < 100) {
@@ -323,7 +328,7 @@ class Engine(
                         }
                     }
                     next = System.nanoTime()
-                } else if (sp == 1) {
+                } else if (sp == 1 && !slowMode) {
                     // Sin sincronizacion de audio (o sin limite): el audio no bloquea.
                     if (frames > 0) {
                         val gain = if (muted) 0 else volume.coerceIn(0, 100)
@@ -342,7 +347,7 @@ class Engine(
                         else if (wait < -100_000_000L) next = System.nanoTime()
                     }
                 } else {
-                    next += FRAME_NANOS / sp
+                    next += if (slowMode) FRAME_NANOS * 2 else FRAME_NANOS / sp
                     val wait = next - System.nanoTime()
                     if (wait > 0) {
                         Thread.sleep(wait / 1_000_000, (wait % 1_000_000).toInt())

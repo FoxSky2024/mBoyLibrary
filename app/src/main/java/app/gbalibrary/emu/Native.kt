@@ -92,4 +92,8 @@ object GbaKey {
     const val X = 1 shl 14
     const val Y = 1 shl 15
     const val DS_MASK = GBA_MASK or X or Y
+
+    // Acciones extra solo de mando fisico (no llegan al nucleo)
+    const val QLOAD = 1 shl 16 // cargar el guardado rapido
+    const val SPEED = 1 shl 17 // ciclar la velocidad
 }

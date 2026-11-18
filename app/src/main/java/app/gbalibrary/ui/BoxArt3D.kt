@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import app.gbalibrary.data.BoxArtFetcher
 import app.gbalibrary.data.CoverFetcher
 import app.gbalibrary.data.Covers
 import app.gbalibrary.data.Game
@@ -58,7 +59,9 @@ object CoverBitmaps {
     private fun fileFor(ctx: Context, g: Game, kind: String): File = when (kind) {
         "snap" -> CoverFetcher.snapFile(ctx, g.id)
         "back" -> CoverFetcher.backFile(ctx, g.id)
-        else -> Covers.coverFile(ctx, g.id)
+        "spine" -> BoxArtFetcher.spineFile(ctx, g.id)
+        // frente de la caja: el recorte real del wrap si existe; si no, la portada normal
+        else -> BoxArtFetcher.frontFile(ctx, g.id).takeIf { it.exists() } ?: Covers.coverFile(ctx, g.id)
     }
 
     /** Del cache o, si no esta, decodifica el archivo en un hilo de fondo. null si no existe. */
@@ -153,7 +156,7 @@ fun FrontArt(game: Game, modifier: Modifier = Modifier) {
 }
 
 /** Lo que hay para dibujar la contraportada. */
-class BackData(val real: ImageBitmap?, val snap: ImageBitmap?, val description: String)
+class BackData(val real: ImageBitmap?, val snap: ImageBitmap?, val description: String, val spine: ImageBitmap? = null)
 
 /**
  * Datos de la contraportada. Lee lo que haya en disco y, solo si [enabled] y la busqueda automatica esta activa,
@@ -171,11 +174,11 @@ fun rememberBackData(game: Game, enabled: Boolean): BackData? {
             val desc = withContext(Dispatchers.IO) {
                 runCatching { CoverFetcher.descFile(ctx, game.id).takeIf { it.exists() }?.readText()?.trim() }.getOrNull() ?: ""
             }
-            return BackData(real, snap, desc)
+            return BackData(real, snap, desc, CoverBitmaps.get(ctx, game, "spine"))
         }
         var d = load()
         data = d
-        if (d.real == null && (d.snap == null || d.description.isBlank()) && Settings.autoCovers.value) {
+        if ((d.real == null || d.spine == null) && (d.real == null || d.spine == null || d.snap == null || d.description.isBlank()) && Settings.autoCovers.value) {
             if (CoverFetcher.fetchBackExtras(ctx, game)) {
                 d = load()
                 data = d

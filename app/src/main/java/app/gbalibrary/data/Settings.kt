@@ -71,6 +71,8 @@ object Settings {
 
     // Margenes de la interfaz (dp) y ventana de video PiP
     val uiMargin = mutableIntStateOf(0)
+    /** Orientacion del emulador: 0 automatica, 1 horizontal (como siempre), 2 vertical. */
+    val orientation = mutableIntStateOf(1)
     val pipCorner = mutableIntStateOf(1) // 0 sup-izq, 1 sup-der, 2 inf-izq, 3 inf-der
     val pipSize = mutableIntStateOf(1) // 0 pequeno, 1 mediano, 2 grande
     val pipOpacity = mutableFloatStateOf(0.95f)
@@ -79,6 +81,11 @@ object Settings {
     // Portadas desde internet
     val autoCovers = mutableStateOf(true)
     val sgdbKey = mutableStateOf("") // clave opcional de SteamGridDB
+    // ScreenScraper (lomo / reverso reales de las cajas); todo opcional
+    val ssDevId = mutableStateOf("")
+    val ssDevPass = mutableStateOf("")
+    val ssUser = mutableStateOf("")
+    val ssPass = mutableStateOf("")
 
     // Orden de la biblioteca (nombre del SortMode)
     val sortMode = mutableStateOf("RECENT")
@@ -148,12 +155,17 @@ object Settings {
         frameSkip.value = p.getBoolean("frameSkip", false)
         audioSync.value = p.getBoolean("audioSync", true)
         uiMargin.intValue = p.getInt("uiMargin", 0).coerceIn(0, 48)
+        orientation.intValue = p.getInt("orientation", 1).coerceIn(0, 2)
         pipCorner.intValue = p.getInt("pipCorner", 1).coerceIn(0, 3)
         pipSize.intValue = p.getInt("pipSize", 1).coerceIn(0, 2)
         pipOpacity.floatValue = p.getFloat("pipOpacity", 0.95f).coerceIn(0.2f, 1f)
         pipOnTop.value = p.getBoolean("pipOnTop", true)
         autoCovers.value = p.getBoolean("autoCovers", true)
         sgdbKey.value = p.getString("sgdbKey", "") ?: ""
+        ssDevId.value = p.getString("ssDevId", "") ?: ""
+        ssDevPass.value = p.getString("ssDevPass", "") ?: ""
+        ssUser.value = p.getString("ssUser", "") ?: ""
+        ssPass.value = p.getString("ssPass", "") ?: ""
         sortMode.value = p.getString("sortMode", "RECENT") ?: "RECENT"
         shelfView.value = p.getBoolean("shelfView", false)
         bootScreen.value = p.getBoolean("bootScreen", true)
@@ -206,12 +218,17 @@ object Settings {
     fun setFfSpeed(v: Int) { ffSpeed.intValue = v; edit { putInt("ffSpeed", v) } }
     fun setFrameSkip(v: Boolean) { frameSkip.value = v; edit { putBoolean("frameSkip", v) } }
     fun setAudioSync(v: Boolean) { audioSync.value = v; edit { putBoolean("audioSync", v) } }
+    fun setOrientation(v: Int) { orientation.intValue = v; edit { putInt("orientation", v) } }
     fun setUiMargin(v: Int) { uiMargin.intValue = v.coerceIn(0, 48); edit { putInt("uiMargin", uiMargin.intValue) } }
     fun setPipCorner(v: Int) { pipCorner.intValue = v; edit { putInt("pipCorner", v) } }
     fun setPipSize(v: Int) { pipSize.intValue = v; edit { putInt("pipSize", v) } }
     fun setPipOpacity(v: Float) { pipOpacity.floatValue = v.coerceIn(0.2f, 1f); edit { putFloat("pipOpacity", pipOpacity.floatValue) } }
     fun setPipOnTop(v: Boolean) { pipOnTop.value = v; edit { putBoolean("pipOnTop", v) } }
     fun setAutoCovers(v: Boolean) { autoCovers.value = v; edit { putBoolean("autoCovers", v) } }
+    fun setScreenScraper(devId: String, devPass: String, user: String, pass: String) {
+        ssDevId.value = devId.trim(); ssDevPass.value = devPass.trim(); ssUser.value = user.trim(); ssPass.value = pass
+        edit { putString("ssDevId", devId.trim()); putString("ssDevPass", devPass.trim()); putString("ssUser", user.trim()); putString("ssPass", pass) }
+    }
     fun setSgdbKey(v: String) { sgdbKey.value = v.trim(); edit { putString("sgdbKey", v.trim()) } }
     fun setSortMode(v: String) { sortMode.value = v; edit { putString("sortMode", v) } }
     fun setShelfView(v: Boolean) { shelfView.value = v; edit { putBoolean("shelfView", v) } }

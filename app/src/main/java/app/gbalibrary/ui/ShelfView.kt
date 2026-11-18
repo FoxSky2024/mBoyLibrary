@@ -214,7 +214,7 @@ fun ShelfView(
                     val scale = scaleOf(d)
                     val cw = cardWpx(g)
                     val th = Math.toRadians((-near * SIDE_TURN).toDouble())
-                    val depth = cw * caseStyleFor(consoleOf(g)).depthRatio
+                    val depth = cardHpx * caseStyleFor(consoleOf(g)).depthRatio
                     val visible = (cw * abs(cos(th)).toFloat() + depth * abs(sin(th)).toFloat()) * scale
                     val center = wPx / 2f + near * refW * 1.25f + far * refW * 0.36f
                     val topY = floorPx - cardHpx * scale

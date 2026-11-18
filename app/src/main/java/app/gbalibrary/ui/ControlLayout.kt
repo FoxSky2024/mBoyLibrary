@@ -28,6 +28,8 @@ object Kind {
     const val RIGHT = "right"
     const val MENU = "menu"
     const val QUICK = "quick"
+    const val SPEED = "speed" // cicla 0.5x / 1x / 2x / 3x / 4x; mantener = turbo temporal
+    const val QLOAD = "qload" // cargar el guardado rapido
     const val X = "x" // solo Nintendo DS
     const val Y = "y" // solo Nintendo DS
 
@@ -38,7 +40,7 @@ object Kind {
         MOVE -> "Movimiento"; A -> "A"; B -> "B"; X -> "X (DS)"; Y -> "Y (DS)"; L -> "L"; R -> "R"
         START -> "Start"; SELECT -> "Select"; TURBO_A -> "Turbo A"; TURBO_B -> "Turbo B"
         UP -> "D-Pad ↑"; DOWN -> "D-Pad ↓"; LEFT -> "D-Pad ←"; RIGHT -> "D-Pad →"
-        MENU -> "Menú"; QUICK -> "Guardar"; else -> k
+        MENU -> "Menú"; QUICK -> "Guardar rápido"; QLOAD -> "Cargar partida"; SPEED -> "Velocidad"; else -> k
     }
 
     /** Texto corto dentro del boton. */
@@ -58,12 +60,12 @@ object Kind {
 
     fun baseW(k: String) = when (k) {
         MOVE -> 150; A, B, X, Y, TURBO_A, TURBO_B -> 72; L, R -> 96; START, SELECT -> 84
-        MENU, QUICK -> 44; else -> 56
+        MENU, QUICK, QLOAD -> 44; SPEED -> 64; else -> 56
     }
 
     fun baseH(k: String) = when (k) {
         MOVE -> 150; A, B, X, Y, TURBO_A, TURBO_B -> 72; L, R -> 46; START, SELECT -> 34
-        MENU, QUICK -> 44; else -> 56
+        MENU, QUICK, QLOAD -> 44; SPEED -> 40; else -> 56
     }
 }
 
@@ -132,6 +134,15 @@ class ControlLayout {
         selected = null
     }
 
+    /**
+     * Botones de velocidad y de cargar partida (todas las consolas). Se anaden una vez a los layouts
+     * guardados antes de existir; se pueden ocultar / mover / escalar en el editor (no borrar).
+     */
+    fun ensureQuickButtons() {
+        if (items.none { it.kind == Kind.SPEED }) items.add(PadItem(Kind.SPEED, Kind.SPEED, if (portrait) 0.22f else 0.20f, 0.05f))
+        if (items.none { it.kind == Kind.QLOAD }) items.add(PadItem(Kind.QLOAD, Kind.QLOAD, if (portrait) 0.84f else 0.89f, if (portrait) 0.04f else 0.07f))
+    }
+
     /** Los juegos de DS usan X e Y: se anaden (una vez) a layouts guardados antes de existir DS. */
     fun ensureDsButtons() {
         if (items.none { it.kind == Kind.X }) items.add(PadItem(Kind.X, Kind.X, if (portrait) 0.88f else 0.86f, if (portrait) 0.66f else 0.34f))
@@ -169,7 +180,7 @@ class ControlLayout {
     }
 
     fun remove(id: String) {
-        if (id == Kind.MENU) return
+        if (id == Kind.MENU || id == Kind.SPEED || id == Kind.QLOAD) return
         items.removeAll { it.id == id }
         if (selected == id) selected = null
     }

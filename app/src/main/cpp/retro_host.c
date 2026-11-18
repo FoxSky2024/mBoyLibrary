@@ -158,6 +158,7 @@ static bool envCb(unsigned cmd, void* data) {
                 if (n >= sizeof(gVars[i].value)) n = sizeof(gVars[i].value) - 1;
                 memcpy(gVars[i].value, opts, n);
                 gVars[i].value[n] = 0;
+                logCb(1, "opcion del nucleo: %s = [%s]", gVars[i].key, gVars[i].opts);
             }
             return true;
         }
@@ -461,7 +462,7 @@ Java_app_gbalibrary_emu_Retro_setOption(JNIEnv* env, jobject thiz, jstring key, 
     jstr(env, key, k, sizeof(k));
     jstr(env, wanted, w, sizeof(w));
     int i = findVar(k);
-    if (i < 0) return JNI_FALSE;
+    if (i < 0) { logCb(2, "setOption: el nucleo no tiene la opcion '%s'", k); return JNI_FALSE; }
     char want[64]; int wn = 0;
     for (const char* c = w; *c && wn < 63; c++) if ((*c >= 'a' && *c <= 'z') || (*c >= 'A' && *c <= 'Z') || (*c >= '0' && *c <= '9')) want[wn++] = (char) ((*c >= 'A' && *c <= 'Z') ? *c + 32 : *c);
     want[wn] = 0;
@@ -480,6 +481,7 @@ Java_app_gbalibrary_emu_Retro_setOption(JNIEnv* env, jobject thiz, jstring key, 
         if (!bar) break;
         p = bar + 1;
     }
+    logCb(2, "setOption: '%s' no acepta '%s' (valores: %s)", k, w, gVars[i].opts);
     return JNI_FALSE;
 }
 

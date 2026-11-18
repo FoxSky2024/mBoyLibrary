@@ -57,6 +57,7 @@ class MenuActions(
     val setForceTouch: (Boolean) -> Unit,
     val setSpeed: (Int) -> Unit,
     val toggleMusic: () -> Unit = {},
+    val editDsScreens: () -> Unit = {},
     val pickPipVideo: () -> Unit = {},
     /** Cuando se guardo la ranura (ms) o 0 si esta vacia. */
     val slotTime: (String) -> Long = { 0L },
@@ -111,7 +112,7 @@ fun GameMenu(title: String, speed: Int, layout: ControlLayout, padConnected: Boo
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 when (tab) {
-                    0 -> VideoTab()
+                    0 -> VideoTab(actions)
                     1 -> AudioTab()
                     2 -> ControlsTab(layout, padConnected, forceTouch, actions)
                     3 -> GameTab(speed, actions)
@@ -157,7 +158,7 @@ private fun GmSwitch(label: String, checked: Boolean, onChange: (Boolean) -> Uni
 }
 
 @Composable
-private fun VideoTab() {
+private fun VideoTab(a: MenuActions) {
     GmLabel("Calidad de imagen")
     GmChips(listOf("Pixel Perfect", "Suave", "CRT / Scanlines"), Settings.filter.intValue) { Settings.setFilter(it) }
     Text(
@@ -181,6 +182,15 @@ private fun VideoTab() {
         color = LocalPalette.current.dim,
     )
     GmSwitch("Mostrar FPS", Settings.showFps.value) { Settings.setShowFps(it) }
+    GmLabel("Orientación del emulador")
+    GmChips(listOf("Automática", "Horizontal", "Vertical"), Settings.orientation.intValue) { Settings.setOrientation(it) }
+    if (app.gbalibrary.emu.Native.isDs) {
+        GmLabel("Nintendo DS: pantallas")
+        GmChips(listOf("Arriba / abajo", "Lado a lado", "Solo arriba", "Solo abajo", "Grande + pequeña"), Settings.dsLayout.intValue) { Settings.setDsLayout(it) }
+        GmSwitch("Intercambiar pantallas", Settings.dsSwap.value) { Settings.setDsSwap(it) }
+        Button(onClick = a.editDsScreens) { Text("Editar pantallas (mover, escalar, rotar)") }
+        Text("La pantalla inferior es táctil en todas las distribuciones. La posición se guarda por juego y orientación.", color = LocalPalette.current.dim)
+    }
 }
 
 @Composable

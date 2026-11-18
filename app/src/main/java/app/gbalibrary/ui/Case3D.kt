@@ -32,6 +32,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
@@ -62,10 +63,11 @@ class CaseStyle(
 )
 
 fun caseStyleFor(console: ConsoleDef): CaseStyle = when (console.short) {
-    "GBA" -> CaseStyle(CaseKind.GBA, 0.125f, 2.dp, 0.dp, Color(0x55FFFFFF))
-    "GBC" -> CaseStyle(CaseKind.GBC, 0.120f, 2.dp, 0.dp, Color(0x55FFFFFF))
-    "GB" -> CaseStyle(CaseKind.GB, 0.130f, 2.dp, 0.dp, Color(0x66000000))
-    "DS" -> CaseStyle(CaseKind.DS, 0.105f, 5.dp, 5.dp, Color(0x66FFFFFF)) // caja de plastico negra, borde grueso
+    // depthRatio = grosor / ALTO de la caja. Carcasa de plastico negro con marco grueso y borde visible.
+    "GBA" -> CaseStyle(CaseKind.GBA, 0.125f, 5.dp, 4.dp, Color(0x77FFFFFF))
+    "GBC" -> CaseStyle(CaseKind.GBC, 0.120f, 5.dp, 4.dp, Color(0x77FFFFFF))
+    "GB" -> CaseStyle(CaseKind.GB, 0.130f, 4.dp, 3.dp, Color(0x77FFFFFF))
+    "DS" -> CaseStyle(CaseKind.DS, 0.085f, 6.dp, 5.dp, Color(0x77FFFFFF)) // plastico negro, mas delgada
     else -> CaseStyle(CaseKind.GENERIC, 0.110f, 5.dp, 4.dp, Color(0x66FFFFFF))
 }
 
@@ -93,7 +95,7 @@ fun Case3D(
     val console = remember(game.id, game.fileName) { consoleOf(game) }
     val style = remember(console) { caseStyleFor(console) }
     val density = LocalDensity.current
-    val depth = width * style.depthRatio
+    val depth = height * style.depthRatio
     val wPx = with(density) { width.toPx() }
     val dPx = with(density) { depth.toPx() }
     val camera = 14f * density.density
@@ -103,7 +105,7 @@ fun Case3D(
             FrontFace(game, style, glarePhase, glareStrength, cheap)
         }
         CaseFace(270f, -wPx / 2f, 0f, depth, height, angle, camera) {
-            Spine(game, style, console, depth, height, glarePhase, glareStrength, cheap)
+            Spine(game, style, console, depth, height, glarePhase, glareStrength, cheap, back?.spine)
         }
         CaseFace(90f, wPx / 2f, 0f, depth, height, angle, camera) {
             Spine(game, style, console, depth, height, glarePhase, glareStrength, cheap)
@@ -206,6 +208,7 @@ private fun FrontFace(game: Game, style: CaseStyle, phase: () -> Float, strength
         }
         // volumen: realce a la izquierda (lado del lomo) y sombra a la derecha + borde fino
         Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(Color.White.copy(alpha = 0.14f), Color.Transparent, Color.Black.copy(alpha = 0.18f)))))
+        if (style.frame > 0.dp) Box(Modifier.fillMaxSize().padding(1.dp).border(1.dp, Color.White.copy(alpha = 0.14f), shape)) // bisel
         Box(Modifier.fillMaxSize().border(1.dp, style.borderColor, shape))
     }
 }
@@ -215,7 +218,7 @@ private fun FrontFace(game: Game, style: CaseStyle, phase: () -> Float, strength
 @Composable
 private fun Spine(
     game: Game, style: CaseStyle, console: ConsoleDef, sideW: Dp, h: Dp,
-    phase: () -> Float, strength: () -> Float, cheap: Boolean,
+    phase: () -> Float, strength: () -> Float, cheap: Boolean, real: ImageBitmap? = null,
 ) {
     val fs = (sideW.value * 0.50f).coerceIn(5f, 12f)
     val hue = (game.id.hashCode().absoluteValue % 360).toFloat()
@@ -248,7 +251,8 @@ private fun Spine(
         }
     }
     Box(Modifier.fillMaxSize().clipToBounds().background(bg)) {
-        Row(
+        if (real != null) Image(real, null, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds) // lomo real del wrap / ScreenScraper
+        if (real == null) Row(
             Modifier.align(Alignment.Center).requiredSize(h, sideW).rotate(90f),
             verticalAlignment = Alignment.CenterVertically,
         ) {

@@ -110,7 +110,6 @@ private fun share(ctx: Context, shot: Shots.Shot) {
 /** Visor a pantalla completa: anterior / siguiente, compartir y borrar. */
 @Composable
 fun ShotViewer(shots: List<Shots.Shot>, start: Int, onClose: () -> Unit, onDelete: (Shots.Shot) -> Unit) {
-    val p = LocalPalette.current
     val ctx = LocalContext.current
     var idx by remember { mutableIntStateOf(start) }
     var confirm by remember { mutableStateOf(false) }

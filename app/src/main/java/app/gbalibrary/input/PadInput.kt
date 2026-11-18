@@ -63,6 +63,8 @@ object PadInput {
         if (a and GbaKey.TURBO_B != 0) parts.add("Turbo B")
         if (a and GbaKey.MENU != 0) parts.add("Menú")
         if (a and GbaKey.QUICK != 0) parts.add("Guardado rápido")
+        if (a and GbaKey.QLOAD != 0) parts.add("Cargar guardado")
+        if (a and GbaKey.SPEED != 0) parts.add("Velocidad")
         return parts.joinToString(" + ")
     }
 
@@ -72,7 +74,7 @@ object PadInput {
         GbaKey.START -> "ST"; GbaKey.SELECT -> "SE"
         GbaKey.UP -> "Arr"; GbaKey.DOWN -> "Abj"; GbaKey.LEFT -> "Izq"; GbaKey.RIGHT -> "Der"
         GbaKey.TURBO_A -> "A»"; GbaKey.TURBO_B -> "B»"
-        GbaKey.MENU -> "Menú"; GbaKey.QUICK -> "Rápido"
+        GbaKey.MENU -> "Menú"; GbaKey.QUICK -> "Rápido"; GbaKey.QLOAD -> "Carga"; GbaKey.SPEED -> "Vel."
         else -> "?"
     }
 
@@ -88,6 +90,8 @@ object PadInput {
         KeyEvent.KEYCODE_BUTTON_START to GbaKey.START,
         KeyEvent.KEYCODE_BUTTON_SELECT to GbaKey.SELECT,
         KeyEvent.KEYCODE_BUTTON_MODE to GbaKey.MENU,
+        KeyEvent.KEYCODE_BUTTON_THUMBL to GbaKey.SPEED,
+        KeyEvent.KEYCODE_BUTTON_THUMBR to GbaKey.QLOAD,
         KeyEvent.KEYCODE_DPAD_UP to GbaKey.UP,
         KeyEvent.KEYCODE_DPAD_DOWN to GbaKey.DOWN,
         KeyEvent.KEYCODE_DPAD_LEFT to GbaKey.LEFT,

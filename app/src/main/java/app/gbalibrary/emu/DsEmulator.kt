@@ -1,5 +1,6 @@
 package app.gbalibrary.emu
 
+import android.util.Log
 import app.gbalibrary.data.Settings
 
 /**
@@ -27,34 +28,49 @@ object DsEmulator : EmulatorCore {
     override fun setKeys(keys: Int) = Retro.setKeys(keys and GbaKey.DS_MASK)
     override fun setTouch(nx: Float, ny: Float, down: Boolean) = Retro.setTouch(nx, ny, down)
 
-    private fun layoutValue(layout: Int, swap: Boolean): String = when (layout) {
-        1 -> if (swap) "rightleft" else "leftright"
-        2 -> if (swap) "bottomonly" else "toponly"
-        3 -> if (swap) "toponly" else "bottomonly"
-        4 -> if (swap) "hybridbottom" else "hybridtop"
-        else -> if (swap) "bottomtop" else "topbottom"
+    /** Aplica una opcion del nucleo y deja constancia en logcat (etiqueta DsEmulator) si el nucleo la rechaza. */
+    private fun set(key: String, value: String): Boolean {
+        val ok = Retro.setOption(key, value)
+        if (!ok) Log.w("DsEmulator", "El nucleo rechazo $key=$value (clave o valor desconocido; ver las opciones listadas por RetroCore)")
+        return ok
     }
 
-    /** Aplica distribucion + intercambio. Seguro de llamar con el juego en marcha (desde el hilo del motor). */
+    /**
+     * El nucleo SIEMPRE entrega "arriba sobre abajo" sin separacion (256x384): [DsScreens] y [GbaGlView]
+     * recortan cada mitad y la colocan segun la distribucion elegida, asi el toque se calcula desde la
+     * pantalla inferior real en cualquier modo.
+     */
     fun applyLayout() {
-        Retro.setOption("melonds_screen_layout", layoutValue(Settings.dsLayout.intValue, Settings.dsSwap.value))
+        set("melonds_screen_layout", "topbottom")
+        set("melonds_screen_gap", "0px")
     }
 
-    /** Opciones de rendimiento. Los nombres que el nucleo no tenga se ignoran sin error. */
+    private var autoSkipped = false
+    private var fastFrames = 0
+
+    /** Opciones de rendimiento. Los nombres que el nucleo no tenga se ignoran (y se registran en logcat). */
     fun applyQuality() {
         val fast = Settings.dsQuality.intValue == QUALITY_FAST || (Settings.dsQuality.intValue == QUALITY_AUTO && Settings.frameSkip.value)
-        Retro.setOption("melonds_threaded_renderer", "enabled")
-        Retro.setOption("melonds_opengl_resolution", if (fast) "1x native" else "2x native")
-        Retro.setOption("melonds_audio_interpolation", if (fast) "None" else "Cosine")
+        set("melonds_threaded_renderer", "enabled")
+        set("melonds_opengl_resolution", if (fast) "1x native" else "2x native") // solo aplica con render OpenGL; en software se ignora
+        set("melonds_audio_interpolation", if (fast) "None" else "Cosine")
     }
 
     fun applyAll() { applyLayout(); applyQuality() }
 
-    /** Bajada automatica de calidad: si el tiempo medio por fotograma supera ~17 ms se pasa a rendimiento. */
+    /**
+     * Saltar fotogramas automaticamente: si el tiempo medio por fotograma supera ~18 ms durante 2 s se activa
+     * el salto de dibujo y la calidad de rendimiento; cuando vuelve a ~14 ms durante 5 s se recupera.
+     */
     @Volatile private var slowFrames = 0
     fun onFrameTime(ms: Float) {
-        if (Settings.dsQuality.intValue != QUALITY_AUTO || Settings.frameSkip.value) return
-        slowFrames = if (ms > 18f) slowFrames + 1 else 0
-        if (slowFrames > 120) { slowFrames = 0; Settings.setFrameSkip(true); applyQuality() }
+        if (Settings.dsQuality.intValue != QUALITY_AUTO) return
+        if (!autoSkipped) {
+            slowFrames = if (ms > 18f) slowFrames + 1 else 0
+            if (slowFrames > 120) { slowFrames = 0; autoSkipped = true; Settings.setFrameSkip(true); applyQuality() }
+        } else {
+            fastFrames = if (ms < 14f) fastFrames + 1 else 0
+            if (fastFrames > 300) { fastFrames = 0; autoSkipped = false; Settings.setFrameSkip(false); applyQuality() }
+        }
     }
 }
