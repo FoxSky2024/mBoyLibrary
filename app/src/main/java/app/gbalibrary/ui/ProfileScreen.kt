@@ -409,8 +409,8 @@ private fun ProfileSidebar(st: ProfileStats, status: StatusDef, ring: Color, sho
 
 @Composable
 @Composable
-fun Ic(icon: androidx.compose.ui.graphics.vector.ImageVector, size: androidx.compose.ui.unit.Dp, tint: androidx.compose.ui.graphics.Color) {
- androidx.compose.material3.Icon(icon, contentDescription = null, modifier = androidx.compose.ui.Modifier.size(size), tint = tint)
+fun Ic(icon: androidx.compose.ui.graphics.vector.ImageVector, size: androidx.compose.ui.unit.Dp = 24.dp, tint: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color.Unspecified, modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier, contentDescription: String? = null) {
+    Icon(imageVector = icon, contentDescription = contentDescription, modifier = modifier.size(size), tint = tint)
 }
 
 @Composable
