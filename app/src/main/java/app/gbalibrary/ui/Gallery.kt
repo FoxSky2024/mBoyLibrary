@@ -111,6 +111,7 @@ private fun share(ctx: Context, shot: Shots.Shot) {
 @Composable
 fun ShotViewer(shots: List<Shots.Shot>, start: Int, onClose: () -> Unit, onDelete: (Shots.Shot) -> Unit) {
     val ctx = LocalContext.current
+    val p = LocalPalette.current
     var idx by remember { mutableIntStateOf(start) }
     var confirm by remember { mutableStateOf(false) }
     if (shots.isEmpty()) { onClose(); return }
