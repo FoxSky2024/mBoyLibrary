@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.SportsEsports
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
@@ -407,7 +408,6 @@ private fun ProfileSidebar(st: ProfileStats, status: StatusDef, ring: Color, sho
     }
 }
 
-@Composable
 @Composable
 fun Ic(icon: androidx.compose.ui.graphics.vector.ImageVector, size: androidx.compose.ui.unit.Dp = 24.dp, tint: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color.Unspecified, modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier, contentDescription: String? = null) {
     Icon(imageVector = icon, contentDescription = contentDescription, modifier = modifier.size(size), tint = tint)
