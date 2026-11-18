@@ -305,30 +305,7 @@ private fun BackFace(game: Game, style: CaseStyle, console: ConsoleDef, data: Ba
         if (real != null) {
             Image(real, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
         } else {
-            if (front != null) {
-                Image(front, null, Modifier.fillMaxSize().blur(16.dp), contentScale = ContentScale.Crop, alpha = 0.55f)
-            }
-            Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(console.bgTop.copy(alpha = 0.80f), Color.Black.copy(alpha = 0.90f)))))
-            Column(Modifier.fillMaxSize().padding(horizontal = 10.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(console.name.uppercase(), color = console.accent, fontSize = 8.sp, fontWeight = FontWeight.Black, letterSpacing = 1.5.sp, maxLines = 1)
-                Text(game.title, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                val desc = data?.description?.takeIf { it.isNotBlank() }
-                    ?: "Un juego de ${console.name} de tu colección. Pulsa JUGAR para empezar donde lo dejaste."
-                Text(desc, color = Color.White.copy(alpha = 0.85f), fontSize = 7.5.sp, lineHeight = 10.sp, maxLines = 9, overflow = TextOverflow.Ellipsis)
-                val snap = data?.snap
-                if (snap != null) {
-                    Image(
-                        snap, null,
-                        Modifier.fillMaxWidth().aspectRatio(snap.width.toFloat() / snap.height.coerceAtLeast(1)).clip(RoundedCornerShape(3.dp))
-                            .border(1.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(3.dp)),
-                        contentScale = ContentScale.Crop,
-                    )
-                } else {
-                    Spacer(Modifier.height(2.dp))
-                }
-                Box(Modifier.weight(1f))
-                Text(console.name.uppercase(), color = Color.White.copy(alpha = 0.6f), fontSize = 7.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, maxLines = 1)
-            }
+            Box(Modifier.fillMaxSize().background(Color.White)) // sin reverso original: blanco liso
         }
         Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.18f), Color.Transparent, Color.White.copy(alpha = 0.10f)))))
         Box(Modifier.fillMaxSize().border(1.dp, style.borderColor, shape))

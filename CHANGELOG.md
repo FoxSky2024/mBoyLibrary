@@ -1,3 +1,8 @@
+## 1.2.0
+- Audio: buffer grande con ajuste automatico ante cortes + relleno inicial.
+- Logros: sonidos nuevos estilo Steam.
+- Inspeccion: caja frente/reverso (arrastrar o boton), reverso sin imagen = blanco, manual con paso de hojas; se quitan las funciones del disco.
+
 ## 1.1.1
 - DS: pantalla tactil forzada a modo Touch del nucleo melonDS; opciones validadas.
 - Galeria: el visor ya cambia de captura al deslizar.

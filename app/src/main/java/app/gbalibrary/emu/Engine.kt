@@ -175,17 +175,36 @@ class Engine(
         val minBytes = AudioTrack.getMinBufferSize(
             SAMPLE_RATE, AudioFormat.CHANNEL_OUT_STEREO, AudioFormat.ENCODING_PCM_16BIT,
         )
+        // Capacidad grande (0.6 s); el tamano activo empieza en ~120 ms y crece solo si hay cortes (ver tuneBuffer).
+        val capBytes = maxOf(minBytes * 4, SAMPLE_RATE * 4 * 6 / 10)
         val builder = AudioTrack.Builder()
             .setAudioAttributes(attrs)
             .setAudioFormat(format)
-            .setBufferSizeInBytes(maxOf(minBytes, 12288))
+            .setBufferSizeInBytes(capBytes)
             .setTransferMode(AudioTrack.MODE_STREAM)
-        if (Build.VERSION.SDK_INT >= 26) {
-            builder.setPerformanceMode(AudioTrack.PERFORMANCE_MODE_LOW_LATENCY)
-        }
         val track = builder.build()
         track.setVolume(1.0f)
+        underSeen = 0
+        if (Build.VERSION.SDK_INT >= 24) {
+            track.bufferSizeInFrames = maxOf(minBytes / 4, SAMPLE_RATE * 12 / 100).coerceAtMost(track.bufferCapacityInFrames)
+        }
+        // Relleno inicial de silencio: evita el corte del primer cuadro.
+        try { track.write(ShortArray(SAMPLE_RATE / 20 * 2), 0, SAMPLE_RATE / 20 * 2) } catch (e: Exception) { /* ignorado */ }
         return track
+    }
+
+    @Volatile private var underSeen = 0
+
+    /** Si el sistema registro cortes (underrun) agranda el buffer activo 40 ms, hasta la capacidad. */
+    private fun tuneBuffer(t: AudioTrack) {
+        if (Build.VERSION.SDK_INT < 24) return
+        try {
+            val u = t.underrunCount
+            if (u > underSeen) {
+                underSeen = u
+                t.bufferSizeInFrames = (t.bufferSizeInFrames + SAMPLE_RATE * 40 / 1000).coerceAtMost(t.bufferCapacityInFrames)
+            }
+        } catch (e: Exception) { /* ignorado */ }
     }
 
     /**
@@ -325,7 +344,7 @@ class Engine(
                         if (!writeAudio(t, audio, frames * 2, true)) {
                             t = rebuildTrack(t)
                             track = t
-                        }
+                        } else if (frameCounter % 20L == 0L) tuneBuffer(t)
                     }
                     next = System.nanoTime()
                 } else if (sp == 1 && !slowMode) {

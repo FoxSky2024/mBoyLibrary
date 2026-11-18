@@ -64,6 +64,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import kotlin.math.roundToInt
 import app.gbalibrary.data.DataDir
 import app.gbalibrary.data.Game
 import kotlinx.coroutines.Dispatchers
@@ -133,23 +135,21 @@ object Manuals {
     }
 }
 
-private enum class Phase { CLOSED, OPEN, MANUAL }
+private enum class Phase { BOX, MANUAL }
 
 /**
- * Inspeccion de la caja (como el video): caja de frente que se puede dar vuelta, abrir (portada + disco),
- * sacar el disco y leer el manual. Fondo oscuro desenfocado, titulo debajo y barra de acciones.
+ * Inspeccion de la caja: se ve de frente y por el reverso (arrastra o usa el boton), con zoom de pellizco,
+ * y se puede leer el manual pasando las hojas. Reverso sin imagen original = blanco.
  */
 @Composable
 fun InspectOverlay(game: Game, onClose: () -> Unit, onPlay: () -> Unit) {
     val ctx = LocalContext.current.applicationContext
     val console = remember(game.id) { consoleOf(game) }
     val scope = rememberCoroutineScope()
-    var phase by remember { mutableStateOf(Phase.CLOSED) }
-    var discOut by remember { mutableStateOf(false) }
+    var phase by remember { mutableStateOf(Phase.BOX) }
     var manualVer by remember { mutableIntStateOf(0) }
     val hasManual = remember(game.id, manualVer) { Manuals.has(ctx, game) }
     val flip = remember { Animatable(0f) }
-    val open = remember { Animatable(0f) }
     val front = rememberBitmap(game, "front")
     val back = rememberBackData(game, enabled = true)
     var zoom by remember { mutableStateOf(1f) }
@@ -161,82 +161,70 @@ fun InspectOverlay(game: Game, onClose: () -> Unit, onPlay: () -> Unit) {
         }
     }
 
-    BackHandler {
-        when {
-            phase == Phase.MANUAL -> phase = Phase.OPEN
-            phase == Phase.OPEN -> scope.launch { open.animateTo(0f, tween(350)); phase = Phase.CLOSED; discOut = false }
-            else -> onClose()
-        }
+    BackHandler { if (phase == Phase.MANUAL) phase = Phase.BOX else onClose() }
+
+    fun settle() {
+        val t = ((flip.value / 180f).roundToInt() * 180f)
+        scope.launch { flip.animateTo(t, tween(350, easing = FastOutSlowInEasing)) }
     }
 
     Box(
         Modifier.fillMaxSize()
             .background(Brush.verticalGradient(listOf(console.bgTop.copy(alpha = 0.97f), Color(0xFF020204))))
-            .pointerInput(Unit) { detectTransformGestures { _, p, z, _ -> if (phase == Phase.CLOSED) { zoom = (zoom * z).coerceIn(1f, 3f); pan = if (zoom > 1f) pan + p else Offset.Zero } } },
+            .pointerInput(phase) {
+                if (phase == Phase.BOX) {
+                    detectTransformGestures { _, p, z, _ ->
+                        zoom = (zoom * z).coerceIn(1f, 3f)
+                        pan = if (zoom > 1f) pan + p else Offset.Zero
+                    }
+                }
+            }
+            .pointerInput(phase) {
+                if (phase == Phase.BOX) {
+                    detectHorizontalDragGestures(onDragEnd = { settle() }, onDragCancel = { settle() }) { c, dx ->
+                        if (zoom <= 1.01f) { c.consume(); scope.launch { flip.snapTo(flip.value + dx * 0.4f) } }
+                    }
+                }
+            },
     ) {
         BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding().padding(bottom = 110.dp, top = 24.dp)) {
-            val boxH = maxHeight * 0.92f
-            val boxW = (boxH * console.boxRatio).coerceAtMost(maxWidth * 0.8f)
-            if (phase != Phase.MANUAL) {
-                val openF = open.value
-                Row(Modifier.align(Alignment.Center), verticalAlignment = Alignment.CenterVertically) {
-                    // cubierta / portada (se abre hacia la izquierda)
-                    Box(
-                        Modifier.size(boxW, boxH)
-                            .graphicsLayer {
-                                translationX = -openF * boxW * 0.55f + pan.x
-                                translationY = pan.y
-                                scaleX = zoom; scaleY = zoom
-                                cameraDistance = 14f * density
-                                rotationY = flip.value
-                            }
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(Color(0xFF0E0E14)),
-                    ) {
-                        val showFront = flip.value < 90f || flip.value > 270f
-                        if (showFront) {
-                            if (front != null) Image(front, game.title, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-                            else FrontArt(game, Modifier.fillMaxSize())
-                        } else {
-                            Box(Modifier.fillMaxSize().graphicsLayer { rotationY = 180f }) { BackFace(game, back) }
+            if (phase == Phase.BOX) {
+                val boxH = maxHeight * 0.92f
+                val boxW = (boxH * console.boxRatio).coerceAtMost(maxWidth * 0.85f)
+                Box(
+                    Modifier.align(Alignment.Center).size(boxW, boxH)
+                        .graphicsLayer {
+                            translationX = pan.x; translationY = pan.y
+                            scaleX = zoom; scaleY = zoom
+                            cameraDistance = 14f * density
+                            rotationY = flip.value
                         }
-                        // brillo
-                        Box(Modifier.fillMaxSize().drawBehind {
-                            drawRect(Brush.linearGradient(listOf(Color.White.copy(alpha = 0.10f), Color.Transparent, Color.Black.copy(alpha = 0.18f))))
-                        })
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(Color(0xFF0E0E14)),
+                ) {
+                    val a = ((flip.value % 360f) + 360f) % 360f
+                    if (a < 90f || a > 270f) {
+                        if (front != null) Image(front, game.title, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                        else FrontArt(game, Modifier.fillMaxSize())
+                    } else {
+                        Box(Modifier.fillMaxSize().graphicsLayer { rotationY = 180f }) { BackFace(back) }
                     }
-                    if (openF > 0.01f) {
-                        // interior: bandeja con el disco
-                        Box(
-                            Modifier.padding(start = 10.dp).size(boxW, boxH)
-                                .graphicsLayer { alpha = openF; translationX = -openF * boxW * 0.30f }
-                                .clip(RoundedCornerShape(4.dp))
-                                .background(Brush.verticalGradient(listOf(console.accent.copy(alpha = 0.45f), Color(0xFF0A0F0C))))
-                                .border(2.dp, console.accent.copy(alpha = 0.7f), RoundedCornerShape(4.dp))
-                                .clickable { discOut = !discOut },
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Disc(game, front, Modifier.size(boxW * 0.82f).graphicsLayer {
-                                val s = if (discOut) 1.18f else 1f
-                                scaleX = s; scaleY = s
-                                translationY = if (discOut) -boxH * 0.04f else 0f
-                                rotationZ = if (discOut) 14f else 0f
-                            })
-                        }
-                    }
+                    Box(Modifier.fillMaxSize().drawBehind {
+                        drawRect(Brush.linearGradient(listOf(Color.White.copy(alpha = 0.08f), Color.Transparent, Color.Black.copy(alpha = 0.14f))))
+                    })
                 }
             } else {
                 ManualViewer(game, Modifier.fillMaxSize())
             }
         }
 
-        // titulo + acciones
         Column(
             Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            val a = ((flip.value % 360f) + 360f) % 360f
             Text(
-                when (phase) { Phase.CLOSED -> if (flip.value in 90f..270f) "CONTRAPORTADA" else "CAJA"; Phase.OPEN -> "ABIERTA"; Phase.MANUAL -> "MANUAL" },
+                if (phase == Phase.MANUAL) "MANUAL" else if (a in 90f..270f) "REVERSO" else "FRENTE",
                 color = Color.White.copy(alpha = 0.55f), fontSize = 10.sp, letterSpacing = 3.sp,
             )
             Text(game.title, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 24.dp))
@@ -245,20 +233,14 @@ fun InspectOverlay(game: Game, onClose: () -> Unit, onPlay: () -> Unit) {
                 Modifier.clip(RoundedCornerShape(50)).background(Color.Black.copy(alpha = 0.55f)).padding(horizontal = 8.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(2.dp),
             ) {
-                if (phase == Phase.CLOSED) {
-                    Act("Dar vuelta") { scope.launch { flip.animateTo(if (flip.value < 90f) 180f else 0f, tween(600, easing = FastOutSlowInEasing)) } }
-                    Act("Abrir caja") { scope.launch { flip.snapTo(0f); phase = Phase.OPEN; open.animateTo(1f, tween(600, easing = FastOutSlowInEasing)) } }
-                }
-                if (phase == Phase.OPEN) {
-                    Act(if (discOut) "Guardar disco" else "Sacar disco") { discOut = !discOut }
+                if (phase == Phase.BOX) {
+                    Act("Dar vuelta") { scope.launch { flip.animateTo((flip.value / 180f).roundToInt() * 180f + 180f, tween(600, easing = FastOutSlowInEasing)) } }
                     Act(if (hasManual) "Leer manual" else "Agregar manual") { if (hasManual) phase = Phase.MANUAL else pick.launch(arrayOf("application/pdf")) }
-                    Act("Cerrar caja") { scope.launch { open.animateTo(0f, tween(350)); phase = Phase.CLOSED; discOut = false } }
-                }
-                if (phase == Phase.MANUAL) {
+                    Act("Jugar", true) { onPlay() }
+                } else {
                     Act("Cambiar manual") { pick.launch(arrayOf("application/pdf")) }
-                    Act("Volver") { phase = Phase.OPEN }
+                    Act("Ver caja") { phase = Phase.BOX }
                 }
-                if (phase != Phase.MANUAL) Act("Jugar", true) { onPlay() }
                 Act("Cerrar") { onClose() }
             }
         }
@@ -276,32 +258,12 @@ private fun Act(text: String, primary: Boolean = false, onClick: () -> Unit) {
     )
 }
 
+/** Reverso original; sin imagen, blanco. */
 @Composable
-private fun BackFace(game: Game, back: BackData?) {
+private fun BackFace(back: BackData?) {
     val real = back?.real
-    if (real != null) {
-        Image(real, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-    } else {
-        Column(Modifier.fillMaxSize().background(Color(0xFF15151C)).padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(game.title, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-            back?.snap?.let { Image(it, null, Modifier.fillMaxWidth().aspectRatio(1.5f).clip(RoundedCornerShape(4.dp)), contentScale = ContentScale.Crop) }
-            Text(back?.description?.ifBlank { null } ?: "Sin descripción", color = Color.White.copy(alpha = 0.75f), fontSize = 11.sp, maxLines = 12, overflow = TextOverflow.Ellipsis)
-        }
-    }
-}
-
-/** Disco: arte circular con aro, agujero central y brillo. */
-@Composable
-private fun Disc(game: Game, art: ImageBitmap?, modifier: Modifier = Modifier) {
-    Box(modifier.clip(CircleShape).background(Color(0xFFE9E9EE)), contentAlignment = Alignment.Center) {
-        if (art != null) Image(art, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop, alpha = 0.92f)
-        Box(Modifier.fillMaxSize().drawBehind {
-            drawCircle(Brush.sweepGradient(listOf(Color.White.copy(alpha = 0.25f), Color.Transparent, Color.White.copy(alpha = 0.18f), Color.Transparent, Color.White.copy(alpha = 0.25f))))
-        })
-        Box(Modifier.fillMaxSize(0.30f).clip(CircleShape).background(Color(0xFFCFCFD6)), contentAlignment = Alignment.Center) {
-            Box(Modifier.fillMaxSize(0.45f).clip(CircleShape).background(Color(0xFF0B0B10)))
-        }
-    }
+    if (real != null) Image(real, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+    else Box(Modifier.fillMaxSize().background(Color.White))
 }
 
 /** Manual con paso de paginas (deslizar) y zoom con pellizco. */
@@ -325,6 +287,13 @@ private fun ManualViewer(game: Game, modifier: Modifier = Modifier) {
             var o by remember { mutableStateOf(Offset.Zero) }
             Box(
                 Modifier.fillMaxSize().padding(6.dp)
+                    .graphicsLayer {
+                        val off = pager.currentPage + pager.currentPageOffsetFraction - page
+                        cameraDistance = 16f * density
+                        transformOrigin = androidx.compose.ui.graphics.TransformOrigin(if (off > 0) 1f else 0f, 0.5f)
+                        rotationY = (off * -50f).coerceIn(-50f, 50f)
+                        alpha = (1f - kotlin.math.abs(off) * 0.4f).coerceIn(0f, 1f)
+                    }
                     .pointerInput(page) { detectTransformGestures { _, p, zm, _ -> z = (z * zm).coerceIn(1f, 4f); o = if (z > 1f) o + p else Offset.Zero } },
                 contentAlignment = Alignment.Center,
             ) {
