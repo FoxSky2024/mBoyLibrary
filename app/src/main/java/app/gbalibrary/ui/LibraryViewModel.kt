@@ -13,6 +13,7 @@ import app.gbalibrary.data.Persist
 import app.gbalibrary.data.Game
 import app.gbalibrary.data.Settings
 import app.gbalibrary.data.GameStore
+import app.gbalibrary.data.ExternalScanner
 import app.gbalibrary.data.RomScanner
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -186,30 +187,6 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
                 if (pick.autoPlay) playRequest.value = store.get(game.id)
             } else {
                 message.value = "No se pudo descomprimir esa ROM"
-            }
-            scanning.value = false
-            showNextPick()
-        }
-    }
-
-    /** Escaneo en segundo plano: los juegos aparecen en la lista a medida que se encuentran. */
-    private fun scan(folders: List<Uri>) {
-        viewModelScope.launch {
-            scanning.value = true
-            var added = 0
-            var removed = 0
-            for (f in folders) {
-                val r = RomScanner.scanTree(appContext, f) { batch ->
-                    withContext(Dispatchers.Main) { added += store.addScanned(batch) }
-                }
-                // Archivos borrados: solo se quitan los juegos sin copia propia en GBALibrary/Games.
-                for (id in r.removedIds) {
-                    val g = store.get(id)
-                    if (g != null && g.stored.isEmpty()) {
-                        store.remove(id)
-                        removed++
-                    }
-                }
             }
             scanning.value = false
             showNextPick()
