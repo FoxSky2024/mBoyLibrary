@@ -1,3 +1,10 @@
+## 1.3.0
+- Manual: ya se puede deslizar/pasar hojas (el gesto de zoom bloqueaba el pager) + botones; acepta PDF o imagenes.
+- Reverso sin imagen: texto NO DATA.
+- Temporada: nieve y banner (ui/Season.kt, Season.ENABLED/SNOW/BANNER).
+- Fuentes Barlow + Rajdhani (ui/Fonts.kt).
+- Estanteria 3D: nuevo estilo vitrina (foco, bokeh, aro de luz).
+
 ## 1.2.0
 - Audio: buffer grande con ajuste automatico ante cortes + relleno inicial.
 - Logros: sonidos nuevos estilo Steam.
