@@ -184,14 +184,8 @@ fun GalleryScreen(onBack: () -> Unit) {
     var stamp by remember { mutableIntStateOf(0) }
     val shots by produceState(emptyList<Shots.Shot>(), stamp) { value = withContext(Dispatchers.IO) { Shots.list(ctx) } }
     var open by remember { mutableStateOf<Int?>(null) }
-    Column(Modifier.fillMaxSize()) {
-        Row(
-            Modifier.fillMaxWidth().height(52.dp).background(p.panel.copy(alpha = Settings.boxOpacity.floatValue)).padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text("← Volver", color = p.accent, fontWeight = FontWeight.Bold, modifier = Modifier.clickable(onClick = onBack).padding(8.dp))
-            Text("Galería de capturas (${shots.size})", color = p.text, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-        }
+    Column(Modifier.fillMaxSize().screenBackdrop()) {
+        ScreenHeader("Galería de capturas (${shots.size})", onBack)
         if (shots.isEmpty()) {
             Text("Todavía no hay capturas.", color = p.dim, modifier = Modifier.padding(24.dp))
         } else {

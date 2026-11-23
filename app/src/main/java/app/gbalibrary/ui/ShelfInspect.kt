@@ -64,6 +64,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateZoom
+import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import kotlin.math.roundToInt
 import app.gbalibrary.data.DataDir
@@ -79,7 +84,14 @@ import java.io.File
  */
 object Manuals {
     private fun dir(ctx: Context) = File(DataDir.root(ctx), "Manuals").apply { mkdirs() }
-    private fun pdf(ctx: Context, g: Game) = File(dir(ctx), "${g.id}.pdf")
+    /** <id>.pdf o <titulo>.pdf (sin caracteres raros), para copiar manuales a la carpeta sin conocer el id. */
+    private fun pdf(ctx: Context, g: Game): File {
+        val byId = File(dir(ctx), "${g.id}.pdf")
+        if (byId.exists()) return byId
+        val want = g.title.lowercase().filter { it.isLetterOrDigit() }
+        val alt = dir(ctx).listFiles { f -> f.extension.equals("pdf", true) && f.nameWithoutExtension.lowercase().filter { it.isLetterOrDigit() } == want }?.firstOrNull()
+        return alt ?: byId
+    }
     private fun imgDir(ctx: Context, g: Game) = File(dir(ctx), g.id)
 
     private fun images(ctx: Context, g: Game): List<File> =
@@ -93,6 +105,23 @@ object Manuals {
         try {
             ctx.contentResolver.openInputStream(uri)?.use { i -> pdf(ctx, g).outputStream().use { o -> i.copyTo(o) } }
             pdf(ctx, g).length() > 0
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    /** PDF (uno) o varias imagenes (paginas en el orden elegido). */
+    suspend fun importAll(ctx: Context, g: Game, uris: List<Uri>): Boolean = withContext(Dispatchers.IO) {
+        if (uris.isEmpty()) return@withContext false
+        val pdfUri = uris.firstOrNull { ctx.contentResolver.getType(it)?.contains("pdf") == true || it.toString().lowercase().endsWith(".pdf") }
+        if (pdfUri != null) return@withContext import(ctx, g, pdfUri)
+        try {
+            val d = imgDir(ctx, g)
+            d.deleteRecursively(); d.mkdirs()
+            uris.forEachIndexed { i, u ->
+                ctx.contentResolver.openInputStream(u)?.use { ins -> File(d, "%04d.jpg".format(i)).outputStream().use { o -> ins.copyTo(o) } }
+            }
+            images(ctx, g).isNotEmpty()
         } catch (e: Exception) {
             false
         }
@@ -155,9 +184,9 @@ fun InspectOverlay(game: Game, onClose: () -> Unit, onPlay: () -> Unit) {
     var zoom by remember { mutableStateOf(1f) }
     var pan by remember { mutableStateOf(Offset.Zero) }
 
-    val pick = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) scope.launch {
-            if (Manuals.import(ctx, game, uri)) { manualVer++; phase = Phase.MANUAL }
+    val pick = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+        if (uris.isNotEmpty()) scope.launch {
+            if (Manuals.importAll(ctx, game, uris)) { manualVer++; phase = Phase.MANUAL }
         }
     }
 
@@ -235,10 +264,10 @@ fun InspectOverlay(game: Game, onClose: () -> Unit, onPlay: () -> Unit) {
             ) {
                 if (phase == Phase.BOX) {
                     Act("Dar vuelta") { scope.launch { flip.animateTo((flip.value / 180f).roundToInt() * 180f + 180f, tween(600, easing = FastOutSlowInEasing)) } }
-                    Act(if (hasManual) "Leer manual" else "Agregar manual") { if (hasManual) phase = Phase.MANUAL else pick.launch(arrayOf("application/pdf")) }
+                    Act(if (hasManual) "Leer manual" else "Agregar manual") { if (hasManual) phase = Phase.MANUAL else pick.launch(arrayOf("application/pdf", "image/*")) }
                     Act("Jugar", true) { onPlay() }
                 } else {
-                    Act("Cambiar manual") { pick.launch(arrayOf("application/pdf")) }
+                    Act("Cambiar manual") { pick.launch(arrayOf("application/pdf", "image/*")) }
                     Act("Ver caja") { phase = Phase.BOX }
                 }
                 Act("Cerrar") { onClose() }
@@ -258,12 +287,20 @@ private fun Act(text: String, primary: Boolean = false, onClick: () -> Unit) {
     )
 }
 
-/** Reverso original; sin imagen, blanco. */
+/** Reverso sin imagen: texto "NO DATA". */
+@Composable
+fun NoData(modifier: Modifier = Modifier.fillMaxSize()) {
+    Box(modifier.background(Color(0xFF16161C)), contentAlignment = Alignment.Center) {
+        Text("NO DATA", color = Color.White.copy(alpha = 0.45f), fontSize = 18.sp, fontWeight = FontWeight.Bold, letterSpacing = 4.sp)
+    }
+}
+
+/** Reverso original; sin imagen, "NO DATA". */
 @Composable
 private fun BackFace(back: BackData?) {
     val real = back?.real
     if (real != null) Image(real, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-    else Box(Modifier.fillMaxSize().background(Color.White))
+    else NoData()
 }
 
 /** Manual con paso de paginas (deslizar) y zoom con pellizco. */
@@ -294,7 +331,20 @@ private fun ManualViewer(game: Game, modifier: Modifier = Modifier) {
                         rotationY = (off * -50f).coerceIn(-50f, 50f)
                         alpha = (1f - kotlin.math.abs(off) * 0.4f).coerceIn(0f, 1f)
                     }
-                    .pointerInput(page) { detectTransformGestures { _, p, zm, _ -> z = (z * zm).coerceIn(1f, 4f); o = if (z > 1f) o + p else Offset.Zero } },
+                    .pointerInput(page) {
+                        awaitEachGesture {
+                            awaitFirstDown(requireUnconsumed = false)
+                            do {
+                                val ev = awaitPointerEvent()
+                                // solo consume con 2 dedos o con zoom: asi el paso de hojas (deslizar) sigue funcionando
+                                if (ev.changes.count { it.pressed } > 1 || z > 1f) {
+                                    z = (z * ev.calculateZoom()).coerceIn(1f, 4f)
+                                    o = if (z > 1f) o + ev.calculatePan() else Offset.Zero
+                                    ev.changes.forEach { if (it.positionChanged()) it.consume() }
+                                }
+                            } while (ev.changes.any { it.pressed })
+                        }
+                    },
                 contentAlignment = Alignment.Center,
             ) {
                 val b = bmp
@@ -302,6 +352,9 @@ private fun ManualViewer(game: Game, modifier: Modifier = Modifier) {
                 else Text("…", color = Color.White.copy(alpha = 0.6f))
             }
         }
+        val sc = rememberCoroutineScope()
+        if (pager.currentPage > 0) Text("‹", color = Color.White, fontSize = 34.sp, modifier = Modifier.align(Alignment.CenterStart).clip(CircleShape).background(Color.Black.copy(alpha = 0.4f)).clickable { sc.launch { pager.animateScrollToPage(pager.currentPage - 1) } }.padding(horizontal = 14.dp, vertical = 2.dp))
+        if (pager.currentPage < d.count - 1) Text("›", color = Color.White, fontSize = 34.sp, modifier = Modifier.align(Alignment.CenterEnd).clip(CircleShape).background(Color.Black.copy(alpha = 0.4f)).clickable { sc.launch { pager.animateScrollToPage(pager.currentPage + 1) } }.padding(horizontal = 14.dp, vertical = 2.dp))
         Text(
             "${pager.currentPage + 1} / ${d.count}", color = Color.White.copy(alpha = 0.7f), fontSize = 11.sp,
             modifier = Modifier.align(Alignment.TopCenter).clip(RoundedCornerShape(50)).background(Color.Black.copy(alpha = 0.5f)).padding(horizontal = 10.dp, vertical = 3.dp),

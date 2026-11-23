@@ -2,6 +2,11 @@
 
 package app.gbalibrary.ui
 
+import app.gbalibrary.data.Settings
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.foundation.layout.height
+import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.Icons
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -175,14 +180,10 @@ fun ChipRow(options: List<String>, selected: Int, onSelect: (Int) -> Unit) {
 fun SectionCard(title: String, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     val p = LocalPalette.current
     Column(
-        modifier.fillMaxWidth()
-            .clip(RoundedCornerShape(Ds.RadiusM))
-            .background(p.panel)
-            .border(1.dp, p.card, RoundedCornerShape(Ds.RadiusM))
-            .padding(Ds.Pad),
+        modifier.fillMaxWidth().opacityPanel(p.panel, RoundedCornerShape(12.dp)).padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(Ds.GapL),
     ) {
-        Text(title.uppercase(), color = p.accent, fontSize = Ds.CaptionSp.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.8.sp)
+        Text(title.uppercase(), color = p.dim, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.8.sp)
         content()
     }
 }
@@ -253,22 +254,29 @@ fun EmptyState(icon: ImageVector, title: String, body: String, modifier: Modifie
     }
 }
 
-/** Cabecera de pantalla: boton volver + titulo (alto fijo, sin encimarse). */
+/** Cabecera de pantalla (mismo diseno que el Perfil): "‹ Volver" + titulo, 52 dp, panel del tema. */
 @Composable
 fun ScreenHeader(title: String, onBack: () -> Unit, trailing: @Composable RowScope.() -> Unit = {}) {
     val p = LocalPalette.current
     Row(
-        Modifier.fillMaxWidth().heightIn(min = 56.dp).background(p.panel).padding(horizontal = Ds.GapL),
+        Modifier.fillMaxWidth().height(52.dp).background(p.panel.copy(alpha = Settings.boxOpacity.floatValue)).padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Ds.GapL),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text(
-            "← Volver", color = p.accent, fontSize = Ds.BodySp.sp, fontWeight = FontWeight.Bold, maxLines = 1,
-            modifier = Modifier.clip(RoundedCornerShape(Ds.RadiusS)).clickable { Sfx.click(); onBack() }.padding(horizontal = 10.dp, vertical = 12.dp),
-        )
-        Text(title, color = p.text, fontSize = 18.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+        Row(Modifier.clip(RoundedCornerShape(8.dp)).clickable { Sfx.click(); onBack() }.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Ic(Icons.Filled.ChevronLeft, tint = p.accent)
+            Text("Volver", color = p.accent, fontWeight = FontWeight.Bold, maxLines = 1)
+        }
+        Text(title, color = p.text, fontWeight = FontWeight.Bold, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
         trailing(this)
     }
+}
+
+/** Fondo de pantalla como el del Perfil: degradado suave del color de acento hacia el fondo. */
+@Composable
+fun Modifier.screenBackdrop(): Modifier {
+    val p = LocalPalette.current
+    return this.background(Brush.verticalGradient(listOf(p.accent.copy(alpha = 0.16f), Color.Transparent)))
 }
 
 /** Elemento de menu lateral (rail) de Ajustes. */

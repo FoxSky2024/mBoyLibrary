@@ -1,3 +1,19 @@
+## 1.5.0
+- Interfaz: cabecera de pantalla (ScreenHeader), fondo degradado y tarjetas de seccion con el diseno del Perfil en Ajustes, Galeria, Noticias, Ficha del juego y Perfil.
+
+## 1.4.0
+- Audio: si la emulacion va mas lenta que el tiempo real, el audio se estira (no se corta).
+- Banner tambien en la estanteria 3D (compacto).
+- Temporada automatica por fecha (Season.AUTO).
+- Manuales: tambien se buscan por titulo (Manuals/<titulo>.pdf).
+
+## 1.3.0
+- Manual: ya se puede deslizar/pasar hojas (el gesto de zoom bloqueaba el pager) + botones; acepta PDF o imagenes.
+- Reverso sin imagen: texto NO DATA.
+- Temporada: nieve y banner (ui/Season.kt, Season.ENABLED/SNOW/BANNER).
+- Fuentes Barlow + Rajdhani (ui/Fonts.kt).
+- Estanteria 3D: nuevo estilo vitrina (foco, bokeh, aro de luz).
+
 ## 1.2.0
 - Audio: buffer grande con ajuste automatico ante cortes + relleno inicial.
 - Logros: sonidos nuevos estilo Steam.

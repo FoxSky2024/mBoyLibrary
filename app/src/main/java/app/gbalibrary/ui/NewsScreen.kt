@@ -100,7 +100,7 @@ fun NewsScreen(vm: LibraryViewModel, onBack: () -> Unit) {
         loading = false
     }
 
-    Column(Modifier.fillMaxSize()) {
+    Column(Modifier.fillMaxSize().screenBackdrop()) {
         ScreenHeader("Noticias", onBack) {
             Ic(Icons.Filled.Refresh, tint = p.accent, modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { reload++ }.padding(8.dp))
             Ic(Icons.Filled.Add, tint = p.accent, modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { adding = true }.padding(8.dp))

@@ -522,32 +522,41 @@ private fun ShelfTopIcons(
     }
 }
 
-/** Fondo con ondas suaves en el color de la consola (como el video). */
+/** Ambiente de galeria: foco de luz sobre la caja central, bokeh flotante y aro de luz en el suelo (estilo "vitrina"). */
 @Composable
 private fun ShelfWaves(accent: Color) {
-    val t = androidx.compose.animation.core.rememberInfiniteTransition(label = "waves")
+    val t = androidx.compose.animation.core.rememberInfiniteTransition(label = "amb")
     val ph by t.animateFloat(
         0f, (2 * Math.PI).toFloat(),
-        androidx.compose.animation.core.infiniteRepeatable(tween(14000, easing = androidx.compose.animation.core.LinearEasing)),
-        label = "wavePh",
+        androidx.compose.animation.core.infiniteRepeatable(tween(30000, easing = androidx.compose.animation.core.LinearEasing)),
+        label = "ambPh",
     )
-    val col by animateColorAsState(accent, tween(450), label = "waveCol")
+    val col by animateColorAsState(accent, tween(450), label = "ambCol")
     Box(
         Modifier.fillMaxSize().drawBehind {
-            drawRect(Brush.radialGradient(listOf(col.copy(alpha = 0.28f), Color.Transparent), center = Offset(size.width / 2f, size.height * 0.35f), radius = size.width * 0.7f))
-            for (k in 0 until 4) {
-                val path = androidx.compose.ui.graphics.Path()
-                val base = size.height * (0.22f + 0.11f * k)
-                val amp = size.height * (0.035f + 0.01f * k)
-                var x = 0f
-                path.moveTo(0f, base)
-                while (x <= size.width) {
-                    path.lineTo(x, base + amp * sin(x / size.width * 5.2f + ph + k * 1.3f))
-                    x += 12f
-                }
-                drawPath(path, col.copy(alpha = 0.16f - 0.025f * k), style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.5f))
+            val w = size.width
+            val h = size.height
+            val floor = h * 0.70f
+            // foco cenital
+            val cone = androidx.compose.ui.graphics.Path().apply {
+                moveTo(w * 0.44f, 0f); lineTo(w * 0.56f, 0f); lineTo(w * 0.80f, floor); lineTo(w * 0.20f, floor); close()
             }
-            drawRect(Brush.radialGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.55f)), center = Offset(size.width / 2f, size.height / 2f), radius = size.width * 0.75f))
+            drawPath(cone, Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.16f), col.copy(alpha = 0.05f), Color.Transparent), startY = 0f, endY = floor))
+            // bokeh
+            for (k in 0 until 14) {
+                val f = k / 14f
+                val x = w * ((f * 7.3f + 0.1f * sin(ph + k)) % 1f)
+                val y = h * (0.08f + 0.55f * ((f * 3.1f + 0.05f * kotlin.math.cos(ph * 1.3f + k * 2f)) % 1f))
+                val r = w * (0.012f + 0.02f * ((k * 37 % 10) / 10f))
+                drawCircle(col.copy(alpha = 0.07f + 0.05f * ((k % 3) / 2f)), r, Offset(x, y))
+            }
+            // aro de luz en el suelo
+            drawOval(
+                Brush.radialGradient(listOf(col.copy(alpha = 0.35f), Color.Transparent), center = Offset(w / 2f, floor), radius = w * 0.40f),
+                topLeft = Offset(w * 0.10f, floor - h * 0.03f), size = androidx.compose.ui.geometry.Size(w * 0.80f, h * 0.10f),
+            )
+            // viñeta
+            drawRect(Brush.radialGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.60f)), center = Offset(w / 2f, h / 2f), radius = w * 0.75f))
         },
     )
 }

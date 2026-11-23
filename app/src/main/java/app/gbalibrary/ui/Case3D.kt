@@ -305,7 +305,7 @@ private fun BackFace(game: Game, style: CaseStyle, console: ConsoleDef, data: Ba
         if (real != null) {
             Image(real, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
         } else {
-            Box(Modifier.fillMaxSize().background(Color.White)) // sin reverso original: blanco liso
+            NoData()
         }
         Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.18f), Color.Transparent, Color.White.copy(alpha = 0.10f)))))
         Box(Modifier.fillMaxSize().border(1.dp, style.borderColor, shape))

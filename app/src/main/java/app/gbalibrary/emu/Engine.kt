@@ -186,7 +186,7 @@ class Engine(
         track.setVolume(1.0f)
         underSeen = 0
         if (Build.VERSION.SDK_INT >= 24) {
-            track.bufferSizeInFrames = maxOf(minBytes / 4, SAMPLE_RATE * 12 / 100).coerceAtMost(track.bufferCapacityInFrames)
+            track.setBufferSizeInFrames(maxOf(minBytes / 4, SAMPLE_RATE * 12 / 100).coerceAtMost(track.bufferCapacityInFrames))
         }
         // Relleno inicial de silencio: evita el corte del primer cuadro.
         try { track.write(ShortArray(SAMPLE_RATE / 20 * 2), 0, SAMPLE_RATE / 20 * 2) } catch (e: Exception) { /* ignorado */ }
@@ -202,7 +202,7 @@ class Engine(
             val u = t.underrunCount
             if (u > underSeen) {
                 underSeen = u
-                t.bufferSizeInFrames = (t.bufferSizeInFrames + SAMPLE_RATE * 40 / 1000).coerceAtMost(t.bufferCapacityInFrames)
+                t.setBufferSizeInFrames((t.bufferSizeInFrames + SAMPLE_RATE * 40 / 1000).coerceAtMost(t.bufferCapacityInFrames))
             }
         } catch (e: Exception) { /* ignorado */ }
     }
@@ -271,6 +271,8 @@ class Engine(
             t.play()
             var playing = true
             val audio = ShortArray(4096)
+            val stretched = ShortArray(8192)
+            var stepEma = FRAME_NANOS.toFloat()
             var next = System.nanoTime()
             var frameCounter = 0L
             var lagging = false
@@ -322,7 +324,9 @@ class Engine(
                 val frameStart = System.nanoTime()
                 val frames = Native.step(audio, render)
 
-                lagging = System.nanoTime() - frameStart > FRAME_NANOS + FRAME_NANOS / 10
+                val stepNs = System.nanoTime() - frameStart
+                lagging = stepNs > FRAME_NANOS + FRAME_NANOS / 10
+                stepEma += (stepNs - stepEma) * 0.05f
                 if (Native.isDs) DsEmulator.onFrameTime((System.nanoTime() - frameStart) / 1_000_000f)
                 fpsCount++
                 val nowNs = System.nanoTime()
@@ -341,7 +345,24 @@ class Engine(
                                 audio[i] = ((audio[i] * gain) / 100).toShort()
                             }
                         }
-                        if (!writeAudio(t, audio, frames * 2, true)) {
+                        // Emulacion mas lenta que el tiempo real: se estira el audio (baja un poco el tono) en vez de cortarlo.
+                        var outBuf = audio
+                        var outCount = frames * 2
+                        val ratio = (stepEma / FRAME_NANOS).coerceIn(1f, 1.5f)
+                        if (ratio > 1.04f) {
+                            val n = minOf((frames * ratio).toInt(), stretched.size / 2)
+                            for (i in 0 until n) {
+                                val pos = i * (frames - 1).coerceAtLeast(1).toFloat() / (n - 1).coerceAtLeast(1)
+                                val i0 = pos.toInt().coerceAtMost(frames - 1)
+                                val i1 = (i0 + 1).coerceAtMost(frames - 1)
+                                val fr = pos - i0
+                                stretched[i * 2] = (audio[i0 * 2] + (audio[i1 * 2] - audio[i0 * 2]) * fr).toInt().toShort()
+                                stretched[i * 2 + 1] = (audio[i0 * 2 + 1] + (audio[i1 * 2 + 1] - audio[i0 * 2 + 1]) * fr).toInt().toShort()
+                            }
+                            outBuf = stretched
+                            outCount = n * 2
+                        }
+                        if (!writeAudio(t, outBuf, outCount, true)) {
                             t = rebuildTrack(t)
                             track = t
                         } else if (frameCounter % 20L == 0L) tuneBuffer(t)
