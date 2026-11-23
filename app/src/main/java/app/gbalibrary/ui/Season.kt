@@ -39,7 +39,25 @@ object Season {
     const val ENABLED = true
     const val SNOW = true
     const val BANNER = true
+
+    /** true: la temporada se elige sola por fecha (y no hay nada fuera de temporada). false: siempre [THEME]. */
+    const val AUTO = false
     val THEME: SeasonTheme = SeasonTheme.CHRISTMAS
+
+    /** Tema activo hoy, o null si no toca ninguno. */
+    fun active(): SeasonTheme? {
+        if (!ENABLED) return null
+        if (!AUTO) return THEME
+        val c = java.util.Calendar.getInstance()
+        val m = c.get(java.util.Calendar.MONTH) // 0 = enero
+        val d = c.get(java.util.Calendar.DAY_OF_MONTH)
+        return when {
+            m == 11 && d <= 26 -> SeasonTheme.CHRISTMAS
+            (m == 11 && d >= 27) || (m == 0 && d <= 6) -> SeasonTheme.NEW_YEAR
+            (m == 9 && d >= 15) || (m == 10 && d <= 2) -> SeasonTheme.HALLOWEEN
+            else -> null
+        }
+    }
 }
 
 class SeasonTheme(
@@ -76,8 +94,8 @@ private class Flake(var x: Float, var y: Float, val r: Float, val v: Float, val 
 /** Particulas (nieve) sobre toda la app. No intercepta toques. */
 @Composable
 fun SeasonParticles() {
-    if (!Season.ENABLED || !Season.SNOW) return
-    val th = Season.THEME
+    if (!Season.SNOW) return
+    val th = Season.active() ?: return
     val flakes = remember { List(th.particleCount) { Flake(Random.nextFloat(), Random.nextFloat(), 1.2f + Random.nextFloat() * 3.2f, 0.03f + Random.nextFloat() * 0.07f, 0.01f + Random.nextFloat() * 0.03f, Random.nextFloat() * 6.28f) } }
     var tick by remember { mutableLongStateOf(0L) }
     LaunchedEffect(Unit) {
@@ -107,10 +125,10 @@ fun SeasonParticles() {
 
 /** Banner de temporada (estilo Steam) para la pantalla de inicio. */
 @Composable
-fun SeasonBanner(modifier: Modifier = Modifier) {
-    if (!Season.ENABLED || !Season.BANNER) return
-    val th = Season.THEME
-    Box(modifier.fillMaxWidth().height(78.dp).clip(RoundedCornerShape(6.dp)).background(Brush.horizontalGradient(th.colors))) {
+fun SeasonBanner(modifier: Modifier = Modifier, compact: Boolean = false) {
+    if (!Season.BANNER) return
+    val th = Season.active() ?: return
+    Box(modifier.fillMaxWidth().height(if (compact) 52.dp else 78.dp).clip(RoundedCornerShape(6.dp)).background(Brush.horizontalGradient(th.colors))) {
         Canvas(Modifier.fillMaxSize()) {
             val w = size.width
             val h = size.height
@@ -143,8 +161,8 @@ fun SeasonBanner(modifier: Modifier = Modifier) {
         }
         Column(Modifier.align(Alignment.CenterStart).padding(start = 18.dp, top = 8.dp)) {
             Text(th.tag, color = Color.White.copy(alpha = 0.75f), fontSize = 10.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 3.sp, fontFamily = AppFonts.Display)
-            Text(th.title, color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold, fontFamily = AppFonts.Display)
-            Text(th.subtitle, color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, fontFamily = AppFonts.Body)
+            Text(th.title, color = Color.White, fontSize = if (compact) 20.sp else 26.sp, fontWeight = FontWeight.Bold, fontFamily = AppFonts.Display)
+            if (!compact) Text(th.subtitle, color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, fontFamily = AppFonts.Body)
         }
     }
 }

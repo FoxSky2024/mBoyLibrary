@@ -411,6 +411,7 @@ private fun LibraryHome(
                 onAddFiles = actions.addFiles,
                 onRescan = { vm.rescan() },
             )
+            SeasonBanner(Modifier.align(Alignment.TopCenter).padding(top = 60.dp, start = 72.dp, end = 72.dp), compact = true)
         } else Column(Modifier.fillMaxSize()) {
             TopBar(
                 query = query,

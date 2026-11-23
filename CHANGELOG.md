@@ -1,3 +1,9 @@
+## 1.4.0
+- Audio: si la emulacion va mas lenta que el tiempo real, el audio se estira (no se corta).
+- Banner tambien en la estanteria 3D (compacto).
+- Temporada automatica por fecha (Season.AUTO).
+- Manuales: tambien se buscan por titulo (Manuals/<titulo>.pdf).
+
 ## 1.3.0
 - Manual: ya se puede deslizar/pasar hojas (el gesto de zoom bloqueaba el pager) + botones; acepta PDF o imagenes.
 - Reverso sin imagen: texto NO DATA.

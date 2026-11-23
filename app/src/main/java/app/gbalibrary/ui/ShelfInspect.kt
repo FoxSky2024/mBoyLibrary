@@ -84,7 +84,14 @@ import java.io.File
  */
 object Manuals {
     private fun dir(ctx: Context) = File(DataDir.root(ctx), "Manuals").apply { mkdirs() }
-    private fun pdf(ctx: Context, g: Game) = File(dir(ctx), "${g.id}.pdf")
+    /** <id>.pdf o <titulo>.pdf (sin caracteres raros), para copiar manuales a la carpeta sin conocer el id. */
+    private fun pdf(ctx: Context, g: Game): File {
+        val byId = File(dir(ctx), "${g.id}.pdf")
+        if (byId.exists()) return byId
+        val want = g.title.lowercase().filter { it.isLetterOrDigit() }
+        val alt = dir(ctx).listFiles { f -> f.extension.equals("pdf", true) && f.nameWithoutExtension.lowercase().filter { it.isLetterOrDigit() } == want }?.firstOrNull()
+        return alt ?: byId
+    }
     private fun imgDir(ctx: Context, g: Game) = File(dir(ctx), g.id)
 
     private fun images(ctx: Context, g: Game): List<File> =
