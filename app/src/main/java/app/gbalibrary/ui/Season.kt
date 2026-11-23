@@ -128,7 +128,7 @@ fun SeasonParticles() {
 fun SeasonBanner(modifier: Modifier = Modifier, compact: Boolean = false) {
     if (!Season.BANNER) return
     val th = Season.active() ?: return
-    Box(modifier.fillMaxWidth().height(if (compact) 52.dp else 78.dp).clip(RoundedCornerShape(6.dp)).background(Brush.horizontalGradient(th.colors))) {
+    Box(modifier.fillMaxWidth().height(if (compact) 52.dp else 104.dp).clip(RoundedCornerShape(6.dp)).background(Brush.horizontalGradient(th.colors))) {
         Canvas(Modifier.fillMaxSize()) {
             val w = size.width
             val h = size.height

@@ -33,6 +33,11 @@ import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -180,29 +185,58 @@ fun ProfileScreen(
                     item { AppButton("Galería de capturas ($shotCount)", onGallery, Modifier.fillMaxWidth(), icon = Icons.Filled.PhotoLibrary) }
                 }
                 1 -> {
+                    // ---- Actividad reciente (como la comunidad de Steam) ----
+                    item {
+                        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).background(Color(0xFF0F1114)).padding(horizontal = 16.dp, vertical = 14.dp)) {
+                            Text("Actividad reciente", color = Color(0xFFDCDEDF), fontSize = 20.sp, fontWeight = FontWeight.Medium)
+                        }
+                    }
                     if (games.isEmpty()) item { Text("Aún no tienes juegos en la biblioteca.", color = p.dim) }
                     items(games, key = { it.id }) { g ->
                         val hasSave = remember(g.id) { File(savesDir, "${g.id}.sav").let { it.exists() && it.length() > 0 } }
-                        Row(
-                            Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).opacityPanel(p.card, RoundedCornerShape(10.dp))
-                                .clickable { onOpenGame(g) }.padding(10.dp),
-                            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        val h = g.playSeconds / 3600.0
+                        val marks = listOf(
+                            Triple(Icons.Filled.PlayArrow, "Jugado", g.playSeconds > 0),
+                            Triple(Icons.Filled.Schedule, "1 hora", h >= 1),
+                            Triple(Icons.Filled.Star, "5 horas", h >= 5),
+                            Triple(Icons.Filled.CheckCircle, "10 horas", h >= 10),
+                            Triple(Icons.Filled.Save, "Partida guardada", hasSave),
+                            Triple(Icons.Filled.Favorite, "Favorito", g.favorite),
+                        )
+                        val got = marks.count { it.third }
+                        Column(
+                            Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).background(Color(0xFF111316)).clickable { onOpenGame(g) }.padding(14.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
-                            Box(Modifier.width(56.dp).height(76.dp).clip(RoundedCornerShape(6.dp))) { CoverImage(g, Modifier.fillMaxSize()) }
-                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                                Text(g.title, color = p.text, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    Ic(Icons.Filled.Schedule, size = 14.dp, tint = p.dim)
-                                    Text("${formatPlayTime(g.playSeconds)}   ·   Última vez: ${formatAgo(g.lastPlayed)}", color = p.dim, fontSize = 12.sp)
+                            Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Box(Modifier.width(88.dp).height(52.dp).clip(RoundedCornerShape(3.dp)).background(Color.Black)) {
+                                    CoverImage(g, Modifier.fillMaxSize())
                                 }
-                                if (g.progress >= 0) {
-                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        LinearProgressIndicator(progress = { g.progress / 100f }, modifier = Modifier.weight(1f).height(6.dp), color = p.accent)
-                                        Text("${g.progress}%", color = p.accent, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                Text(g.title, color = Color(0xFFE6E8EA), fontSize = 16.sp, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                                Column(horizontalAlignment = Alignment.End) {
+                                    Text(if (g.playSeconds <= 0) "sin jugar" else "${formatPlayTime(g.playSeconds)} registradas", color = Color(0xFF8B929A), fontSize = 12.sp)
+                                    if (g.lastPlayed > 0) Text("última vez ${formatAgo(g.lastPlayed)}", color = Color(0xFF8B929A), fontSize = 12.sp)
+                                }
+                            }
+                            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(4.dp)).background(Color(0xFF1A1C20)).padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    Ic(Icons.Filled.EmojiEvents, size = 26.dp, tint = Color(0xFF59616A))
+                                    Text("$got / ${marks.size} hitos", color = Color(0xFFDCDEDF), fontSize = 14.sp, modifier = Modifier.weight(1f))
+                                    if (got == marks.size) Text("Completado", color = Color(0xFFE8B84A), fontSize = 13.sp)
+                                }
+                                Box(Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(2.dp)).background(Color(0xFF0B0C0E))) {
+                                    Box(Modifier.fillMaxWidth(got / marks.size.toFloat()).height(8.dp).background(Brush.horizontalGradient(listOf(Color(0xFF1A5E94), Color(0xFF3B8ED0)))))
+                                }
+                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    marks.forEach { (ic, _, on) ->
+                                        Box(
+                                            Modifier.size(38.dp).clip(RoundedCornerShape(3.dp)).background(if (on) Color(0xFF2B1F4D) else Color(0xFF15171A)),
+                                            contentAlignment = Alignment.Center,
+                                        ) { Ic(ic, size = 22.dp, tint = if (on) Color(0xFFB69CFF) else Color(0xFF3A3F45)) }
                                     }
-                                } else {
-                                    Text(if (hasSave) "Con partida guardada · progreso sin definir" else "Sin partida guardada", color = p.dim, fontSize = 11.sp)
                                 }
+                                val missing = marks.filter { !it.third }.joinToString(" · ") { it.second }
+                                if (missing.isNotEmpty()) Text("Pendientes: $missing", color = Color(0xFF6F767E), fontSize = 11.sp)
                             }
                         }
                     }
