@@ -186,7 +186,7 @@ class Engine(
         track.setVolume(1.0f)
         underSeen = 0
         if (Build.VERSION.SDK_INT >= 24) {
-            track.bufferSizeInFrames = maxOf(minBytes / 4, SAMPLE_RATE * 12 / 100).coerceAtMost(track.bufferCapacityInFrames)
+            track.setBufferSizeInFrames(maxOf(minBytes / 4, SAMPLE_RATE * 12 / 100).coerceAtMost(track.bufferCapacityInFrames))
         }
         // Relleno inicial de silencio: evita el corte del primer cuadro.
         try { track.write(ShortArray(SAMPLE_RATE / 20 * 2), 0, SAMPLE_RATE / 20 * 2) } catch (e: Exception) { /* ignorado */ }
@@ -202,7 +202,7 @@ class Engine(
             val u = t.underrunCount
             if (u > underSeen) {
                 underSeen = u
-                t.bufferSizeInFrames = (t.bufferSizeInFrames + SAMPLE_RATE * 40 / 1000).coerceAtMost(t.bufferCapacityInFrames)
+                t.setBufferSizeInFrames((t.bufferSizeInFrames + SAMPLE_RATE * 40 / 1000).coerceAtMost(t.bufferCapacityInFrames))
             }
         } catch (e: Exception) { /* ignorado */ }
     }
