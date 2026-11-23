@@ -1,3 +1,6 @@
+## 1.5.0
+- Interfaz: cabecera de pantalla (ScreenHeader), fondo degradado y tarjetas de seccion con el diseno del Perfil en Ajustes, Galeria, Noticias, Ficha del juego y Perfil.
+
 ## 1.4.0
 - Audio: si la emulacion va mas lenta que el tiempo real, el audio se estira (no se corta).
 - Banner tambien en la estanteria 3D (compacto).
