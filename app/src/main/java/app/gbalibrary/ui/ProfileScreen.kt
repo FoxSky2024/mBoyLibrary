@@ -96,16 +96,7 @@ fun ProfileScreen(
     val status = Statuses[Profile.status.intValue.coerceIn(0, Statuses.lastIndex)]
 
     Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(banner[0].copy(alpha = 0.6f), Color.Transparent)))) {
-        Row(
-            Modifier.fillMaxWidth().height(52.dp).background(p.panel.copy(alpha = Settings.boxOpacity.floatValue)).padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Row(Modifier.clickable(onClick = onBack).padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Ic(Icons.Filled.ChevronLeft, tint = p.accent)
-                Text("Volver", color = p.accent, fontWeight = FontWeight.Bold)
-            }
-            Text("Mi Perfil", color = p.text, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-        }
+        ScreenHeader("Mi Perfil", onBack)
         Row(Modifier.fillMaxSize()) {
         LazyColumn(Modifier.weight(1f).fillMaxHeight(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             // ---- Cabecera (estilo Steam) ----

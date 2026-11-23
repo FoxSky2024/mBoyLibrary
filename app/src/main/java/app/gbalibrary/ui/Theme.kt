@@ -91,6 +91,6 @@ fun GbaTheme(content: @Composable () -> Unit) {
         )
     }
     CompositionLocalProvider(LocalPalette provides p) {
-        MaterialTheme(colorScheme = scheme, content = content)
+        MaterialTheme(colorScheme = scheme, typography = AppFonts.typography, content = content)
     }
 }

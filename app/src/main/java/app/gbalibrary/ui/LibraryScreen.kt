@@ -249,6 +249,7 @@ fun LibraryApp(vm: LibraryViewModel, actions: LibraryActions, onPlay: (Game) -> 
                 )
             }
         }
+        SeasonParticles()
         PipOverlay()
         AchievementToastHost()
         // Vinilo abajo a la derecha (biblioteca y ajustes; nunca dentro del juego)
@@ -410,6 +411,7 @@ private fun LibraryHome(
                 onAddFiles = actions.addFiles,
                 onRescan = { vm.rescan() },
             )
+            SeasonBanner(Modifier.align(Alignment.TopCenter).padding(top = 60.dp, start = 72.dp, end = 72.dp), compact = true)
         } else Column(Modifier.fillMaxSize()) {
             TopBar(
                 query = query,
@@ -424,6 +426,7 @@ private fun LibraryHome(
                 onNews = onNews,
             )
             if (scanning) LinearProgressIndicator(Modifier.fillMaxWidth().height(3.dp), color = p.accent)
+            SeasonBanner(Modifier.padding(horizontal = 12.dp, vertical = 6.dp))
             if (all.isNotEmpty()) SystemFilterRow(all, systemFilter) { vm.systemFilter.value = it }
             Row(Modifier.fillMaxSize()) {
                 SidePanel(all, collections, category, if (showFocus && nav.zone == Zone.SIDE) nav.side else -1, sideKeys) { vm.category.value = it }

@@ -75,15 +75,8 @@ fun SettingsScreen(vm: LibraryViewModel, actions: LibraryActions, onBack: () -> 
     BackHandler(enabled = editingPad) { globalLayout.save("global"); editingPad = false }
 
     Box(Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxSize()) {
-            Row(
-                Modifier.fillMaxWidth().height(48.dp).opacityPanel(p.panel).padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Text("← Volver", color = p.accent, fontWeight = FontWeight.Bold, maxLines = 1, modifier = Modifier.clickable(onClick = onBack).padding(8.dp))
-                Text("Ajustes y personalización", color = p.text, fontWeight = FontWeight.Bold, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            }
+        Column(Modifier.fillMaxSize().screenBackdrop()) {
+            ScreenHeader("Ajustes y personalización", onBack)
             Row(
                 Modifier.fillMaxSize().verticalScroll(rememberScrollState())
                     .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 48.dp),
