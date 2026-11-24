@@ -1,3 +1,9 @@
+## 1.6.0
+- Estanteria 3D sin banner; inspeccion con caja 3D real (arrastrar para girar: frente, lomo, reverso, canto).
+- Marcos de caja con el color de cada consola (GBA indigo, GBC verde agua, GB gris, DS plata).
+- Carrusel de banners estilo Steam en el inicio (temporada, destacado, evento semanal, oferta del dia, actividad).
+- Perfil > Juegos: "Actividad reciente" estilo Steam con hitos por juego.
+
 ## 1.5.0
 - Interfaz: cabecera de pantalla (ScreenHeader), fondo degradado y tarjetas de seccion con el diseno del Perfil en Ajustes, Galeria, Noticias, Ficha del juego y Perfil.
 

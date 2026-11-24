@@ -60,15 +60,16 @@ class CaseStyle(
     val corner: Dp,
     val frame: Dp,
     val borderColor: Color,
+    val frameColor: Color = Color(0xFF0B0B0D), // color del marco (plastico de la caja segun la consola)
 )
 
 fun caseStyleFor(console: ConsoleDef): CaseStyle = when (console.short) {
-    // depthRatio = grosor / ALTO de la caja. Carcasa de plastico negro con marco grueso y borde visible.
-    "GBA" -> CaseStyle(CaseKind.GBA, 0.125f, 5.dp, 4.dp, Color(0x77FFFFFF))
-    "GBC" -> CaseStyle(CaseKind.GBC, 0.120f, 5.dp, 4.dp, Color(0x77FFFFFF))
-    "GB" -> CaseStyle(CaseKind.GB, 0.130f, 4.dp, 3.dp, Color(0x77FFFFFF))
-    "DS" -> CaseStyle(CaseKind.DS, 0.085f, 6.dp, 5.dp, Color(0x77FFFFFF)) // plastico negro, mas delgada
-    else -> CaseStyle(CaseKind.GENERIC, 0.110f, 5.dp, 4.dp, Color(0x66FFFFFF))
+    // depthRatio = grosor / ALTO de la caja. El marco y el borde llevan el color de la consola (como su plastico).
+    "GBA" -> CaseStyle(CaseKind.GBA, 0.125f, 4.dp, 3.dp, Color(0xCC8E7CFF), Color(0xFF3B2F7A)) // indigo GBA
+    "GBC" -> CaseStyle(CaseKind.GBC, 0.120f, 4.dp, 3.dp, Color(0xCC4FD1C5), Color(0xFF17706B)) // verde agua GBC
+    "GB" -> CaseStyle(CaseKind.GB, 0.130f, 3.dp, 3.dp, Color(0xCCC5C8CC), Color(0xFF6E7176)) // gris DMG
+    "DS" -> CaseStyle(CaseKind.DS, 0.085f, 4.dp, 3.dp, Color(0xCCF2F4F7), Color(0xFF9AA0A8)) // plata/blanco DS Lite
+    else -> CaseStyle(CaseKind.GENERIC, 0.110f, 4.dp, 3.dp, Color(0x66FFFFFF))
 }
 
 /**
@@ -200,7 +201,7 @@ private fun FrontFace(game: Game, style: CaseStyle, phase: () -> Float, strength
     ) {
         if (style.frame > 0.dp) {
             // caja de plastico: marco negro grueso alrededor del arte
-            Box(Modifier.fillMaxSize().background(Color(0xFF0B0B0D)).padding(style.frame)) {
+            Box(Modifier.fillMaxSize().background(style.frameColor).padding(style.frame)) {
                 FrontArt(game, Modifier.fillMaxSize().clip(RoundedCornerShape(2.dp)))
             }
         } else {
@@ -208,8 +209,7 @@ private fun FrontFace(game: Game, style: CaseStyle, phase: () -> Float, strength
         }
         // volumen: realce a la izquierda (lado del lomo) y sombra a la derecha + borde fino
         Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(Color.White.copy(alpha = 0.14f), Color.Transparent, Color.Black.copy(alpha = 0.18f)))))
-        if (style.frame > 0.dp) Box(Modifier.fillMaxSize().padding(1.dp).border(1.dp, Color.White.copy(alpha = 0.14f), shape)) // bisel
-        Box(Modifier.fillMaxSize().border(1.dp, style.borderColor, shape))
+        Box(Modifier.fillMaxSize().border(1.dp, style.borderColor.copy(alpha = 0.55f), shape))
     }
 }
 

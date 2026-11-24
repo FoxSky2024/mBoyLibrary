@@ -164,6 +164,9 @@ object Manuals {
     }
 }
 
+/** Angulo de reposo de la caja: algo girada para que se vea el lomo y el grosor. */
+private const val HOME_ANGLE = 22f
+
 private enum class Phase { BOX, MANUAL }
 
 /**
@@ -178,7 +181,7 @@ fun InspectOverlay(game: Game, onClose: () -> Unit, onPlay: () -> Unit) {
     var phase by remember { mutableStateOf(Phase.BOX) }
     var manualVer by remember { mutableIntStateOf(0) }
     val hasManual = remember(game.id, manualVer) { Manuals.has(ctx, game) }
-    val flip = remember { Animatable(0f) }
+    val flip = remember { Animatable(HOME_ANGLE) }
     val front = rememberBitmap(game, "front")
     val back = rememberBackData(game, enabled = true)
     var zoom by remember { mutableStateOf(1f) }
@@ -193,7 +196,7 @@ fun InspectOverlay(game: Game, onClose: () -> Unit, onPlay: () -> Unit) {
     BackHandler { if (phase == Phase.MANUAL) phase = Phase.BOX else onClose() }
 
     fun settle() {
-        val t = ((flip.value / 180f).roundToInt() * 180f)
+        val t = ((flip.value - HOME_ANGLE) / 180f).roundToInt() * 180f + HOME_ANGLE
         scope.launch { flip.animateTo(t, tween(350, easing = FastOutSlowInEasing)) }
     }
 
@@ -202,16 +205,8 @@ fun InspectOverlay(game: Game, onClose: () -> Unit, onPlay: () -> Unit) {
             .background(Brush.verticalGradient(listOf(console.bgTop.copy(alpha = 0.97f), Color(0xFF020204))))
             .pointerInput(phase) {
                 if (phase == Phase.BOX) {
-                    detectTransformGestures { _, p, z, _ ->
-                        zoom = (zoom * z).coerceIn(1f, 3f)
-                        pan = if (zoom > 1f) pan + p else Offset.Zero
-                    }
-                }
-            }
-            .pointerInput(phase) {
-                if (phase == Phase.BOX) {
                     detectHorizontalDragGestures(onDragEnd = { settle() }, onDragCancel = { settle() }) { c, dx ->
-                        if (zoom <= 1.01f) { c.consume(); scope.launch { flip.snapTo(flip.value + dx * 0.4f) } }
+                        c.consume(); scope.launch { flip.snapTo(flip.value + dx * 0.5f) }
                     }
                 }
             },
@@ -220,27 +215,18 @@ fun InspectOverlay(game: Game, onClose: () -> Unit, onPlay: () -> Unit) {
             if (phase == Phase.BOX) {
                 val boxH = maxHeight * 0.92f
                 val boxW = (boxH * console.boxRatio).coerceAtMost(maxWidth * 0.85f)
+                // Caja 3D de verdad (frente, lomo, reverso y canto): arrastra para girarla.
                 Box(
-                    Modifier.align(Alignment.Center).size(boxW, boxH)
-                        .graphicsLayer {
-                            translationX = pan.x; translationY = pan.y
-                            scaleX = zoom; scaleY = zoom
-                            cameraDistance = 14f * density
-                            rotationY = flip.value
-                        }
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(Color(0xFF0E0E14)),
+                    Modifier.align(Alignment.Center).graphicsLayer {
+                        translationX = pan.x; translationY = pan.y
+                        scaleX = zoom; scaleY = zoom
+                    },
                 ) {
-                    val a = ((flip.value % 360f) + 360f) % 360f
-                    if (a < 90f || a > 270f) {
-                        if (front != null) Image(front, game.title, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-                        else FrontArt(game, Modifier.fillMaxSize())
-                    } else {
-                        Box(Modifier.fillMaxSize().graphicsLayer { rotationY = 180f }) { BackFace(back) }
-                    }
-                    Box(Modifier.fillMaxSize().drawBehind {
-                        drawRect(Brush.linearGradient(listOf(Color.White.copy(alpha = 0.08f), Color.Transparent, Color.Black.copy(alpha = 0.14f))))
-                    })
+                    Case3D(
+                        game = game, width = boxW, height = boxH,
+                        angle = { flip.value }, glarePhase = { (flip.value / 360f) % 1f }, glareStrength = { 0.35f },
+                        showBack = true, back = back,
+                    )
                 }
             } else {
                 ManualViewer(game, Modifier.fillMaxSize())
@@ -253,7 +239,7 @@ fun InspectOverlay(game: Game, onClose: () -> Unit, onPlay: () -> Unit) {
         ) {
             val a = ((flip.value % 360f) + 360f) % 360f
             Text(
-                if (phase == Phase.MANUAL) "MANUAL" else if (a in 90f..270f) "REVERSO" else "FRENTE",
+                if (phase == Phase.MANUAL) "MANUAL" else if (a in 100f..280f) "REVERSO" else "FRENTE",
                 color = Color.White.copy(alpha = 0.55f), fontSize = 10.sp, letterSpacing = 3.sp,
             )
             Text(game.title, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 24.dp))
@@ -263,7 +249,7 @@ fun InspectOverlay(game: Game, onClose: () -> Unit, onPlay: () -> Unit) {
                 horizontalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 if (phase == Phase.BOX) {
-                    Act("Dar vuelta") { scope.launch { flip.animateTo((flip.value / 180f).roundToInt() * 180f + 180f, tween(600, easing = FastOutSlowInEasing)) } }
+                    Act("Dar vuelta") { scope.launch { flip.animateTo(((flip.value - HOME_ANGLE) / 180f).roundToInt() * 180f + HOME_ANGLE + 180f, tween(600, easing = FastOutSlowInEasing)) } }
                     Act(if (hasManual) "Leer manual" else "Agregar manual") { if (hasManual) phase = Phase.MANUAL else pick.launch(arrayOf("application/pdf", "image/*")) }
                     Act("Jugar", true) { onPlay() }
                 } else {
