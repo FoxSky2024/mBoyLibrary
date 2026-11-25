@@ -38,11 +38,19 @@ object Profile {
     var platinumDone = false
         private set
 
+    private val mirror = SharedPreferences.OnSharedPreferenceChangeListener { _, _ -> appCtx?.let { Persist.touch(it) } }
+    private var appCtx: Context? = null
+
+    /** Vuelve a leer el perfil (despues de restaurar una copia / config.json). */
+    fun reload(ctx: Context) { sp = null; init(ctx) }
+
     @Synchronized
     fun init(ctx: Context) {
         if (sp != null) return
+        appCtx = ctx.applicationContext
         val p = ctx.applicationContext.getSharedPreferences("profile", Context.MODE_PRIVATE)
         sp = p
+        p.registerOnSharedPreferenceChangeListener(mirror)
         var pid = p.getString("id", "") ?: ""
         if (pid.isEmpty()) {
             pid = UUID.randomUUID().toString().replace("-", "").take(12)

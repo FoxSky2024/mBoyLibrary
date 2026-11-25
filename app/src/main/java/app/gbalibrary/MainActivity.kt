@@ -249,7 +249,6 @@ class MainActivity : ComponentActivity() {
                         onPlay = { game -> play(game, "") },
                         onPlaySlot = { game, slot -> play(game, slot) },
                     )
-                    app.gbalibrary.ui.StickerLayer()
                     bootGame?.let { g ->
                         app.gbalibrary.ui.BootScreen(
                             game = g,

@@ -1,3 +1,11 @@
+## 1.11.0
+- Cajas 3D: sin marco ni borde propio; la caja toma las proporciones reales del arte (frente y lomo) para que calcen.
+- Stickers solo en el perfil (editar, agregar, quitar) y stickers propios con tus imagenes (recorte circular, PNG).
+- Banners en alta calidad (1200x400) con recorte coherente con la vista previa.
+- Tus datos sobreviven a reinstalar: perfil, logros, Pawb, fondos, banners, stickers se guardan en GBALibrary/config.json.
+- Icono nuevo.
+- Menu de pausa: categorias en el borde izquierdo y ajustes abajo al centro; el centro queda libre.
+
 ## 1.10.0
 - La app y el APK se llaman mBoyLibrary (APK: mBoyLibrary-release.apk). Nuevo icono con la mascota.
 - Cajas completas incluidas (frente, lomo y reverso, sin internet): Pokémon Rubí, Zafiro, Roja, Azul, Amarilla (ES y US), Plata, Cristal y Final Fantasy Legend. Se aplican solas al detectar el juego.

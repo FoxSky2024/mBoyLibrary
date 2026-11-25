@@ -68,49 +68,64 @@ private val TABS = listOf("VIDEO", "AUDIO", "CONTROLES", "JUEGO", "VENTANA", "SA
 @Composable
 fun GameMenu(title: String, speed: Int, layout: ControlLayout, padConnected: Boolean, forceTouch: Boolean, actions: MenuActions) {
     val p = LocalPalette.current
-    var tab by remember { mutableIntStateOf(0) }
+    var tab by remember { mutableIntStateOf(0) } // -1 = panel de ajustes plegado
+    val glass = p.panel.copy(alpha = 0.93f)
+    // El centro de la pantalla queda libre: categorias en el borde izquierdo, ajustes abajo en el centro.
     Box(
-        Modifier.fillMaxSize().background(Color(0xAA000000)).clickable(onClick = actions.close),
-        contentAlignment = Alignment.Center,
+        Modifier.fillMaxSize().background(Color(0x40000000)).clickable(onClick = actions.close),
     ) {
         StatusIndicators(Modifier.align(Alignment.TopEnd).padding(top = 6.dp, end = 12.dp), tint = Color.White)
-        Row(
+
+        // ---- categorias (borde izquierdo) ----
+        Column(
             Modifier
-                .fillMaxWidth(0.82f)
-                .fillMaxHeight(0.88f)
-                .background(p.panel, RoundedCornerShape(14.dp))
-                .clickable(enabled = false, onClick = {}),
+                .align(Alignment.CenterStart)
+                .fillMaxHeight(0.92f)
+                .width(132.dp)
+                .background(glass, RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp))
+                .clickable(enabled = false, onClick = {})
+                .padding(vertical = 10.dp),
         ) {
-            Column(
-                Modifier.width(150.dp).fillMaxHeight().background(p.bg, RoundedCornerShape(topStart = 14.dp, bottomStart = 14.dp)).padding(vertical = 12.dp),
-            ) {
+            Text(
+                title, color = p.text, fontWeight = FontWeight.Bold, maxLines = 2, fontSize = 13.sp,
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+            )
+            TABS.forEachIndexed { i, name ->
                 Text(
-                    title, color = p.text, fontWeight = FontWeight.Bold, maxLines = 2,
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                    name,
+                    color = if (i == tab) p.accent else p.text,
+                    fontWeight = if (i == tab) FontWeight.Bold else FontWeight.Normal,
+                    fontSize = 13.sp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(if (i == tab) p.card else Color.Transparent)
+                        .clickable { Sfx.click(); tab = if (tab == i && i != TABS.lastIndex) -1 else i }
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
                 )
-                TABS.forEachIndexed { i, name ->
-                    Text(
-                        name,
-                        color = if (i == tab) p.accent else p.text,
-                        fontWeight = if (i == tab) FontWeight.Bold else FontWeight.Normal,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(if (i == tab) p.card else Color.Transparent)
-                            .clickable { Sfx.click(); tab = i }
-                            .padding(horizontal = 14.dp, vertical = 11.dp),
-                    )
-                }
-                Box(Modifier.weight(1f))
-                Button(
-                    onClick = actions.close,
-                    colors = ButtonDefaults.buttonColors(containerColor = p.play),
-                    modifier = Modifier.padding(horizontal = 10.dp).fillMaxWidth(),
-                ) { Text("Continuar", color = Color.White) }
             }
+            Box(Modifier.weight(1f))
+            Button(
+                onClick = actions.close,
+                colors = ButtonDefaults.buttonColors(containerColor = p.play),
+                modifier = Modifier.padding(horizontal = 10.dp).fillMaxWidth(),
+            ) { Text("Continuar", color = Color.White, fontSize = 13.sp) }
+        }
+
+        // ---- ajustes (abajo, centrado, sin tapar el juego) ----
+        if (tab >= 0) {
             Column(
-                Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()).padding(18.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(start = 140.dp, bottom = 10.dp)
+                    .fillMaxWidth(0.66f)
+                    .fillMaxHeight(0.46f)
+                    .background(glass, RoundedCornerShape(16.dp))
+                    .clickable(enabled = false, onClick = {})
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 18.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
+                Text(TABS[tab], color = p.accent, fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = 1.sp)
                 when (tab) {
                     0 -> VideoTab(actions)
                     1 -> AudioTab()

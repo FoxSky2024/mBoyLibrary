@@ -43,7 +43,9 @@ import app.gbalibrary.data.CustomBanner
 import app.gbalibrary.data.Pawb
 
 /** Acceso global a la tienda (se abre desde la barra superior o el perfil). */
-object ShopNav { val show = mutableStateOf(false) }
+object ShopNav {
+    /** true = al cerrar la tienda, ir al perfil (para pegar stickers). */
+    val openProfile = androidx.compose.runtime.mutableStateOf(false) val show = mutableStateOf(false) }
 
 private val Swatches = listOf(
     0xFFE8892B, 0xFFD64B4B, 0xFFD86B9A, 0xFF8A4CD6, 0xFF3B7DD8, 0xFF2FBF9B,
@@ -127,13 +129,32 @@ fun ShopScreen(onBack: () -> Unit) {
                 }
                 5 -> {
                     item {
-                        Text("Compra stickers y pégalos en cualquier pantalla de la app, como pegatinas en una consola real. Un sticker comprado se puede pegar las veces que quieras.", color = p.dim, fontSize = 12.sp)
-                        if (Pawb.placed.value.isNotEmpty()) PriceButton("Editar stickers pegados (${Pawb.placed.value.size})", true) { Pawb.stickerEdit.value = true; ShopNav.show.value = false }
+                        Text("Compra stickers y pégalos en tu perfil, como pegatinas en una consola real. Un sticker se puede pegar las veces que quieras.", color = p.dim, fontSize = 12.sp)
+                        var stSrc by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+                        val stPick = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri ->
+                            if (uri != null) stSrc = decodeForCrop(ctx, uri) ?: null.also { msg = "No se pudo leer la imagen" }
+                        }
+                        PriceButton("Crear sticker con mi imagen (gratis)", true) { stPick.launch("image/*") }
+                        stSrc?.let { bm ->
+                            BannerCropDialog(bm, aspect = 1f, outW = 512, outH = 512, png = true, round = true, title = "Recortar sticker",
+                                onDone = { Pawb.addCustomSticker(ctx, it); stSrc = null; msg = "Sticker creado" }, onCancel = { stSrc = null })
+                        }
+                        if (Pawb.customStickers.value.isNotEmpty()) Text("MIS STICKERS", color = p.dim, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Row(Modifier.horizontalScroll(androidx.compose.foundation.rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Pawb.customStickers.value.forEach { cs ->
+                                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    StickerArt(cs, 56.dp)
+                                    Text("Pegar", color = p.accent, fontSize = 12.sp, modifier = Modifier.clickable { Pawb.placeSticker(cs); Pawb.stickerEdit.value = true; ShopNav.openProfile.value = true; ShopNav.show.value = false })
+                                    Text("Borrar", color = p.dim, fontSize = 11.sp, modifier = Modifier.clickable { Pawb.deleteCustomSticker(ctx, cs) })
+                                }
+                            }
+                        }
+                        if (Pawb.placed.value.isNotEmpty()) PriceButton("Editar stickers pegados (${Pawb.placed.value.size})", true) { Pawb.stickerEdit.value = true; ShopNav.openProfile.value = true; ShopNav.show.value = false }
                     }
                     items(ShopCatalog.stickers, key = { it.id }) { st ->
                         ItemCard(
                             name = st.name, rarity = st.rarity, price = st.price, id = st.id, equipped = false, actionLabel = "Pegar",
-                            onEquip = { Pawb.placeSticker(st.id); Pawb.stickerEdit.value = true; ShopNav.show.value = false }, onMsg = { msg = it },
+                            onEquip = { Pawb.placeSticker(st.id); Pawb.stickerEdit.value = true; ShopNav.openProfile.value = true; ShopNav.show.value = false }, onMsg = { msg = it },
                         ) { Box(Modifier.fillMaxSize().background(Color(0xFF1B2430)), contentAlignment = Alignment.Center) { StickerArt(st.id, 56.dp) } }
                     }
                 }
@@ -241,7 +262,7 @@ private fun BannerCreator(onMsg: (String) -> Unit) {
     val pick = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) cropSrc = decodeForCrop(ctx, uri) ?: null.also { onMsg("No se pudo leer la imagen") }
     }
-    cropSrc?.let { bm -> BannerCropDialog(bm, onDone = { img = it; cropSrc = null }, onCancel = { cropSrc = null }) }
+    cropSrc?.let { bm -> BannerCropDialog(bm, onDone = { img = android.util.Base64.encodeToString(it, android.util.Base64.NO_WRAP); cropSrc = null }, onCancel = { cropSrc = null }) }
 
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(p.panel).padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("CREAR BANNER", color = p.dim, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.8.sp)

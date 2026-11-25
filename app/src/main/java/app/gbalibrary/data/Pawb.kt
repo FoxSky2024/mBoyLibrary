@@ -53,9 +53,21 @@ object Pawb {
     val custom = mutableStateOf<List<CustomBanner>>(emptyList())
     var playerName = "Jugador"
 
+    private var appCtx: Context? = null
+    private val mirror = SharedPreferences.OnSharedPreferenceChangeListener { _, _ -> appCtx?.let { Persist.touch(it) } }
+
     fun init(ctx: Context) {
         if (this::p.isInitialized) return
+        appCtx = ctx.applicationContext
         p = ctx.applicationContext.getSharedPreferences("pawb", Context.MODE_PRIVATE)
+        p.registerOnSharedPreferenceChangeListener(mirror) // cada cambio se copia a GBALibrary/config.json
+        load()
+    }
+
+    /** Vuelve a leer todo (despues de restaurar una copia / config.json). */
+    fun reload() { if (this::p.isInitialized) load() }
+
+    private fun load() {
         if (!p.contains("balance")) p.edit().putInt("balance", 100).apply() // regalo de bienvenida
         balance.intValue = p.getInt("balance", 0)
         owned.value = p.getString("owned", "").orEmpty().split(",").filter { it.isNotBlank() }.toSet()
@@ -66,6 +78,7 @@ object Pawb {
             val a = JSONArray(p.getString("placed", "[]"))
             (0 until a.length()).map { val o = a.getJSONObject(it); PlacedSticker(o.getString("u"), o.getString("s"), o.getDouble("x").toFloat(), o.getDouble("y").toFloat(), o.getDouble("k").toFloat(), o.getDouble("r").toFloat()) }
         } catch (e: Exception) { emptyList() }
+        customStickers.value = p.getString("cstk", "").orEmpty().split(",").filter { it.isNotBlank() }
         refreshAds()
         custom.value = try {
             val a = JSONArray(p.getString("custom", "[]"))
@@ -141,6 +154,23 @@ object Pawb {
         placed.value = placed.value.map { if (it.uid == uid) PlacedSticker(uid, it.sid, x.coerceIn(0f, 1f), y.coerceIn(0f, 1f), scale.coerceIn(0.4f, 5f), rot) else it }
     }
     fun commitStickers() = savePlaced()
+
+    // stickers propios (imagenes del usuario): PNG en GBALibrary/Stickers/<id>.png, ids "cs:<id>"
+    val customStickers = mutableStateOf<List<String>>(emptyList())
+    fun stickerDir(ctx: Context) = java.io.File(DataDir.root(ctx), "Stickers").apply { mkdirs() }
+    fun addCustomSticker(ctx: Context, png: ByteArray): String {
+        val id = UUID.randomUUID().toString().take(8)
+        java.io.File(stickerDir(ctx), "$id.png").writeBytes(png)
+        customStickers.value = customStickers.value + "cs:$id"
+        p.edit().putString("cstk", customStickers.value.joinToString(",")).apply()
+        return "cs:$id"
+    }
+    fun deleteCustomSticker(ctx: Context, sid: String) {
+        runCatching { java.io.File(stickerDir(ctx), sid.removePrefix("cs:") + ".png").delete() }
+        customStickers.value = customStickers.value - sid
+        p.edit().putString("cstk", customStickers.value.joinToString(",")).apply()
+        placed.value = placed.value.filter { it.sid != sid }; savePlaced()
+    }
     fun removeSticker(uid: String) { placed.value = placed.value.filter { it.uid != uid }; stickerSel.value = ""; savePlaced() }
 
     // ---- anuncios voluntarios con recompensa ----
@@ -175,8 +205,19 @@ object Pawb {
         if (banner.value == id) equipBanner("")
     }
 
+    /** La imagen se guarda en alta calidad; en el enlace viaja reducida (480x160) para que quepa. */
+    private fun smallImg(b64: String): String = try {
+        if (b64.isEmpty()) "" else {
+            val raw = Base64.decode(b64, Base64.DEFAULT)
+            val bmp = android.graphics.BitmapFactory.decodeByteArray(raw, 0, raw.size)
+            val sm = android.graphics.Bitmap.createScaledBitmap(bmp, 480, 160, true)
+            val bos = java.io.ByteArrayOutputStream(); sm.compress(android.graphics.Bitmap.CompressFormat.JPEG, 60, bos)
+            Base64.encodeToString(bos.toByteArray(), Base64.NO_WRAP)
+        }
+    } catch (e: Exception) { "" }
+
     fun shareLink(b: CustomBanner): String =
-        "mboyitem://" + Base64.encodeToString(b.toJson().toString().toByteArray(), Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
+        "mboyitem://" + Base64.encodeToString(b.copy(img = smallImg(b.img)).toJson().toString().toByteArray(), Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
 
     fun parseLink(text: String): CustomBanner? = try {
         val s = text.trim().removePrefix("mboyitem://")

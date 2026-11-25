@@ -102,24 +102,34 @@ fun Case3D(
     val console = remember(game.id, game.fileName) { consoleOf(game) }
     val style = remember(console) { caseStyleFor(console) }
     val density = LocalDensity.current
-    val depth = height * style.depthRatio
-    val wPx = with(density) { width.toPx() }
+    // La caja toma las proporciones REALES del arte (frente y lomo): asi calzan tamano y bordes.
+    val frontBmp = rememberBitmap(game, "front")
+    val spineImg = back?.spine ?: rememberBitmap(game, "spine")
+    val aspect = frontBmp?.let { it.width.toFloat() / it.height }?.takeIf { it in 0.4f..1.3f }
+    var fw = width
+    var fh = height
+    if (aspect != null) { if (height * aspect <= width) fw = height * aspect else { fw = width; fh = width / aspect } }
+    val spAspect = spineImg?.let { it.width.toFloat() / it.height }?.takeIf { it in 0.04f..0.3f }
+    val depth = if (spAspect != null) fh * spAspect else fh * style.depthRatio
+    val wPx = with(density) { fw.toPx() }
     val dPx = with(density) { depth.toPx() }
     val camera = 48f * density.density // perspectiva suave: frente y laterales conservan la misma altura
 
-    Box(modifier.size(width, height)) {
-        CaseFace(0f, 0f, dPx / 2f, width, height, angle, camera) {
-            FrontFace(game, style, glarePhase, glareStrength, cheap)
-        }
-        CaseFace(270f, -wPx / 2f, 0f, depth, height, angle, camera) {
-            Spine(game, style, console, depth, height, glarePhase, glareStrength, cheap, back?.spine)
-        }
-        CaseFace(90f, wPx / 2f, 0f, depth, height, angle, camera) {
-            Spine(game, style, console, depth, height, glarePhase, glareStrength, cheap)
-        }
-        if (showBack && !cheap) {
-            CaseFace(180f, 0f, -dPx / 2f, width, height, angle, camera) {
-                BackFace(game, style, console, back)
+    Box(modifier.size(width, height), contentAlignment = Alignment.BottomCenter) {
+        Box(Modifier.size(fw, fh)) {
+            CaseFace(0f, 0f, dPx / 2f, fw, fh, angle, camera) {
+                FrontFace(game, style, glarePhase, glareStrength, cheap, fitted = aspect != null)
+            }
+            CaseFace(270f, -wPx / 2f, 0f, depth, fh, angle, camera) {
+                Spine(game, style, console, depth, fh, glarePhase, glareStrength, cheap, spineImg)
+            }
+            CaseFace(90f, wPx / 2f, 0f, depth, fh, angle, camera) {
+                Spine(game, style, console, depth, fh, glarePhase, glareStrength, cheap, spineImg)
+            }
+            if (showBack && !cheap) {
+                CaseFace(180f, 0f, -dPx / 2f, fw, fh, angle, camera) {
+                    BackFace(game, style, console, back)
+                }
             }
         }
     }
@@ -199,23 +209,15 @@ private fun Modifier.glare(phase: () -> Float, strength: () -> Float, gloss: Boo
 // ------------------------------------------------------------------------------------------ frente
 
 @Composable
-private fun FrontFace(game: Game, style: CaseStyle, phase: () -> Float, strength: () -> Float, cheap: Boolean) {
-    val shape = RoundedCornerShape(style.corner)
+private fun FrontFace(game: Game, style: CaseStyle, phase: () -> Float, strength: () -> Float, cheap: Boolean, fitted: Boolean) {
     Box(
-        Modifier.fillMaxSize().clip(shape)
+        Modifier.fillMaxSize()
             .then(if (cheap) Modifier else Modifier.glare(phase, strength)),
     ) {
-        if (style.frame > 0.dp) {
-            // caja de plastico: marco negro grueso alrededor del arte
-            Box(Modifier.fillMaxSize().background(style.frameColor).padding(style.frame)) {
-                FrontArt(game, Modifier.fillMaxSize().clip(RoundedCornerShape(2.dp)))
-            }
-        } else {
-            FrontArt(game, Modifier.fillMaxSize())
-        }
-        // volumen: realce a la izquierda (lado del lomo) y sombra a la derecha + borde fino
-        Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(Color.White.copy(alpha = 0.14f), Color.Transparent, Color.Black.copy(alpha = 0.18f)))))
-        Box(Modifier.fillMaxSize().border(1.dp, style.borderColor.copy(alpha = 0.55f), shape))
+        // sin marco ni borde propio: solo el arte de la caja
+        FrontArt(game, Modifier.fillMaxSize(), if (fitted) ContentScale.FillBounds else ContentScale.Crop)
+        // volumen: realce a la izquierda (lado del lomo) y sombra a la derecha
+        Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(Color.White.copy(alpha = 0.10f), Color.Transparent, Color.Black.copy(alpha = 0.14f)))))
     }
 }
 
@@ -325,7 +327,6 @@ private fun Spine(
             // linea de brillo del plastico negro
             Box(Modifier.align(Alignment.CenterStart).padding(start = 2.dp).fillMaxHeight().requiredSize(1.dp, h).background(Color.White.copy(alpha = 0.22f)))
         }
-        Box(Modifier.fillMaxSize().border(1.dp, style.borderColor.copy(alpha = 0.7f)))
     }
     if (!cheap) Box(Modifier.fillMaxSize().glare({ phase() + 0.4f }, { strength() * 0.5f }, gloss = false))
 }
@@ -350,6 +351,5 @@ private fun BackFace(game: Game, style: CaseStyle, console: ConsoleDef, data: Ba
             if (base != null) Image(base, null, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
         }
         Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.18f), Color.Transparent, Color.White.copy(alpha = 0.10f)))))
-        Box(Modifier.fillMaxSize().border(1.dp, style.borderColor, shape))
     }
 }

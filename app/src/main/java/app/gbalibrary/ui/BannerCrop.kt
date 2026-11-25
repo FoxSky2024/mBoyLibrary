@@ -50,7 +50,11 @@ private fun adjustMatrix(brightness: Float, saturation: Float): FloatArray {
 
 /** Editor de imagen del banner: arrastra y pellizca para encuadrar (marco 3:1), brillo y saturacion. Devuelve base64 JPEG 480x160. */
 @Composable
-fun BannerCropDialog(src: Bitmap, onDone: (String) -> Unit, onCancel: () -> Unit) {
+fun BannerCropDialog(
+    src: Bitmap, onDone: (ByteArray) -> Unit, onCancel: () -> Unit,
+    aspect: Float = 3f, outW: Int = 1200, outH: Int = 400, png: Boolean = false, round: Boolean = false,
+    title: String = "Recortar y editar",
+) {
     val p = LocalPalette.current
     var frame by remember { mutableStateOf(IntSize(1, 1)) }
     var zoom by remember { mutableFloatStateOf(1f) }
@@ -74,10 +78,10 @@ fun BannerCropDialog(src: Bitmap, onDone: (String) -> Unit, onCancel: () -> Unit
             Modifier.clip16().background(p.panel).padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text("Recortar y editar", color = p.text, fontSize = 16.sp)
+            Text(title, color = p.text, fontSize = 16.sp)
             Text("Arrastra para mover · pellizca para acercar", color = p.dim, fontSize = 11.sp)
             Canvas(
-                Modifier.fillMaxWidth().aspectRatio(3f).clipToBounds().background(Color.Black)
+                (if (aspect >= 2f) Modifier.fillMaxWidth() else Modifier.fillMaxWidth(0.62f).align(Alignment.CenterHorizontally)).aspectRatio(aspect).clipToBounds().background(if (png) Color(0xFF2A2F3A) else Color.Black)
                     .onSizeChanged { frame = it }
                     .pointerInput(src) {
                         detectTransformGestures { _, pan, g, _ ->
@@ -94,6 +98,15 @@ fun BannerCropDialog(src: Bitmap, onDone: (String) -> Unit, onCancel: () -> Unit
                 withTransform({ translate(x, y); scale(sc, sc, Offset.Zero) }) {
                     drawImage(img, colorFilter = ColorFilter.colorMatrix(ColorMatrix(adjustMatrix(bright, sat))))
                 }
+                if (round) {
+                    // lo que queda fuera del circulo no se guarda
+                    val path = androidx.compose.ui.graphics.Path().apply {
+                        addRect(androidx.compose.ui.geometry.Rect(0f, 0f, size.width, size.height))
+                        addOval(androidx.compose.ui.geometry.Rect(0f, 0f, size.width, size.height))
+                        fillType = androidx.compose.ui.graphics.PathFillType.EvenOdd
+                    }
+                    drawPath(path, Color(0xCC000000))
+                }
             }
             Text("Brillo", color = p.dim, fontSize = 11.sp)
             Slider(bright, { bright = it }, valueRange = -0.5f..0.5f)
@@ -108,16 +121,25 @@ fun BannerCropDialog(src: Bitmap, onDone: (String) -> Unit, onCancel: () -> Unit
                     modifier = Modifier.clip16().background(p.play).clickable0 {
                         val fw = frame.width.toFloat().coerceAtLeast(1f); val fh = frame.height.toFloat().coerceAtLeast(1f)
                         val (sc, x, y) = place(fw, fh, zoom, off)
-                        val f = 480f / fw
-                        val out = Bitmap.createBitmap(480, 160, Bitmap.Config.ARGB_8888)
+                        val f = outW / fw
+                        val out = Bitmap.createBitmap(outW, outH, Bitmap.Config.ARGB_8888)
                         val m = android.graphics.Matrix().apply { postScale(sc, sc); postTranslate(x, y); postScale(f, f) }
-                        val paint = android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG).apply {
+                        val paint = android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG or android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
                             colorFilter = android.graphics.ColorMatrixColorFilter(android.graphics.ColorMatrix(adjustMatrix(bright, sat)))
                         }
-                        android.graphics.Canvas(out).drawBitmap(src, m, paint)
+                        val cv = android.graphics.Canvas(out)
+                        if (round) {
+                            val layer = cv.saveLayer(0f, 0f, outW.toFloat(), outH.toFloat(), null)
+                            cv.drawBitmap(src, m, paint)
+                            val mask = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+                                xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.DST_IN)
+                            }
+                            cv.drawOval(0f, 0f, outW.toFloat(), outH.toFloat(), mask)
+                            cv.restoreToCount(layer)
+                        } else cv.drawBitmap(src, m, paint)
                         val bos = java.io.ByteArrayOutputStream()
-                        out.compress(Bitmap.CompressFormat.JPEG, 55, bos)
-                        onDone(android.util.Base64.encodeToString(bos.toByteArray(), android.util.Base64.NO_WRAP))
+                        if (png) out.compress(Bitmap.CompressFormat.PNG, 100, bos) else out.compress(Bitmap.CompressFormat.JPEG, 90, bos)
+                        onDone(bos.toByteArray())
                     }.padding(horizontal = 14.dp, vertical = 8.dp))
             }
         }

@@ -143,7 +143,7 @@ fun CoverPlaceholder(game: Game, modifier: Modifier = Modifier) {
 
 /** Portada de la cara frontal: crossfade desde el marcador; sin portada, el degradado generado. */
 @Composable
-fun FrontArt(game: Game, modifier: Modifier = Modifier) {
+fun FrontArt(game: Game, modifier: Modifier = Modifier, scale: ContentScale = ContentScale.Crop) {
     if (!game.hasCover) {
         CoverImage(game, modifier)
         return
@@ -151,7 +151,7 @@ fun FrontArt(game: Game, modifier: Modifier = Modifier) {
     val bmp = rememberBitmap(game, "front")
     Crossfade(targetState = bmp, modifier = modifier, animationSpec = tween(220), label = "cover") { b ->
         if (b == null) CoverPlaceholder(game, Modifier.fillMaxSize())
-        else Image(b, game.title, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+        else Image(b, game.title, Modifier.fillMaxSize(), contentScale = scale)
     }
 }
 
