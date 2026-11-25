@@ -183,6 +183,7 @@ fun ProfileScreen(
                         }
                     }
                     item { AppButton("Galería de capturas ($shotCount)", onGallery, Modifier.fillMaxWidth(), icon = Icons.Filled.PhotoLibrary) }
+                    item { AppButton("🐾 Tienda de Pawb (${app.gbalibrary.data.Pawb.balance.intValue})", { ShopNav.show.value = true }, Modifier.fillMaxWidth()) }
                 }
                 1 -> {
                     // ---- Actividad reciente (como la comunidad de Steam) ----

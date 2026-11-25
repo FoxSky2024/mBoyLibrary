@@ -1,5 +1,6 @@
 package app.gbalibrary
 
+import app.gbalibrary.data.Pawb
 import android.content.Intent
 import android.Manifest
 import android.net.Uri
@@ -197,6 +198,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Settings.init(this) // GbaApp ya lo hizo; es idempotente
+        Pawb.init(this)
+        Pawb.dailyBonus().let { if (it > 0) Toast.makeText(this, "🐾 +$it Pawb de bonus diario", Toast.LENGTH_SHORT).show() }
         app.gbalibrary.data.Profile.init(this)
         app.gbalibrary.data.Feeds.init(this)
         handleLink(intent)
