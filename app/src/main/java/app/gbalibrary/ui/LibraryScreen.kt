@@ -151,6 +151,9 @@ fun LibraryApp(vm: LibraryViewModel, actions: LibraryActions, onPlay: (Game) -> 
         }
     }
 
+    androidx.compose.runtime.LaunchedEffect(ShopNav.openProfile.value) {
+        if (ShopNav.openProfile.value) { ShopNav.openProfile.value = false; ShopNav.show.value = false; showProfile = true }
+    }
     BackHandler(enabled = detail != null || showSettings || showProfile || showGallery || showNews) {
         when {
             showNews -> showNews = false

@@ -100,6 +100,7 @@ fun ProfileScreen(
     val banner = Banners[Profile.banner.intValue.coerceIn(0, Banners.lastIndex)].second
     val status = Statuses[Profile.status.intValue.coerceIn(0, Statuses.lastIndex)]
 
+    Box(Modifier.fillMaxSize()) {
     Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(banner[0].copy(alpha = 0.6f), Color.Transparent)))) {
         ScreenHeader("Mi Perfil", onBack)
         Row(Modifier.fillMaxSize()) {
@@ -183,6 +184,7 @@ fun ProfileScreen(
                         }
                     }
                     item { AppButton("Galería de capturas ($shotCount)", onGallery, Modifier.fillMaxWidth(), icon = Icons.Filled.PhotoLibrary) }
+                    item { AppButton("Stickers del perfil (${app.gbalibrary.data.Pawb.placed.value.size}) · editar", { app.gbalibrary.data.Pawb.stickerEdit.value = true }, Modifier.fillMaxWidth()) }
                     item { AppButton("Tienda de Pawb (${app.gbalibrary.data.Pawb.balance.intValue})", { ShopNav.show.value = true }, Modifier.fillMaxWidth()) }
                 }
                 1 -> {
@@ -341,6 +343,8 @@ fun ProfileScreen(
         }
         ProfileSidebar(st, status, ring, shotCount, onTab = { tab = it }, onGallery = onGallery, modifier = Modifier.width(250.dp).fillMaxHeight())
         }
+    }
+    StickerLayer(Modifier.fillMaxSize())
     }
     if (showQr) {
         val link = remember(all, st, showQr, Profile.status.intValue, Profile.headline.value, Profile.bio.value, Profile.location.value, Profile.frame.intValue, Profile.banner.intValue, Profile.showcase.value, Profile.showGames.value, Profile.showTime.value, Profile.acceptNotes.value, Settings.profileName.value) {

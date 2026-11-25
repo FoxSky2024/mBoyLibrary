@@ -112,6 +112,7 @@ object Settings {
     fun reload(ctx: Context) {
         val p = sp ?: return init(ctx)
         readAll(p)
+        Pawb.reload(); Profile.reload(ctx)
     }
 
     private fun readAll(p: SharedPreferences) {
