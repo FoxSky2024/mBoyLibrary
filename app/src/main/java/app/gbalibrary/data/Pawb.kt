@@ -74,6 +74,8 @@ object Pawb {
         bg.value = p.getString("bg", "").orEmpty()
         banner.value = p.getString("banner", "").orEmpty()
         skin.value = p.getString("skin", "").orEmpty()
+        vFrame.value = p.getString("vframe", "").orEmpty(); vTitle.value = p.getString("vtitle", "").orEmpty()
+        vSub.value = p.getString("vsub", "").orEmpty(); vImg.value = p.getString("vimg", "").orEmpty()
         placed.value = try {
             val a = JSONArray(p.getString("placed", "[]"))
             (0 until a.length()).map { val o = a.getJSONObject(it); PlacedSticker(o.getString("u"), o.getString("s"), o.getDouble("x").toFloat(), o.getDouble("y").toFloat(), o.getDouble("k").toFloat(), o.getDouble("r").toFloat()) }
@@ -130,6 +132,17 @@ object Pawb {
 
     // ---- banners propios / de otros jugadores ----
     private fun saveCustom() { p.edit().putString("custom", JSONArray(custom.value.map { it.toJson() }).toString()).apply() }
+
+    // ---- vitrina del perfil: marco equipado + textos/imagen editados dentro del marco ----
+    val vFrame = mutableStateOf("")
+    val vTitle = mutableStateOf("")
+    val vSub = mutableStateOf("")
+    val vImg = mutableStateOf("")   // base64 JPEG (alta calidad)
+    fun equipFrame(id: String) { vFrame.value = id; p.edit().putString("vframe", id).apply() }
+    fun setVitrina(title: String, sub: String, img: String) {
+        vTitle.value = title; vSub.value = sub; vImg.value = img
+        p.edit().putString("vtitle", title).putString("vsub", sub).putString("vimg", img).apply()
+    }
 
     // ---- skins del emulador ----
     val skin = mutableStateOf("")      // id de la skin de botones equipada

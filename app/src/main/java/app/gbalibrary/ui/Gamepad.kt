@@ -19,6 +19,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -37,6 +38,33 @@ private val PadIdle0 = Color(0x44FFFFFF)
 private val PadBorder0 = Color(0x66FFFFFF)
 
 // Skin equipada (tienda): colores de los botones tactiles. Sin skin = aspecto original.
+private val DiamondShape = androidx.compose.foundation.shape.GenericShape { sz, _ ->
+    moveTo(sz.width / 2f, 0f); lineTo(sz.width, sz.height / 2f); lineTo(sz.width / 2f, sz.height); lineTo(0f, sz.height / 2f); close()
+}
+private val HexShape = androidx.compose.foundation.shape.GenericShape { sz, _ ->
+    val w = sz.width; val h = sz.height
+    moveTo(w * 0.25f, 0f); lineTo(w * 0.75f, 0f); lineTo(w, h / 2f); lineTo(w * 0.75f, h); lineTo(w * 0.25f, h); lineTo(0f, h / 2f); close()
+}
+
+/** Forma del boton segun la skin: [round] = boton circular (A, B...); si no, barra (L, R, START...). */
+fun skinShape(sk: ShopSkin?, default: androidx.compose.ui.graphics.Shape, round: Boolean): androidx.compose.ui.graphics.Shape = when (sk?.shape ?: 0) {
+    1 -> if (round) androidx.compose.foundation.shape.RoundedCornerShape(30) else androidx.compose.foundation.shape.RoundedCornerShape(10.dp)
+    2 -> androidx.compose.foundation.shape.RoundedCornerShape(4.dp)
+    3 -> if (round) DiamondShape else androidx.compose.foundation.shape.CutCornerShape(28)
+    4 -> if (round) HexShape else androidx.compose.foundation.shape.CutCornerShape(18)
+    else -> default
+}
+
+/** Trama decorativa de la skin (rayas, puntos, brillo) sobre el fondo del boton. */
+fun androidx.compose.ui.graphics.drawscope.DrawScope.skinPattern(pattern: Int) {
+    val w = size.width; val h = size.height
+    when (pattern) {
+        1 -> { var x = -h; while (x < w) { drawLine(Color.White.copy(alpha = 0.14f), androidx.compose.ui.geometry.Offset(x, h), androidx.compose.ui.geometry.Offset(x + h, 0f), strokeWidth = 3f); x += 14f } }
+        2 -> { var y = 6f; while (y < h) { var x = 6f; while (x < w) { drawCircle(Color.White.copy(alpha = 0.16f), 1.8f, androidx.compose.ui.geometry.Offset(x, y)); x += 11f }; y += 11f } }
+        3 -> drawRect(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.28f), Color.Transparent), endY = h * 0.55f))
+    }
+}
+
 @Composable fun padIdle(): Color = ShopCatalog.skin(app.gbalibrary.data.Pawb.skin.value)?.idle ?: PadIdle0
 @Composable fun padBorder(): Color = ShopCatalog.skin(app.gbalibrary.data.Pawb.skin.value)?.border ?: PadBorder0
 @Composable fun padGlyph(): Color = ShopCatalog.skin(app.gbalibrary.data.Pawb.skin.value)?.glyph ?: Color.White
@@ -56,12 +84,18 @@ fun PadButton(
 ) {
     var pressed by remember { mutableStateOf(false) }
     val active = padActive(); val idle = padIdle(); val bord = padBorder(); val glyph = padGlyph()
+    val skin = ShopCatalog.skin(app.gbalibrary.data.Pawb.skin.value)
+    val sh = skinShape(skin, shape, round = shape === CircleShape)
     Box(
         modifier = modifier
             .fillMaxSize()
-            .clip(shape)
-            .background(if (pressed) active else idle)
-            .border(2.dp, bord, shape)
+            .clip(sh)
+            .then(
+                if (!pressed && skin?.idle2 != null) Modifier.background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(idle, skin.idle2)))
+                else Modifier.background(if (pressed) active else idle),
+            )
+            .then(if (skin != null && skin.pattern != 0) Modifier.drawBehind { skinPattern(skin.pattern) } else Modifier)
+            .border(2.dp, bord, sh)
             .pointerInput(mask, enabled, source) {
                 if (!enabled || engine == null) return@pointerInput
                 awaitEachGesture {

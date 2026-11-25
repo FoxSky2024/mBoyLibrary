@@ -1,3 +1,9 @@
+## 1.12.0
+- Skins del emulador con formas (redondeada, cuadrada, diamante, hexagono), tramas (rayas, puntos, brillo), degradados y temas.
+- Tienda mas visual: tarjetas grandes, marcos (nuevo), sobres de stickers y de marcos, sobres con animacion (rasgar el sobre y girar cartas segun rareza).
+- Vitrina del perfil: el banner va dentro del marco que obtuviste; puedes editar titulo, subtitulo e imagen dentro del marco (reemplaza "crear banner").
+- Se quita el banner de la pantalla de inicio.
+
 ## 1.11.1
 - Corrige errores de compilacion de 1.11.0.
 
