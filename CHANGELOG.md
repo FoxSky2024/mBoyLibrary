@@ -1,3 +1,6 @@
+## 1.9.2
+- Corrige el build (version de Fragment exigida por AdMob).
+
 ## 1.9.1
 - Corrige error de compilacion en stickers.
 
