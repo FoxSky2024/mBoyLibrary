@@ -1,3 +1,6 @@
+## 1.12.1
+- Nuevo icono de la app (el zorro con consola).
+
 ## 1.12.0
 - Skins del emulador con formas (redondeada, cuadrada, diamante, hexagono), tramas (rayas, puntos, brillo), degradados y temas.
 - Tienda mas visual: tarjetas grandes, marcos (nuevo), sobres de stickers y de marcos, sobres con animacion (rasgar el sobre y girar cartas segun rareza).
