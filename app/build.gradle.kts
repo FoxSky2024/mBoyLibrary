@@ -13,8 +13,8 @@ android {
         applicationId = "app.gbalibrary"
         minSdk = 24
         targetSdk = 35
-        versionCode = 26
-        versionName = "1.8.1"
+        versionCode = 27
+        versionName = "1.9.0"
 
         ndk {
             abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
@@ -59,6 +59,7 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     // Codigo QR (solo generar; se escanea con la camara del telefono)
     implementation("com.google.zxing:core:3.5.3")
+    implementation("com.google.android.gms:play-services-ads:23.6.0")
     implementation("androidx.activity:activity-compose:1.9.3")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")

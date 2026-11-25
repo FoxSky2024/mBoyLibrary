@@ -1,3 +1,10 @@
+## 1.9.0
+- Pawb ahora es un icono (ya no emoji). Interfaz al minimo por defecto.
+- Banners propios: recortar (arrastrar/zoom), brillo y saturacion de la imagen.
+- Tienda: skins del emulador (colores de botones), stickers (se pegan en cualquier pantalla, arrastrar/pellizcar/quitar) y pestaña Gratis.
+- Anuncios voluntarios con recompensa (+15 Pawb, max. 5 al dia). Usa IDs de PRUEBA de AdMob: cambiar en data/Ads.kt y AndroidManifest.xml.
+- Aviso de logros mas pequeño. Cajas 3D: frente y laterales con la misma altura (menos perspectiva).
+
 ## 1.8.1
 - Crear banner cuesta 200 Pawb; se puede usar una imagen de fondo (viaja en el enlace al compartir).
 - Aviso de logros rediseñado (barra de color, icono con brillo, barrido de luz, recompensa +10 / +50 Pawb).

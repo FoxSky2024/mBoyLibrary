@@ -99,7 +99,7 @@ fun Case3D(
     val depth = height * style.depthRatio
     val wPx = with(density) { width.toPx() }
     val dPx = with(density) { depth.toPx() }
-    val camera = 14f * density.density
+    val camera = 48f * density.density // perspectiva suave: frente y laterales conservan la misma altura
 
     Box(modifier.size(width, height)) {
         CaseFace(0f, 0f, dPx / 2f, width, height, angle, camera) {

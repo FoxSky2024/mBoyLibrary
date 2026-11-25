@@ -199,7 +199,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         Settings.init(this) // GbaApp ya lo hizo; es idempotente
         Pawb.init(this)
-        Pawb.dailyBonus().let { if (it > 0) Toast.makeText(this, "🐾 +$it Pawb de bonus diario", Toast.LENGTH_SHORT).show() }
+        Pawb.dailyBonus().let { if (it > 0) Toast.makeText(this, "+$it Pawb de bonus diario", Toast.LENGTH_SHORT).show() }
         app.gbalibrary.data.Profile.init(this)
         app.gbalibrary.data.Feeds.init(this)
         handleLink(intent)
@@ -249,6 +249,7 @@ class MainActivity : ComponentActivity() {
                         onPlay = { game -> play(game, "") },
                         onPlaySlot = { game, slot -> play(game, slot) },
                     )
+                    app.gbalibrary.ui.StickerLayer()
                     bootGame?.let { g ->
                         app.gbalibrary.ui.BootScreen(
                             game = g,

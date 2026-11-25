@@ -519,7 +519,7 @@ private fun TopBar(
 
         StatusIndicators()
 
-        Text("🐾", fontSize = 18.sp, modifier = Modifier.clickable { Sfx.click(); ShopNav.show.value = true }.padding(horizontal = 6.dp, vertical = 2.dp))
+        PawIcon(22.dp, modifier = Modifier.clickable { Sfx.click(); ShopNav.show.value = true }.padding(horizontal = 6.dp, vertical = 4.dp))
         Ic(Icons.Filled.RssFeed, size = 22.dp, tint = p.dim, modifier = Modifier.clickable { onNews() }.padding(horizontal = 6.dp, vertical = 4.dp))
         Ic(Icons.Filled.PhotoLibrary, size = 22.dp, tint = p.dim, modifier = Modifier.clickable { onGallery() }.padding(horizontal = 6.dp, vertical = 4.dp))
         Row(

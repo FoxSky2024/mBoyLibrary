@@ -34,6 +34,8 @@ val StyleNames = listOf("Liso", "Diagonal", "Ondas", "Puntos")
 
 class ShopBg(val id: String, val name: String, val price: Int, val rarity: Rarity, val colors: List<Color>, val style: Int)
 class ShopBanner(val id: String, val name: String, val price: Int, val rarity: Rarity, val title: String, val subtitle: String, val colors: List<Color>, val style: Int)
+class ShopSkin(val id: String, val name: String, val price: Int, val rarity: Rarity, val idle: Color, val border: Color, val glyph: Color, val active: Color?)
+class ShopSticker(val id: String, val name: String, val price: Int, val rarity: Rarity)
 class ShopPack(val id: String, val name: String, val desc: String, val price: Int, val bgs: Boolean, val banners: Boolean, val count: Int)
 
 /**
@@ -61,9 +63,31 @@ object ShopCatalog {
         ShopBanner("bn_green", "Verde GB", 40, Rarity.COMMON, "GAME BOY", "Cuatro tonos de verde", listOf(c(0xFF9BBC0F), c(0xFF306230)), 3),
         ShopBanner("bn_wave", "Ola", 60, Rarity.RARE, "SURF", "Sigue la corriente", listOf(c(0xFF0B5E8C), c(0xFF2FBF9B)), 2),
         ShopBanner("bn_dual", "Doble pantalla", 70, Rarity.RARE, "DUAL SCREEN", "Toca y juega", listOf(c(0xFF3B7DD8), c(0xFF123566)), 1),
-        ShopBanner("bn_paws", "Huellitas", 90, Rarity.EPIC, "PAWB CLUB", "🐾 🐾 🐾", listOf(c(0xFF8A4CD6), c(0xFF2A1A6B)), 3),
+        ShopBanner("bn_paws", "Huellitas", 90, Rarity.EPIC, "PAWB CLUB", "· · ·", listOf(c(0xFF8A4CD6), c(0xFF2A1A6B)), 3),
         ShopBanner("bn_sunset", "Atardecer", 110, Rarity.EPIC, "ÚLTIMA PARTIDA", "El sol se va", listOf(c(0xFFFF8A4C), c(0xFF6A1B6E)), 2),
         ShopBanner("bn_champ", "Campeón", 260, Rarity.LEGENDARY, "CAMPEÓN", "Todos los hitos", listOf(c(0xFFF5B642), c(0xFF7A4A08)), 1),
+    )
+
+    /** Skins del emulador: colores de los botones tactiles. */
+    val skins = listOf(
+        ShopSkin("sk_gba", "Índigo GBA", 40, Rarity.COMMON, c(0xAA3B2F7A), c(0xFF8E7CFF), Color.White, c(0xCCB8A9FF)),
+        ShopSkin("sk_mint", "Verde agua", 40, Rarity.COMMON, c(0xAA17706B), c(0xFF4FD1C5), Color.White, c(0xCC9AF0E8)),
+        ShopSkin("sk_dmg", "Gris DMG", 50, Rarity.COMMON, c(0xCCB4B8BD), c(0xFF6E7176), c(0xFF1B1D20), c(0xCC8D9196)),
+        ShopSkin("sk_fire", "Fuego", 80, Rarity.RARE, c(0xAA8A2A0E), c(0xFFFF8A4C), Color.White, c(0xCCFFC107)),
+        ShopSkin("sk_sakura", "Sakura", 80, Rarity.RARE, c(0xAAB84A7B), c(0xFFFFB3D1), Color.White, c(0xCCFFE0EC)),
+        ShopSkin("sk_neon", "Neón", 130, Rarity.EPIC, c(0x99000000), c(0xFF00E5FF), c(0xFF00E5FF), c(0xCCFF2BD6)),
+        ShopSkin("sk_gold", "Dorado", 280, Rarity.LEGENDARY, c(0xAA7A4A08), c(0xFFFFD54F), c(0xFFFFE9A8), c(0xCCFFD54F)),
+    )
+
+    val stickers = listOf(
+        ShopSticker("st_star", "Estrella", 20, Rarity.COMMON),
+        ShopSticker("st_heart", "Corazón", 20, Rarity.COMMON),
+        ShopSticker("st_thumb", "Me gusta", 25, Rarity.COMMON),
+        ShopSticker("st_paw", "Huella", 30, Rarity.COMMON),
+        ShopSticker("st_gg", "GG", 40, Rarity.RARE),
+        ShopSticker("st_new", "NEW!", 40, Rarity.RARE),
+        ShopSticker("st_100", "100%", 70, Rarity.EPIC),
+        ShopSticker("st_pow", "¡POW!", 70, Rarity.EPIC),
     )
 
     val packs = listOf(
@@ -72,6 +96,7 @@ object ShopCatalog {
         ShopPack("pk_mix", "Paquete sorpresa", "3 objetos aleatorios (fondos o banners)", 100, true, true, 3),
     )
 
+    fun skin(id: String) = skins.firstOrNull { it.id == id }
     fun bg(id: String) = backgrounds.firstOrNull { it.id == id }
     fun banner(id: String) = banners.firstOrNull { it.id == id }
     fun custom(id: String) = Pawb.custom.value.firstOrNull { it.id == id }

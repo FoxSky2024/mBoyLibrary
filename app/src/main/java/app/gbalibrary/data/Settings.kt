@@ -54,7 +54,7 @@ object Settings {
     val padRumble = mutableStateOf(true)
 
     // Escala de la interfaz (biblioteca y ajustes): 0.7 .. 1.25, por defecto 0.85 (compacto)
-    val uiScale = mutableFloatStateOf(0.85f)
+    val uiScale = mutableFloatStateOf(0.7f)
 
     // Opacidad de paneles / barras / tarjetas: 40%..100% (sin glass ni blur)
     val boxOpacity = mutableFloatStateOf(0.9f)
@@ -144,7 +144,7 @@ object Settings {
         musicShuffle.value = p.getBoolean("musicShuffle", false)
         padAutoHide.value = p.getBoolean("padAutoHide", true)
         padRumble.value = p.getBoolean("padRumble", true)
-        uiScale.floatValue = p.getFloat("uiScale", 0.85f).coerceIn(0.7f, 1.25f)
+        uiScale.floatValue = p.getFloat("uiScale", 0.7f).coerceIn(0.7f, 1.25f)
         boxOpacity.floatValue = p.getFloat("boxOpacity", 0.9f).coerceIn(0.4f, 1f)
         entryAnim.value = p.getBoolean("entryAnim", true)
         showStatus.value = p.getBoolean("showStatus", true)

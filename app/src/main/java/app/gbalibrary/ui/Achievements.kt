@@ -118,7 +118,7 @@ fun AchievementToastHost() {
                 val pulse = androidx.compose.animation.core.rememberInfiniteTransition(label = "achPulse")
                 val glow by pulse.animateFloat(0.35f, 0.9f, androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(900), androidx.compose.animation.core.RepeatMode.Reverse), label = "glow")
                 Row(
-                    Modifier.widthIn(min = 260.dp, max = 340.dp).clip(shape)
+                    Modifier.widthIn(min = 190.dp, max = 250.dp).clip(shape)
                         .background(androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(Color(0xF2232B36), Color(0xF2121820))))
                         .border(1.dp, tint.copy(alpha = 0.6f), shape)
                         .drawWithContent {
@@ -134,20 +134,20 @@ fun AchievementToastHost() {
                             // barra de color a la izquierda
                             drawRect(tint, size = androidx.compose.ui.geometry.Size(5f, size.height))
                         }
-                        .padding(start = 16.dp, top = 12.dp, end = 14.dp, bottom = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        .padding(start = 12.dp, top = 7.dp, end = 10.dp, bottom = 7.dp),
+                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(9.dp),
                 ) {
                     Box(
-                        Modifier.size(52.dp).clip(RoundedCornerShape(10.dp))
+                        Modifier.size(34.dp).clip(RoundedCornerShape(8.dp))
                             .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(tint.copy(alpha = 0.35f), tint.copy(alpha = 0.10f))))
-                            .border(2.dp, tint.copy(alpha = glow), RoundedCornerShape(10.dp)),
+                            .border(2.dp, tint.copy(alpha = glow), RoundedCornerShape(8.dp)),
                         contentAlignment = Alignment.Center,
-                    ) { Ic(cur.icon, size = 30.dp, tint = tint) }
+                    ) { Ic(cur.icon, size = 20.dp, tint = tint) }
                     Column(Modifier.weight(1f, fill = false), verticalArrangement = Arrangement.spacedBy(1.dp)) {
-                        Text(if (cur.platinum) "LOGRO PLATINO" else "LOGRO DESBLOQUEADO", color = tint, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp, fontFamily = AppFonts.Display)
-                        Text(cur.title, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1, fontFamily = AppFonts.Display)
-                        Text(cur.desc, color = Color(0xFF9FB1C1), fontSize = 12.sp, maxLines = 2)
-                        Text("🐾 +${if (cur.platinum) 50 else 10} Pawb", color = Color(0xFFF5B642), fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                        Text(if (cur.platinum) "LOGRO PLATINO" else "LOGRO DESBLOQUEADO", color = tint, fontSize = 8.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, fontFamily = AppFonts.Display)
+                        Text(cur.title, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1, fontFamily = AppFonts.Display)
+                        Text(cur.desc, color = Color(0xFF9FB1C1), fontSize = 10.sp, maxLines = 1)
+                        PawAmount("+${if (cur.platinum) 50 else 10}", fontSize = 10.sp, iconSize = 11.dp)
                     }
                 }
             }
