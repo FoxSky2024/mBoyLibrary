@@ -1,3 +1,7 @@
+## 1.8.1
+- Crear banner cuesta 200 Pawb; se puede usar una imagen de fondo (viaja en el enlace al compartir).
+- Aviso de logros rediseñado (barra de color, icono con brillo, barrido de luz, recompensa +10 / +50 Pawb).
+
 ## 1.8.0
 - Se quitan las particulas de Navidad.
 - Economia con Pawb 🐾: saldo, bonus diario (+25), 1 Pawb por cada 5 min jugados, tienda de fondos y banners, paquetes aleatorios, creador de banners propios y comprar banners de otros jugadores por enlace (mboyitem://).

@@ -16,6 +16,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -129,9 +130,19 @@ fun androidx.compose.ui.graphics.drawscope.DrawScope.drawStyled(colors: List<Col
 
 /** Banner (catalogo o propio) con titulo y subtitulo. */
 @Composable
-fun BannerArt(title: String, subtitle: String, colors: List<Color>, style: Int, modifier: Modifier = Modifier) {
+fun BannerArt(title: String, subtitle: String, colors: List<Color>, style: Int, modifier: Modifier = Modifier, img: String = "") {
+    val bmp = androidx.compose.runtime.remember(img) {
+        if (img.isEmpty()) null else try {
+            val b = android.util.Base64.decode(img, android.util.Base64.DEFAULT)
+            android.graphics.BitmapFactory.decodeByteArray(b, 0, b.size)?.asImageBitmap()
+        } catch (e: Exception) { null }
+    }
     Box(modifier.clip(androidx.compose.foundation.shape.RoundedCornerShape(6.dp))) {
         Canvas(Modifier.fillMaxSize()) { drawStyled(colors, style) }
+        if (bmp != null) {
+            androidx.compose.foundation.Image(bmp, null, Modifier.fillMaxSize(), contentScale = androidx.compose.ui.layout.ContentScale.Crop)
+            Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.55f), Color.Transparent))))
+        }
         Column(Modifier.align(Alignment.CenterStart).padding(start = 18.dp)) {
             Text(title, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold, fontFamily = AppFonts.Display, maxLines = 1)
             if (subtitle.isNotBlank()) Text(subtitle, color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, maxLines = 1)
@@ -147,7 +158,7 @@ fun EquippedBannerArt(modifier: Modifier = Modifier): Boolean {
     val id = Pawb.banner.value
     if (id.isEmpty()) return false
     ShopCatalog.banner(id)?.let { BannerArt(it.title, it.subtitle, it.colors, it.style, modifier); return true }
-    ShopCatalog.custom(id)?.let { BannerArt(it.title, it.subtitle, it.colors.map { c -> Color(c) }, it.style, modifier); return true }
+    ShopCatalog.custom(id)?.let { BannerArt(it.title, it.subtitle, it.colors.map { c -> Color(c) }, it.style, modifier, it.img); return true }
     return false
 }
 
