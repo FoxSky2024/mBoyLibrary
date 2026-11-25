@@ -1,3 +1,6 @@
+## 1.9.1
+- Corrige error de compilacion en stickers.
+
 ## 1.9.0
 - Pawb ahora es un icono (ya no emoji). Interfaz al minimo por defecto.
 - Banners propios: recortar (arrastrar/zoom), brillo y saturacion de la imagen.

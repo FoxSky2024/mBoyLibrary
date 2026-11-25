@@ -2,6 +2,7 @@ package app.gbalibrary.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -93,7 +94,7 @@ fun StickerLayer() {
                                 Pawb.updateSticker(cur.uid, cur.x + pan.x * cur.scale / w, cur.y + pan.y * cur.scale / h, cur.scale * zoom, cur.rot + rot)
                             }
                         }.pointerInput(st.uid + "t") {
-                            androidx.compose.foundation.gestures.detectTapGestures(onPress = { Pawb.stickerSel.value = st.uid; tryAwaitRelease(); Pawb.commitStickers() })
+                            detectTapGestures(onPress = { Pawb.stickerSel.value = st.uid; tryAwaitRelease(); Pawb.commitStickers() })
                         },
                     ),
                 contentAlignment = Alignment.Center,
