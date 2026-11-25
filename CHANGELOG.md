@@ -1,3 +1,6 @@
+## 1.11.1
+- Corrige errores de compilacion de 1.11.0.
+
 ## 1.11.0
 - Cajas 3D: sin marco ni borde propio; la caja toma las proporciones reales del arte (frente y lomo) para que calcen.
 - Stickers solo en el perfil (editar, agregar, quitar) y stickers propios con tus imagenes (recorte circular, PNG).
