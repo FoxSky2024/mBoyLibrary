@@ -232,6 +232,7 @@ class MainActivity : ComponentActivity() {
                 if (askStorage) {
                     AlertDialog(
                         onDismissRequest = { },
+                        icon = { app.gbalibrary.ui.MascotBox() },
                         title = { Text("Guardar tus datos de forma permanente") },
                         text = { Text("Para que juegos, partidas, estados y portadas sobrevivan a una reinstalación, la app usa la carpeta Documentos/GBALibrary. Android pide el permiso de acceso a archivos. Puedes hacerlo después en Ajustes.") },
                         confirmButton = { TextButton(onClick = { askStorage = false; flags.edit().putBoolean("storage_asked", true).apply(); requestStorage() }) { Text("Conceder") } },

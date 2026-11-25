@@ -1,3 +1,6 @@
+## 1.7.1
+- Aviso de permiso de almacenamiento con la mascota en su caja (fondo transparente).
+
 ## 1.7.0
 - Menu 3D basado en el video: fondo con la portada desenfocada y teñida, pastilla de estado (hora/red/bateria) arriba, panel inferior de cristal con Jugar / Inspeccionar / ··· (Detalles) y puntos de pagina.
 
