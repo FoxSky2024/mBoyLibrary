@@ -45,7 +45,9 @@ import app.gbalibrary.data.Pawb
 /** Acceso global a la tienda (se abre desde la barra superior o el perfil). */
 object ShopNav {
     /** true = al cerrar la tienda, ir al perfil (para pegar stickers). */
-    val openProfile = androidx.compose.runtime.mutableStateOf(false) val show = mutableStateOf(false) }
+    val openProfile = androidx.compose.runtime.mutableStateOf(false)
+    val show = mutableStateOf(false)
+}
 
 private val Swatches = listOf(
     0xFFE8892B, 0xFFD64B4B, 0xFFD86B9A, 0xFF8A4CD6, 0xFF3B7DD8, 0xFF2FBF9B,
