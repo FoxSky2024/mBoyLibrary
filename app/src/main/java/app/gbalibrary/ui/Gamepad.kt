@@ -33,8 +33,14 @@ import app.gbalibrary.emu.GbaKey
 import kotlin.math.abs
 import kotlin.math.hypot
 
-private val PadIdle = Color(0x44FFFFFF)
-private val PadBorder = Color(0x66FFFFFF)
+private val PadIdle0 = Color(0x44FFFFFF)
+private val PadBorder0 = Color(0x66FFFFFF)
+
+// Skin equipada (tienda): colores de los botones tactiles. Sin skin = aspecto original.
+@Composable fun padIdle(): Color = ShopCatalog.skin(app.gbalibrary.data.Pawb.skin.value)?.idle ?: PadIdle0
+@Composable fun padBorder(): Color = ShopCatalog.skin(app.gbalibrary.data.Pawb.skin.value)?.border ?: PadBorder0
+@Composable fun padGlyph(): Color = ShopCatalog.skin(app.gbalibrary.data.Pawb.skin.value)?.glyph ?: Color.White
+@Composable fun padActive(): Color = ShopCatalog.skin(app.gbalibrary.data.Pawb.skin.value)?.active ?: LocalPalette.current.accent.copy(alpha = 0.75f)
 
 /** Boton (A, B, L, R, START, SELECT, ...) que rellena su espacio, con multitouch independiente. */
 @Composable
@@ -49,13 +55,13 @@ fun PadButton(
     source: Int = Engine.SOURCE_TOUCH,
 ) {
     var pressed by remember { mutableStateOf(false) }
-    val active = LocalPalette.current.accent.copy(alpha = 0.75f)
+    val active = padActive(); val idle = padIdle(); val bord = padBorder(); val glyph = padGlyph()
     Box(
         modifier = modifier
             .fillMaxSize()
             .clip(shape)
-            .background(if (pressed) active else PadIdle)
-            .border(2.dp, PadBorder, shape)
+            .background(if (pressed) active else idle)
+            .border(2.dp, bord, shape)
             .pointerInput(mask, enabled, source) {
                 if (!enabled || engine == null) return@pointerInput
                 awaitEachGesture {
@@ -69,7 +75,7 @@ fun PadButton(
             },
         contentAlignment = Alignment.Center,
     ) {
-        Text(label, color = Color.White, fontWeight = FontWeight.Bold, fontSize = fontSize.sp)
+        Text(label, color = glyph, fontWeight = FontWeight.Bold, fontSize = fontSize.sp)
     }
 }
 
@@ -77,7 +83,7 @@ fun PadButton(
 @Composable
 fun DPad(engine: Engine?, enabled: Boolean, modifier: Modifier = Modifier, source: Int = Engine.SOURCE_TOUCH) {
     var dirs by remember { mutableIntStateOf(0) }
-    val activeColor = LocalPalette.current.accent.copy(alpha = 0.75f)
+    val activeColor = padActive(); val idle = padIdle(); val bord = padBorder()
     Box(
         modifier = modifier.fillMaxSize().pointerInput(enabled, source) {
             if (!enabled || engine == null) return@pointerInput
@@ -128,8 +134,8 @@ fun DPad(engine: Engine?, enabled: Boolean, modifier: Modifier = Modifier, sourc
             val t = w / 3f
             val corner = CornerRadius(t / 3f, t / 3f)
             drawCircle(Color(0x22FFFFFF))
-            drawRoundRect(PadIdle, topLeft = Offset(t, 0f), size = Size(t, w), cornerRadius = corner)
-            drawRoundRect(PadIdle, topLeft = Offset(0f, t), size = Size(w, t), cornerRadius = corner)
+            drawRoundRect(idle, topLeft = Offset(t, 0f), size = Size(t, w), cornerRadius = corner)
+            drawRoundRect(idle, topLeft = Offset(0f, t), size = Size(w, t), cornerRadius = corner)
 
             fun highlight(bit: Int, topLeft: Offset) {
                 if ((dirs and bit) != 0) drawRect(activeColor, topLeft = topLeft, size = Size(t, t))
@@ -151,7 +157,7 @@ fun DPad(engine: Engine?, enabled: Boolean, modifier: Modifier = Modifier, sourc
 fun Stick(engine: Engine?, enabled: Boolean, deadzone: Float, modifier: Modifier = Modifier, source: Int = Engine.SOURCE_TOUCH) {
     var knob by remember { mutableStateOf(Offset.Zero) } // -1..1
     var dirs by remember { mutableIntStateOf(0) }
-    val activeColor = LocalPalette.current.accent.copy(alpha = 0.85f)
+    val activeColor = padActive(); val bord = padBorder()
     Box(
         modifier = modifier.fillMaxSize().pointerInput(enabled, source, deadzone) {
             if (!enabled || engine == null) return@pointerInput
@@ -200,13 +206,13 @@ fun Stick(engine: Engine?, enabled: Boolean, deadzone: Float, modifier: Modifier
             val r = size.width / 2f
             val c = Offset(r, r)
             drawCircle(Color(0x33FFFFFF), radius = r, center = c)
-            drawCircle(PadBorder, radius = r - 1.5f, center = c, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3f))
+            drawCircle(bord, radius = r - 1.5f, center = c, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3f))
             // zona muerta
             drawCircle(Color(0x22FFFFFF), radius = r * deadzone, center = c)
             val kr = r * 0.38f
             val kc = Offset(c.x + knob.x * (r - kr), c.y + knob.y * (r - kr))
             drawCircle(if (dirs != 0) activeColor else Color(0x88FFFFFF), radius = kr, center = kc)
-            drawCircle(PadBorder, radius = kr, center = kc, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3f))
+            drawCircle(bord, radius = kr, center = kc, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3f))
         }
     }
 }

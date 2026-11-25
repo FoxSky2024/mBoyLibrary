@@ -40,7 +40,7 @@ data class CustomBanner(
 }
 
 /**
- * Economia local de la app: moneda Pawb (🐾). Saldo, objetos comprados, fondo y banner equipados y banners propios.
+ * Economia local de la app: moneda Pawb (icono PawIcon). Saldo, objetos comprados, fondo y banner equipados y banners propios.
  * Todo vive en el dispositivo (SharedPreferences "pawb", incluido en la copia de config.json). No hay servidor:
  * "comprar a otros jugadores" = importar su enlace pagando el precio que puso; el Pawb no se transfiere a nadie.
  */
@@ -61,6 +61,12 @@ object Pawb {
         owned.value = p.getString("owned", "").orEmpty().split(",").filter { it.isNotBlank() }.toSet()
         bg.value = p.getString("bg", "").orEmpty()
         banner.value = p.getString("banner", "").orEmpty()
+        skin.value = p.getString("skin", "").orEmpty()
+        placed.value = try {
+            val a = JSONArray(p.getString("placed", "[]"))
+            (0 until a.length()).map { val o = a.getJSONObject(it); PlacedSticker(o.getString("u"), o.getString("s"), o.getDouble("x").toFloat(), o.getDouble("y").toFloat(), o.getDouble("k").toFloat(), o.getDouble("r").toFloat()) }
+        } catch (e: Exception) { emptyList() }
+        refreshAds()
         custom.value = try {
             val a = JSONArray(p.getString("custom", "[]"))
             (0 until a.length()).map { CustomBanner.fromJson(a.getJSONObject(it)) }
@@ -111,6 +117,47 @@ object Pawb {
 
     // ---- banners propios / de otros jugadores ----
     private fun saveCustom() { p.edit().putString("custom", JSONArray(custom.value.map { it.toJson() }).toString()).apply() }
+
+    // ---- skins del emulador ----
+    val skin = mutableStateOf("")      // id de la skin de botones equipada
+    fun equipSkin(id: String) { skin.value = id; p.edit().putString("skin", id).apply() }
+
+    // ---- stickers pegados en pantalla (x, y en fraccion 0..1 de la pantalla) ----
+    class PlacedSticker(val uid: String, val sid: String, val x: Float, val y: Float, val scale: Float, val rot: Float)
+    val placed = mutableStateOf<List<PlacedSticker>>(emptyList())
+    val stickerEdit = mutableStateOf(false)
+    val stickerSel = mutableStateOf("")
+
+    private fun savePlaced() {
+        val a = JSONArray()
+        placed.value.forEach { a.put(JSONObject().put("u", it.uid).put("s", it.sid).put("x", it.x.toDouble()).put("y", it.y.toDouble()).put("k", it.scale.toDouble()).put("r", it.rot.toDouble())) }
+        p.edit().putString("placed", a.toString()).apply()
+    }
+    fun placeSticker(sid: String) {
+        val st = PlacedSticker(UUID.randomUUID().toString().take(8), sid, 0.5f, 0.45f, 1.4f, 0f)
+        placed.value = placed.value + st; stickerSel.value = st.uid; savePlaced()
+    }
+    fun updateSticker(uid: String, x: Float, y: Float, scale: Float, rot: Float) {
+        placed.value = placed.value.map { if (it.uid == uid) PlacedSticker(uid, it.sid, x.coerceIn(0f, 1f), y.coerceIn(0f, 1f), scale.coerceIn(0.4f, 5f), rot) else it }
+    }
+    fun commitStickers() = savePlaced()
+    fun removeSticker(uid: String) { placed.value = placed.value.filter { it.uid != uid }; stickerSel.value = ""; savePlaced() }
+
+    // ---- anuncios voluntarios con recompensa ----
+    const val AD_REWARD = 15
+    const val AD_DAILY_CAP = 5
+    val adsLeft = mutableIntStateOf(AD_DAILY_CAP)
+    private fun today() = SimpleDateFormat("yyyyMMdd", Locale.US).format(Date())
+    private fun refreshAds() {
+        adsLeft.intValue = if (p.getString("adsDay", "") == today()) (AD_DAILY_CAP - p.getInt("adsN", 0)).coerceAtLeast(0) else AD_DAILY_CAP
+    }
+    /** Se llama SOLO cuando AdMob confirma que el usuario completo el anuncio. */
+    fun adReward() {
+        val n = if (p.getString("adsDay", "") == today()) p.getInt("adsN", 0) else 0
+        if (n >= AD_DAILY_CAP) return
+        p.edit().putString("adsDay", today()).putInt("adsN", n + 1).apply()
+        earn(AD_REWARD); refreshAds()
+    }
 
     const val CREATE_COST = 200
 

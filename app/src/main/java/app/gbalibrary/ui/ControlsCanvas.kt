@@ -158,6 +158,7 @@ private fun PlacedItem(
 /** Velocidad: tocar = siguiente (0.5x, 1x, 2x, 3x, 4x); mantener pulsado = turbo temporal. */
 @Composable
 private fun SpeedTap(label: String, enabled: Boolean, onTap: () -> Unit, onHold: (Boolean) -> Unit) {
+    val glyph = padGlyph()
     Box(
         Modifier.fillMaxSize().clip(RoundedCornerShape(14.dp)).background(Color(0x66000000))
             .pointerInput(enabled) {
@@ -169,7 +170,7 @@ private fun SpeedTap(label: String, enabled: Boolean, onTap: () -> Unit, onHold:
                 )
             },
         contentAlignment = Alignment.Center,
-    ) { Text(label, color = Color.White, fontSize = 15.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, maxLines = 1) }
+    ) { Text(label, color = glyph, fontSize = 15.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, maxLines = 1) }
 }
 
 @Composable
@@ -177,7 +178,7 @@ private fun RoundTap(glyph: ImageVector, enabled: Boolean, onClick: () -> Unit) 
     Box(
         Modifier.fillMaxSize().clip(CircleShape).background(Color(0x66000000)).clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center,
-    ) { Ic(glyph, size = 22.dp, tint = Color.White) }
+    ) { Ic(glyph, size = 22.dp, tint = padGlyph()) }
 }
 
 /**

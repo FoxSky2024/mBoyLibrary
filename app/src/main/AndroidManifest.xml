@@ -38,6 +38,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.GbaLibrary">
 
+        <!-- AdMob: ID de app de PRUEBA de Google. Sustituye por el tuyo (ver data/Ads.kt, AdConfig). -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-3940256099942544~3347511713" />
+
         <activity
             android:name=".MainActivity"
             android:launchMode="singleTask"
