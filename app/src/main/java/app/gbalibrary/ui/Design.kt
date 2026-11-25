@@ -276,7 +276,7 @@ fun ScreenHeader(title: String, onBack: () -> Unit, trailing: @Composable RowSco
 @Composable
 fun Modifier.screenBackdrop(): Modifier {
     val p = LocalPalette.current
-    return this.background(Brush.verticalGradient(listOf(p.accent.copy(alpha = 0.16f), Color.Transparent)))
+    return this.background(Brush.verticalGradient(listOf(p.accent.copy(alpha = 0.16f), Color.Transparent))).equippedBackground()
 }
 
 /** Elemento de menu lateral (rail) de Ajustes. */

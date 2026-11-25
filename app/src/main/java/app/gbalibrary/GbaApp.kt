@@ -13,5 +13,6 @@ class GbaApp : Application() {
         super.onCreate()
         DataDir.init(this)
         Settings.init(this)
+        app.gbalibrary.data.Pawb.init(this)
     }
 }

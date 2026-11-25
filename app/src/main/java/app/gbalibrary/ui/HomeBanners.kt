@@ -31,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.gbalibrary.data.Game
+import app.gbalibrary.data.Pawb
 import kotlinx.coroutines.delay
 import java.util.Calendar
 
@@ -55,8 +56,10 @@ fun HomeBanners(all: List<Game>, onOpen: (Game) -> Unit, onPlay: (Game) -> Unit,
     val daily = remember(all, day) { all[day % all.size] }
     val season = Season.active()
 
-    val pages = remember(all, season, last, daily) {
+    val equipped = Pawb.banner.value
+    val pages = remember(all, season, last, daily, equipped, Pawb.custom.value) {
         buildList<Slide> {
+            if (Pawb.banner.value.isNotEmpty()) add(Slide("mine") { EquippedBannerArt(Modifier.fillMaxSize()) })
             if (season != null) add(Slide("season") { SeasonBanner(Modifier.fillMaxSize()) })
             add(Slide("featured") { FeaturedBanner(last, onOpen, onPlay) })
             add(Slide("event") { EventBanner(all, day) })

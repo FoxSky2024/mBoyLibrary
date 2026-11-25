@@ -95,6 +95,7 @@ class GameStore private constructor(private val ctx: Context) {
 
     /** Suma [seconds] al total acumulado (no solo a la ultima sesion) y marca la ultima vez jugado. */
     fun addPlay(id: String, seconds: Long, now: Long) = modify(id) {
+        Pawb.earnFromPlay(seconds)
         it.copy(playSeconds = it.playSeconds + seconds, lastPlayed = now)
     }
 

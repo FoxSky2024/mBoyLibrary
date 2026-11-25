@@ -1,3 +1,7 @@
+## 1.8.0
+- Se quitan las particulas de Navidad.
+- Economia con Pawb 🐾: saldo, bonus diario (+25), 1 Pawb por cada 5 min jugados, tienda de fondos y banners, paquetes aleatorios, creador de banners propios y comprar banners de otros jugadores por enlace (mboyitem://).
+
 ## 1.7.1
 - Aviso de permiso de almacenamiento con la mascota en su caja (fondo transparente).
 

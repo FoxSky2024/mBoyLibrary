@@ -24,7 +24,7 @@ import java.util.zip.ZipOutputStream
  */
 object Persist {
     private const val TAG = "Persist"
-    private val PREF_FILES = listOf("settings", "library")
+    private val PREF_FILES = listOf("settings", "library", "pawb")
     private const val KEY_ROOT = "__cfg_root"
     private val SKIP_KEYS = setOf("musicUri", "musicFolder", "folders")
     private val handler = Handler(Looper.getMainLooper())

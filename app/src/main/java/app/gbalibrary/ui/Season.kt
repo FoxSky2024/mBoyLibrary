@@ -37,7 +37,7 @@ import kotlin.random.Random
  */
 object Season {
     const val ENABLED = true
-    const val SNOW = true
+    const val SNOW = false // particulas desactivadas (el codigo sigue aqui por si se quieren volver a activar)
     const val BANNER = true
 
     /** true: la temporada se elige sola por fecha (y no hay nada fuera de temporada). false: siempre [THEME]. */

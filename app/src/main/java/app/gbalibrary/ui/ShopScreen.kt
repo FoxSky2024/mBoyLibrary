@@ -1,0 +1,236 @@
+package app.gbalibrary.ui
+
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import app.gbalibrary.data.CustomBanner
+import app.gbalibrary.data.Pawb
+
+/** Acceso global a la tienda (se abre desde la barra superior o el perfil). */
+object ShopNav { val show = mutableStateOf(false) }
+
+private val Swatches = listOf(
+    0xFFE8892B, 0xFFD64B4B, 0xFFD86B9A, 0xFF8A4CD6, 0xFF3B7DD8, 0xFF2FBF9B,
+    0xFF3FA56B, 0xFFF5B642, 0xFF1A1033, 0xFF123566, 0xFF14432B, 0xFF16202D,
+).map { it.toInt() }
+
+/** Tienda de Pawb: fondos, banners, paquetes aleatorios y creador de banners propios. */
+@Composable
+fun ShopScreen(onBack: () -> Unit) {
+    val p = LocalPalette.current
+    var tab by remember { mutableIntStateOf(0) }
+    var msg by remember { mutableStateOf<String?>(null) }
+    var packResult by remember { mutableStateOf<List<String>?>(null) }
+    BackHandler { onBack() }
+
+    Column(Modifier.fillMaxSize().screenBackdrop()) {
+        ScreenHeader("Tienda de Pawb", onBack) {
+            Text("🐾 ${Pawb.balance.intValue}", color = Color(0xFFF5B642), fontWeight = FontWeight.Bold, fontSize = 16.sp)
+        }
+        Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf("Fondos", "Banners", "Paquetes", "Crear").forEachIndexed { i, t ->
+                Text(
+                    t, color = if (tab == i) p.onPlay else p.text, fontWeight = FontWeight.SemiBold, fontSize = 13.sp,
+                    modifier = Modifier.clip(RoundedCornerShape(50)).background(if (tab == i) p.accent else p.card).clickable { Sfx.click(); tab = i }.padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+            }
+        }
+        LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            item {
+                Text("Gana Pawb jugando (1 por cada 5 min) y con el bonus diario (+25).", color = p.dim, fontSize = 12.sp)
+            }
+            when (tab) {
+                0 -> items(ShopCatalog.backgrounds, key = { it.id }) { b ->
+                    ItemCard(
+                        name = b.name, rarity = b.rarity, price = b.price, id = b.id, equipped = Pawb.bg.value == b.id,
+                        onEquip = { Pawb.equipBg(if (Pawb.bg.value == b.id) "" else b.id) }, onMsg = { msg = it },
+                    ) { Canvas(Modifier.fillMaxSize()) { drawStyled(b.colors, b.style) } }
+                }
+                1 -> {
+                    items(ShopCatalog.banners, key = { it.id }) { b ->
+                        ItemCard(
+                            name = b.name, rarity = b.rarity, price = b.price, id = b.id, equipped = Pawb.banner.value == b.id,
+                            onEquip = { Pawb.equipBanner(if (Pawb.banner.value == b.id) "" else b.id) }, onMsg = { msg = it },
+                        ) { BannerArt(b.title, b.subtitle, b.colors, b.style, Modifier.fillMaxSize()) }
+                    }
+                    items(Pawb.custom.value, key = { it.id }) { b -> CustomCard(b, onMsg = { msg = it }) }
+                }
+                2 -> items(ShopCatalog.packs, key = { it.id }) { pk ->
+                    Row(
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(p.panel).padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Text("🎁", fontSize = 34.sp)
+                        Column(Modifier.weight(1f)) {
+                            Text(pk.name, color = p.text, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                            Text(pk.desc, color = p.dim, fontSize = 12.sp)
+                            Text("Probabilidad: común 60% · raro 28% · épico 10% · legendario 2%", color = p.dim, fontSize = 10.sp)
+                        }
+                        PriceButton("🐾 ${pk.price}", Pawb.balance.intValue >= pk.price) {
+                            val r = ShopCatalog.openPack(pk)
+                            if (r == null) msg = if (Pawb.balance.intValue < pk.price) "No tienes suficientes Pawb" else "Ya tienes todo lo de este paquete" else packResult = r
+                        }
+                    }
+                }
+                else -> item { BannerCreator(onMsg = { msg = it }) }
+            }
+        }
+    }
+    msg?.let { m -> AlertDialog(onDismissRequest = { msg = null }, confirmButton = { TextButton({ msg = null }) { Text("OK") } }, text = { Text(m) }) }
+    packResult?.let { r ->
+        AlertDialog(
+            onDismissRequest = { packResult = null }, confirmButton = { TextButton({ packResult = null }) { Text("¡Genial!") } },
+            title = { Text("🎉 Conseguiste") }, text = { Text(r.joinToString("\n") { "• " + ShopCatalog.nameOf(it) }) },
+        )
+    }
+}
+
+@Composable
+private fun PriceButton(text: String, enabled: Boolean, onClick: () -> Unit) {
+    val p = LocalPalette.current
+    Text(
+        text, color = if (enabled) p.onPlay else p.dim, fontWeight = FontWeight.Bold, fontSize = 13.sp,
+        modifier = Modifier.clip(RoundedCornerShape(50)).background(if (enabled) p.play else p.card).clickable { Sfx.click(); onClick() }.padding(horizontal = 16.dp, vertical = 9.dp),
+    )
+}
+
+@Composable
+private fun ItemCard(
+    name: String, rarity: Rarity, price: Int, id: String, equipped: Boolean,
+    onEquip: () -> Unit, onMsg: (String) -> Unit, preview: @Composable () -> Unit,
+) {
+    val p = LocalPalette.current
+    val owned = Pawb.has(id) || price == 0
+    Column(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(p.panel).border(1.dp, rarity.color.copy(alpha = 0.5f), RoundedCornerShape(12.dp)).padding(10.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Box(Modifier.fillMaxWidth().height(86.dp).clip(RoundedCornerShape(8.dp))) { preview() }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(Modifier.weight(1f)) {
+                Text(name, color = p.text, fontWeight = FontWeight.Bold)
+                Text(rarity.label, color = rarity.color, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+            }
+            if (owned) {
+                PriceButton(if (equipped) "✓ Equipado" else "Equipar", true) { onEquip() }
+            } else {
+                PriceButton("🐾 $price", Pawb.balance.intValue >= price) {
+                    if (Pawb.buy(id, price)) onMsg("Compraste «$name»") else onMsg("Te faltan ${price - Pawb.balance.intValue} Pawb")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CustomCard(b: CustomBanner, onMsg: (String) -> Unit) {
+    val p = LocalPalette.current
+    val ctx = LocalContext.current
+    val clip = LocalClipboardManager.current
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(p.panel).border(1.dp, p.accent.copy(alpha = 0.5f), RoundedCornerShape(12.dp)).padding(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        BannerArt(b.title, b.subtitle, b.colors.map { Color(it) }, b.style, Modifier.fillMaxWidth().height(86.dp))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(Modifier.weight(1f)) {
+                Text(b.name, color = p.text, fontWeight = FontWeight.Bold)
+                Text("de ${b.creator} · precio al compartir 🐾 ${b.price}", color = p.dim, fontSize = 11.sp)
+            }
+            PriceButton(if (Pawb.banner.value == b.id) "✓ Equipado" else "Equipar", true) { Pawb.equipBanner(if (Pawb.banner.value == b.id) "" else b.id) }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            PriceButton("Copiar enlace", true) { clip.setText(AnnotatedString(Pawb.shareLink(b))); onMsg("Enlace copiado. Quien lo importe pagará 🐾 ${b.price}.") }
+            PriceButton("Eliminar", false) { Pawb.deleteCustom(b.id) }
+        }
+    }
+}
+
+@Composable
+private fun BannerCreator(onMsg: (String) -> Unit) {
+    val p = LocalPalette.current
+    var name by remember { mutableStateOf("") }
+    var title by remember { mutableStateOf("MI BANNER") }
+    var sub by remember { mutableStateOf("Hecho por mí") }
+    var c1 by remember { mutableIntStateOf(Swatches[3]) }
+    var c2 by remember { mutableIntStateOf(Swatches[9]) }
+    var style by remember { mutableIntStateOf(1) }
+    var price by remember { mutableStateOf("50") }
+    var link by remember { mutableStateOf("") }
+
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(p.panel).padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text("CREAR BANNER", color = p.dim, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.8.sp)
+        BannerArt(title.ifBlank { " " }, sub, listOf(Color(c1), Color(c2)), style, Modifier.fillMaxWidth().height(96.dp))
+        OutlinedTextField(name, { name = it.take(24) }, label = { Text("Nombre del objeto") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(title, { title = it.take(22) }, label = { Text("Título") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(sub, { sub = it.take(40) }, label = { Text("Subtítulo") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        Text("Color 1", color = p.dim, fontSize = 11.sp)
+        SwatchRow(c1) { c1 = it }
+        Text("Color 2", color = p.dim, fontSize = 11.sp)
+        SwatchRow(c2) { c2 = it }
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            StyleNames.forEachIndexed { i, n ->
+                Text(n, color = if (style == i) p.onPlay else p.text, fontSize = 12.sp,
+                    modifier = Modifier.clip(RoundedCornerShape(50)).background(if (style == i) p.accent else p.card).clickable { style = i }.padding(horizontal = 12.dp, vertical = 6.dp))
+            }
+        }
+        OutlinedTextField(price, { price = it.filter(Char::isDigit).take(3) }, label = { Text("Precio en Pawb al compartirlo (0-999)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        PriceButton("Guardar banner", true) {
+            Pawb.createBanner(name, title, sub, listOf(c1, c2), style, price.toIntOrNull() ?: 0)
+            onMsg("Banner guardado. Está en la pestaña Banners; allí puedes equiparlo o copiar su enlace.")
+        }
+    }
+    Column(Modifier.fillMaxWidth().padding(top = 10.dp).clip(RoundedCornerShape(12.dp)).background(p.panel).padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text("COMPRAR A OTRO JUGADOR", color = p.dim, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.8.sp)
+        Text("Pega el enlace mboyitem:// que te compartió otro jugador.", color = p.dim, fontSize = 12.sp)
+        OutlinedTextField(link, { link = it }, label = { Text("Enlace mboyitem://") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        PriceButton("Importar", link.isNotBlank()) {
+            val b = Pawb.parseLink(link)
+            if (b == null) onMsg("Enlace no válido") else {
+                val err = Pawb.importBanner(b)
+                onMsg(err ?: "Importaste «${b.name}» de ${b.creator} por 🐾 ${b.price}"); if (err == null) link = ""
+            }
+        }
+    }
+}
+
+@Composable
+private fun SwatchRow(selected: Int, onPick: (Int) -> Unit) {
+    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Swatches.forEach { c ->
+            Box(Modifier.size(24.dp).clip(CircleShape).background(Color(c)).border(if (c == selected) 2.dp else 0.dp, Color.White, CircleShape).clickable { onPick(c) })
+        }
+    }
+}
