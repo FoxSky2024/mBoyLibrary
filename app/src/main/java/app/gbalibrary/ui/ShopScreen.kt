@@ -4,6 +4,8 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -60,7 +62,7 @@ fun ShopScreen(onBack: () -> Unit) {
     val p = LocalPalette.current
     var tab by remember { mutableIntStateOf(0) }
     var msg by remember { mutableStateOf<String?>(null) }
-    var packResult by remember { mutableStateOf<List<String>?>(null) }
+    var packOpen by remember { mutableStateOf<Triple<String, Color, List<String>>?>(null) }
     BackHandler { onBack() }
     val ctx = LocalContext.current
     androidx.compose.runtime.LaunchedEffect(Unit) { app.gbalibrary.data.Ads.init(ctx); app.gbalibrary.data.Ads.load(ctx) }
@@ -70,7 +72,7 @@ fun ShopScreen(onBack: () -> Unit) {
             PawAmount("${Pawb.balance.intValue}", fontSize = 16.sp, iconSize = 18.dp)
         }
         Row(Modifier.fillMaxWidth().horizontalScroll(androidx.compose.foundation.rememberScrollState()).padding(horizontal = 12.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf("Fondos", "Banners", "Paquetes", "Crear", "Skins", "Stickers", "Gratis").forEachIndexed { i, t ->
+            listOf("Fondos", "Banners", "Marcos", "Skins", "Stickers", "Sobres", "Vitrina", "Gratis").forEachIndexed { i, t ->
                 Text(
                     t, color = if (tab == i) p.onPlay else p.text, fontWeight = FontWeight.SemiBold, fontSize = 13.sp,
                     modifier = Modifier.clip(RoundedCornerShape(50)).background(if (tab == i) p.accent else p.card).clickable { Sfx.click(); tab = i }.padding(horizontal = 16.dp, vertical = 8.dp),
@@ -97,12 +99,17 @@ fun ShopScreen(onBack: () -> Unit) {
                     }
                     items(Pawb.custom.value, key = { it.id }) { b -> CustomCard(b, onMsg = { msg = it }) }
                 }
-                2 -> items(ShopCatalog.packs, key = { it.id }) { pk ->
+                5 -> items(ShopCatalog.packs, key = { it.id }) { pk ->
                     Row(
                         Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(p.panel).padding(14.dp),
                         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        Text("🎁", fontSize = 34.sp)
+                        Box(
+                            Modifier.size(54.dp, 74.dp).clip(RoundedCornerShape(8.dp))
+                                .background(Brush.verticalGradient(listOf(pk.color, pk.color.copy(alpha = 0.5f), Color(0xFF14101F))))
+                                .border(1.5.dp, Color.White.copy(alpha = 0.6f), RoundedCornerShape(8.dp)),
+                            contentAlignment = Alignment.Center,
+                        ) { PawIcon(26.dp, Color.White) }
                         Column(Modifier.weight(1f)) {
                             Text(pk.name, color = p.text, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                             Text(pk.desc, color = p.dim, fontSize = 12.sp)
@@ -110,26 +117,31 @@ fun ShopScreen(onBack: () -> Unit) {
                         }
                         PriceButton("${pk.price}", Pawb.balance.intValue >= pk.price, paw = true) {
                             val r = ShopCatalog.openPack(pk)
-                            if (r == null) msg = if (Pawb.balance.intValue < pk.price) "No tienes suficientes Pawb" else "Ya tienes todo lo de este paquete" else packResult = r
+                            if (r == null) msg = if (Pawb.balance.intValue < pk.price) "No tienes suficientes Pawb" else "Ya tienes todo lo de este paquete" else packOpen = Triple(pk.name, pk.color, r)
                         }
                     }
                 }
-                4 -> items(ShopCatalog.skins, key = { it.id }) { k ->
+                3 -> items(ShopCatalog.skins, key = { it.id }) { k ->
                     ItemCard(
-                        name = k.name, rarity = k.rarity, price = k.price, id = k.id, equipped = Pawb.skin.value == k.id,
+                        name = k.name, rarity = k.rarity, price = k.price, id = k.id, equipped = Pawb.skin.value == k.id, sub = k.theme,
                         onEquip = { Pawb.equipSkin(if (Pawb.skin.value == k.id) "" else k.id) }, onMsg = { msg = it },
                     ) {
                         Row(Modifier.fillMaxSize().background(Color(0xFF1B2430)), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-                            listOf("A", "B", "L").forEach { g ->
-                                Box(Modifier.size(46.dp).clip(CircleShape).background(k.idle).border(2.dp, k.border, CircleShape), contentAlignment = Alignment.Center) {
-                                    Text(g, color = k.glyph, fontWeight = FontWeight.Bold, fontSize = 17.sp)
-                                }
+                            listOf("A" to true, "B" to true, "L" to false, "▶" to false).forEach { (g, round) ->
+                                val sh = skinShape(k, if (round) CircleShape else RoundedCornerShape(14.dp), round)
+                                val w = if (round) 50.dp else 58.dp
+                                Box(
+                                    Modifier.size(w, if (round) 50.dp else 34.dp).clip(sh)
+                                        .then(if (k.idle2 != null) Modifier.background(Brush.verticalGradient(listOf(k.idle, k.idle2))) else Modifier.background(k.idle))
+                                        .then(if (k.pattern != 0) Modifier.drawBehind { skinPattern(k.pattern) } else Modifier)
+                                        .border(2.dp, k.border, sh),
+                                    contentAlignment = Alignment.Center,
+                                ) { Text(g, color = k.glyph, fontWeight = FontWeight.Bold, fontSize = 16.sp) }
                             }
-                            Box(Modifier.size(46.dp).clip(CircleShape).background(k.active ?: k.border), contentAlignment = Alignment.Center) { Text("•", color = k.glyph, fontSize = 17.sp) }
                         }
                     }
                 }
-                5 -> {
+                4 -> {
                     item {
                         Text("Compra stickers y pégalos en tu perfil, como pegatinas en una consola real. Un sticker se puede pegar las veces que quieras.", color = p.dim, fontSize = 12.sp)
                         var stSrc by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
@@ -160,7 +172,7 @@ fun ShopScreen(onBack: () -> Unit) {
                         ) { Box(Modifier.fillMaxSize().background(Color(0xFF1B2430)), contentAlignment = Alignment.Center) { StickerArt(st.id, 56.dp) } }
                     }
                 }
-                6 -> item {
+                7 -> item {
                     val act = generateSequence(ctx) { (it as? android.content.ContextWrapper)?.baseContext }.filterIsInstance<android.app.Activity>().firstOrNull()
                     val left = Pawb.adsLeft.intValue
                     val ready = app.gbalibrary.data.Ads.ready.value
@@ -172,16 +184,71 @@ fun ShopScreen(onBack: () -> Unit) {
                         }
                     }
                 }
-                else -> item { BannerCreator(onMsg = { msg = it }) }
+                2 -> items(ShopCatalog.frames, key = { it.id }) { f ->
+                    ItemCard(
+                        name = f.name, rarity = f.rarity, price = f.price, id = f.id, equipped = Pawb.vFrame.value == f.id,
+                        onEquip = { Pawb.equipFrame(if (Pawb.vFrame.value == f.id) "" else f.id) }, onMsg = { msg = it },
+                    ) { ItemPreview(f.id) }
+                }
+                else -> item { VitrinaEditor(onMsg = { msg = it }) }
             }
         }
     }
     msg?.let { m -> AlertDialog(onDismissRequest = { msg = null }, confirmButton = { TextButton({ msg = null }) { Text("OK") } }, text = { Text(m) }) }
-    packResult?.let { r ->
-        AlertDialog(
-            onDismissRequest = { packResult = null }, confirmButton = { TextButton({ packResult = null }) { Text("¡Genial!") } },
-            title = { Text("🎉 Conseguiste") }, text = { Text(r.joinToString("\n") { "• " + ShopCatalog.nameOf(it) }) },
-        )
+    packOpen?.let { (name, color, ids) ->
+        androidx.compose.ui.window.Dialog(
+            onDismissRequest = {},
+            properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = false, dismissOnClickOutside = false),
+        ) { PackOpening(name, color, ids) { packOpen = null } }
+    }
+}
+
+@Composable
+private fun VitrinaEditor(onMsg: (String) -> Unit) {
+    val p = LocalPalette.current
+    val ctx = LocalContext.current
+    var title by remember { mutableStateOf(Pawb.vTitle.value) }
+    var sub by remember { mutableStateOf(Pawb.vSub.value) }
+    var crop by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+    val pick = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) crop = decodeForCrop(ctx, uri) ?: null.also { onMsg("No se pudo leer la imagen") }
+    }
+    crop?.let { bm ->
+        BannerCropDialog(bm, onDone = { Pawb.setVitrina(title, sub, android.util.Base64.encodeToString(it, android.util.Base64.NO_WRAP)); crop = null }, onCancel = { crop = null })
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text("Tu vitrina se muestra en tu perfil. Elige un marco de tus sobres y cambia lo que hay dentro.", color = p.dim, fontSize = 12.sp)
+        Vitrina(Modifier.fillMaxWidth().height(120.dp))
+        Text("MARCO", color = p.dim, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        Row(Modifier.horizontalScroll(androidx.compose.foundation.rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            val sel = Pawb.vFrame.value
+            Text("Sin marco", color = if (sel.isEmpty()) p.onPlay else p.text, fontSize = 12.sp,
+                modifier = Modifier.clip(RoundedCornerShape(10.dp)).background(if (sel.isEmpty()) p.accent else p.card).clickable { Pawb.equipFrame("") }.padding(horizontal = 14.dp, vertical = 22.dp))
+            ShopCatalog.frames.filter { Pawb.has(it.id) }.forEach { f ->
+                Box(Modifier.size(92.dp, 64.dp).clip(RoundedCornerShape(10.dp)).border(if (sel == f.id) 2.dp else 0.dp, p.accent, RoundedCornerShape(10.dp)).clickable { Pawb.equipFrame(f.id) }) { ItemPreview(f.id) }
+            }
+        }
+        if (ShopCatalog.frames.none { Pawb.has(it.id) }) Text("Aún no tienes marcos: consíguelos en la pestaña Marcos o en los sobres.", color = p.dim, fontSize = 11.sp)
+        Text("DISEÑO DE BASE", color = p.dim, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        Row(Modifier.horizontalScroll(androidx.compose.foundation.rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            val cur = Pawb.banner.value
+            Text("Ninguno", color = if (cur.isEmpty()) p.onPlay else p.text, fontSize = 12.sp,
+                modifier = Modifier.clip(RoundedCornerShape(50)).background(if (cur.isEmpty()) p.accent else p.card).clickable { Pawb.equipBanner("") }.padding(horizontal = 14.dp, vertical = 8.dp))
+            ShopCatalog.banners.filter { Pawb.has(it.id) || it.price == 0 }.forEach { b ->
+                Text(b.name, color = if (cur == b.id) p.onPlay else p.text, fontSize = 12.sp,
+                    modifier = Modifier.clip(RoundedCornerShape(50)).background(if (cur == b.id) p.accent else p.card).clickable { Pawb.equipBanner(b.id) }.padding(horizontal = 14.dp, vertical = 8.dp))
+            }
+            Pawb.custom.value.forEach { b ->
+                Text(b.name, color = if (cur == b.id) p.onPlay else p.text, fontSize = 12.sp,
+                    modifier = Modifier.clip(RoundedCornerShape(50)).background(if (cur == b.id) p.accent else p.card).clickable { Pawb.equipBanner(b.id) }.padding(horizontal = 14.dp, vertical = 8.dp))
+            }
+        }
+        androidx.compose.material3.OutlinedTextField(title, { title = it; Pawb.setVitrina(it, sub, Pawb.vImg.value) }, label = { Text("Título") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        androidx.compose.material3.OutlinedTextField(sub, { sub = it; Pawb.setVitrina(title, it, Pawb.vImg.value) }, label = { Text("Subtítulo") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            PriceButton(if (Pawb.vImg.value.isEmpty()) "Imagen de fondo" else "Cambiar / recortar imagen", true) { pick.launch("image/*") }
+            if (Pawb.vImg.value.isNotEmpty()) PriceButton("Quitar imagen", true) { Pawb.setVitrina(title, sub, "") }
+        }
     }
 }
 
@@ -201,7 +268,7 @@ private fun PriceButton(text: String, enabled: Boolean, paw: Boolean = false, on
 @Composable
 private fun ItemCard(
     name: String, rarity: Rarity, price: Int, id: String, equipped: Boolean,
-    onEquip: () -> Unit, onMsg: (String) -> Unit, actionLabel: String? = null, preview: @Composable () -> Unit,
+    onEquip: () -> Unit, onMsg: (String) -> Unit, actionLabel: String? = null, sub: String? = null, preview: @Composable () -> Unit,
 ) {
     val p = LocalPalette.current
     val owned = Pawb.has(id) || price == 0
@@ -209,11 +276,11 @@ private fun ItemCard(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(p.panel).border(1.dp, rarity.color.copy(alpha = 0.5f), RoundedCornerShape(12.dp)).padding(10.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Box(Modifier.fillMaxWidth().height(86.dp).clip(RoundedCornerShape(8.dp))) { preview() }
+        Box(Modifier.fillMaxWidth().height(112.dp).clip(RoundedCornerShape(8.dp))) { preview() }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Column(Modifier.weight(1f)) {
                 Text(name, color = p.text, fontWeight = FontWeight.Bold)
-                Text(rarity.label, color = rarity.color, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                Text(rarity.label + if (sub != null) " · $sub" else "", color = rarity.color, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
             }
             if (owned) {
                 PriceButton(actionLabel ?: if (equipped) "✓ Equipado" else "Equipar", true) { onEquip() }

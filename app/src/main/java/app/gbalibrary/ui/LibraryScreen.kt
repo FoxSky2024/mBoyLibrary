@@ -428,7 +428,6 @@ private fun LibraryHome(
                 onNews = onNews,
             )
             if (scanning) LinearProgressIndicator(Modifier.fillMaxWidth().height(3.dp), color = p.accent)
-            HomeBanners(all, onOpen, onPlay, Modifier.padding(horizontal = 12.dp, vertical = 6.dp))
             if (all.isNotEmpty()) SystemFilterRow(all, systemFilter) { vm.systemFilter.value = it }
             Row(Modifier.fillMaxSize()) {
                 SidePanel(all, collections, category, if (showFocus && nav.zone == Zone.SIDE) nav.side else -1, sideKeys) { vm.category.value = it }

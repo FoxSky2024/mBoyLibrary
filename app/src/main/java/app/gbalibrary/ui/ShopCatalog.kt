@@ -34,9 +34,14 @@ val StyleNames = listOf("Liso", "Diagonal", "Ondas", "Puntos")
 
 class ShopBg(val id: String, val name: String, val price: Int, val rarity: Rarity, val colors: List<Color>, val style: Int)
 class ShopBanner(val id: String, val name: String, val price: Int, val rarity: Rarity, val title: String, val subtitle: String, val colors: List<Color>, val style: Int)
-class ShopSkin(val id: String, val name: String, val price: Int, val rarity: Rarity, val idle: Color, val border: Color, val glyph: Color, val active: Color?)
+/** shape: 0 original, 1 redondeado, 2 cuadrado, 3 diamante, 4 hexagono. pattern: 0 liso, 1 rayas, 2 puntos, 3 brillo. */
+class ShopSkin(
+    val id: String, val name: String, val price: Int, val rarity: Rarity, val idle: Color, val border: Color, val glyph: Color, val active: Color?,
+    val shape: Int = 0, val pattern: Int = 0, val idle2: Color? = null, val theme: String = "",
+)
+class ShopFrame(val id: String, val name: String, val price: Int, val rarity: Rarity, val kind: Int, val c1: Color, val c2: Color)
 class ShopSticker(val id: String, val name: String, val price: Int, val rarity: Rarity)
-class ShopPack(val id: String, val name: String, val desc: String, val price: Int, val bgs: Boolean, val banners: Boolean, val count: Int)
+class ShopPack(val id: String, val name: String, val desc: String, val price: Int, val kinds: Set<String>, val count: Int, val color: Color)
 
 /**
  * CATALOGO DE LA TIENDA (editar aqui para agregar/quitar objetos). Ids unicos, precios en Pawb.
@@ -70,13 +75,26 @@ object ShopCatalog {
 
     /** Skins del emulador: colores de los botones tactiles. */
     val skins = listOf(
-        ShopSkin("sk_gba", "Índigo GBA", 40, Rarity.COMMON, c(0xAA3B2F7A), c(0xFF8E7CFF), Color.White, c(0xCCB8A9FF)),
-        ShopSkin("sk_mint", "Verde agua", 40, Rarity.COMMON, c(0xAA17706B), c(0xFF4FD1C5), Color.White, c(0xCC9AF0E8)),
-        ShopSkin("sk_dmg", "Gris DMG", 50, Rarity.COMMON, c(0xCCB4B8BD), c(0xFF6E7176), c(0xFF1B1D20), c(0xCC8D9196)),
-        ShopSkin("sk_fire", "Fuego", 80, Rarity.RARE, c(0xAA8A2A0E), c(0xFFFF8A4C), Color.White, c(0xCCFFC107)),
-        ShopSkin("sk_sakura", "Sakura", 80, Rarity.RARE, c(0xAAB84A7B), c(0xFFFFB3D1), Color.White, c(0xCCFFE0EC)),
-        ShopSkin("sk_neon", "Neón", 130, Rarity.EPIC, c(0x99000000), c(0xFF00E5FF), c(0xFF00E5FF), c(0xCCFF2BD6)),
-        ShopSkin("sk_gold", "Dorado", 280, Rarity.LEGENDARY, c(0xAA7A4A08), c(0xFFFFD54F), c(0xFFFFE9A8), c(0xCCFFD54F)),
+        ShopSkin("sk_gba", "Índigo GBA", 40, Rarity.COMMON, c(0xAA3B2F7A), c(0xFF8E7CFF), Color.White, c(0xCCB8A9FF), shape = 1, pattern = 3, theme = "Portátil clásica"),
+        ShopSkin("sk_dmg", "Gris DMG", 50, Rarity.COMMON, c(0xCCB4B8BD), c(0xFF6E7176), c(0xFF1B1D20), c(0xCC8D9196), shape = 0, pattern = 0, theme = "Game Boy original"),
+        ShopSkin("sk_mint", "Menta", 50, Rarity.COMMON, c(0xAA17706B), c(0xFF4FD1C5), Color.White, c(0xCC9AF0E8), shape = 1, pattern = 2, idle2 = c(0xAA0E4A4A), theme = "Burbujas"),
+        ShopSkin("sk_pixel", "Píxel", 70, Rarity.RARE, c(0xCC1B3A8C), c(0xFFFFFFFF), Color.White, c(0xCCFFD54F), shape = 2, pattern = 2, theme = "8 bits"),
+        ShopSkin("sk_fire", "Fuego", 90, Rarity.RARE, c(0xAA8A2A0E), c(0xFFFF8A4C), Color.White, c(0xCCFFC107), shape = 3, pattern = 1, idle2 = c(0xAA3B0F05), theme = "Diamantes ardientes"),
+        ShopSkin("sk_sakura", "Sakura", 90, Rarity.RARE, c(0xAAB84A7B), c(0xFFFFB3D1), Color.White, c(0xCCFFE0EC), shape = 0, pattern = 2, idle2 = c(0xAA7A2B50), theme = "Pétalos"),
+        ShopSkin("sk_neon", "Neón tech", 140, Rarity.EPIC, c(0x99000000), c(0xFF00E5FF), c(0xFF00E5FF), c(0xCCFF2BD6), shape = 4, pattern = 1, theme = "Hexágonos cyber"),
+        ShopSkin("sk_ice", "Cristal de hielo", 150, Rarity.EPIC, c(0x884FC3F7), c(0xFFE1F5FE), Color.White, c(0xCCB3E5FC), shape = 3, pattern = 3, idle2 = c(0x881565C0), theme = "Diamantes de hielo"),
+        ShopSkin("sk_gold", "Dorado real", 300, Rarity.LEGENDARY, c(0xAA7A4A08), c(0xFFFFD54F), c(0xFFFFE9A8), c(0xCCFFD54F), shape = 4, pattern = 3, idle2 = c(0xAA3E2504), theme = "Hexágonos de oro"),
+    )
+
+    val frames = listOf(
+        ShopFrame("fr_wood", "Madera", 40, Rarity.COMMON, 3, c(0xFF8B5A2B), c(0xFF5A3A1A)),
+        ShopFrame("fr_pixel", "Píxeles", 40, Rarity.COMMON, 2, c(0xFF3B7DD8), c(0xFF0E2236)),
+        ShopFrame("fr_ticket", "Entrada", 55, Rarity.COMMON, 7, c(0xFFF5E6C8), c(0xFFC9A66B)),
+        ShopFrame("fr_gold", "Oro", 100, Rarity.RARE, 0, c(0xFFFFE08A), c(0xFFB8860B)),
+        ShopFrame("fr_neon", "Neón", 120, Rarity.RARE, 1, c(0xFF00E5FF), c(0xFFFF2BD6)),
+        ShopFrame("fr_paws", "Huellas", 130, Rarity.RARE, 6, c(0xFFF5B642), c(0xFF2A1A4A)),
+        ShopFrame("fr_ornate", "Ornamentado", 190, Rarity.EPIC, 5, c(0xFFE8C766), c(0xFF6B1E2E)),
+        ShopFrame("fr_holo", "Holográfico", 260, Rarity.LEGENDARY, 4, c(0xFFFFFFFF), c(0xFF000000)),
     )
 
     val stickers = listOf(
@@ -91,12 +109,16 @@ object ShopCatalog {
     )
 
     val packs = listOf(
-        ShopPack("pk_bg", "Paquete de fondos", "1 fondo aleatorio que no tengas", 40, true, false, 1),
-        ShopPack("pk_bn", "Paquete de banners", "1 banner aleatorio que no tengas", 40, false, true, 1),
-        ShopPack("pk_mix", "Paquete sorpresa", "3 objetos aleatorios (fondos o banners)", 100, true, true, 3),
+        ShopPack("pk_bg", "Sobre de fondos", "1 fondo aleatorio", 40, setOf("bg"), 1, c(0xFF3B7DD8)),
+        ShopPack("pk_bn", "Sobre de banners", "1 banner aleatorio", 40, setOf("banner"), 1, c(0xFF8A4CD6)),
+        ShopPack("pk_stk", "Sobre de stickers", "3 stickers aleatorios", 60, setOf("sticker"), 3, c(0xFFE8892B)),
+        ShopPack("pk_frm", "Sobre de marcos", "1 marco aleatorio para tu vitrina", 80, setOf("frame"), 1, c(0xFFD4A017)),
+        ShopPack("pk_mix", "Sobre sorpresa", "3 objetos de cualquier tipo", 120, setOf("bg", "banner", "sticker", "frame"), 3, c(0xFFD64B4B)),
     )
 
     fun skin(id: String) = skins.firstOrNull { it.id == id }
+    fun frame(id: String) = frames.firstOrNull { it.id == id }
+    fun sticker(id: String) = stickers.firstOrNull { it.id == id }
     fun bg(id: String) = backgrounds.firstOrNull { it.id == id }
     fun banner(id: String) = banners.firstOrNull { it.id == id }
     fun custom(id: String) = Pawb.custom.value.firstOrNull { it.id == id }
@@ -104,8 +126,10 @@ object ShopCatalog {
     /** Abre un paquete: elige objetos que no tengas, con probabilidad segun rareza. Devuelve los ids ganados. */
     fun openPack(pack: ShopPack): List<String>? {
         val pool = buildList {
-            if (pack.bgs) backgrounds.filter { !Pawb.has(it.id) }.forEach { add(it.id to it.rarity) }
-            if (pack.banners) banners.filter { !Pawb.has(it.id) }.forEach { add(it.id to it.rarity) }
+            if ("bg" in pack.kinds) backgrounds.filter { !Pawb.has(it.id) }.forEach { add(it.id to it.rarity) }
+            if ("banner" in pack.kinds) banners.filter { !Pawb.has(it.id) }.forEach { add(it.id to it.rarity) }
+            if ("sticker" in pack.kinds) stickers.filter { !Pawb.has(it.id) }.forEach { add(it.id to it.rarity) }
+            if ("frame" in pack.kinds) frames.filter { !Pawb.has(it.id) }.forEach { add(it.id to it.rarity) }
         }.toMutableList()
         if (pool.isEmpty() || !Pawb.spend(pack.price)) return null
         val won = mutableListOf<String>()
@@ -117,7 +141,8 @@ object ShopCatalog {
         return won
     }
 
-    fun nameOf(id: String): String = bg(id)?.name ?: banner(id)?.name ?: custom(id)?.name ?: id
+    fun nameOf(id: String): String = bg(id)?.name ?: banner(id)?.name ?: frame(id)?.name ?: sticker(id)?.name ?: custom(id)?.name ?: id
+    fun rarityOf(id: String): Rarity = bg(id)?.rarity ?: banner(id)?.rarity ?: frame(id)?.rarity ?: sticker(id)?.rarity ?: skin(id)?.rarity ?: Rarity.COMMON
 }
 
 /** Dibuja gradiente + patron segun [style]. */
