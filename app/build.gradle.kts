@@ -4,6 +4,8 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
+base { archivesName.set("mBoyLibrary") }
+
 android {
     namespace = "app.gbalibrary"
     compileSdk = 35
@@ -13,8 +15,8 @@ android {
         applicationId = "app.gbalibrary"
         minSdk = 24
         targetSdk = 35
-        versionCode = 29
-        versionName = "1.9.2"
+        versionCode = 30
+        versionName = "1.10.0"
 
         ndk {
             abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")

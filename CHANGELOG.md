@@ -1,3 +1,8 @@
+## 1.10.0
+- La app y el APK se llaman mBoyLibrary (APK: mBoyLibrary-release.apk). Nuevo icono con la mascota.
+- Cajas completas incluidas (frente, lomo y reverso, sin internet): Pokémon Rubí, Zafiro, Roja, Azul, Amarilla (ES y US), Plata, Cristal y Final Fantasy Legend. Se aplican solas al detectar el juego.
+- Bases por consola (GB, GBC, GBA, DS): lomo y reverso generados usan el molde de la consola (logo, tabla de compatibilidad, Nintendo).
+
 ## 1.9.2
 - Corrige el build (version de Fragment exigida por AdMob).
 

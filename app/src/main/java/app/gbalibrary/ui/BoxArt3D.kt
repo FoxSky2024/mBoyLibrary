@@ -176,6 +176,7 @@ fun rememberBackData(game: Game, enabled: Boolean): BackData? {
             }
             return BackData(real, snap, desc, CoverBitmaps.get(ctx, game, "spine"))
         }
+        withContext(Dispatchers.IO) { runCatching { app.gbalibrary.data.BundledBoxes.install(ctx, game, overwriteFront = false) } }
         var d = load()
         data = d
         if ((d.real == null || d.spine == null) && (d.real == null || d.spine == null || d.snap == null || d.description.isBlank()) && Settings.autoCovers.value) {

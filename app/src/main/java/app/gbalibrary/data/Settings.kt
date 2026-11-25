@@ -35,7 +35,7 @@ object Settings {
     val bgMode = mutableIntStateOf(0) // 0 por defecto, 1 imagen, 2 color
     val bgColor = mutableIntStateOf(0xFF1B2838.toInt())
     val bgStamp = mutableIntStateOf(0)
-    val appName = mutableStateOf("GBA Library")
+    val appName = mutableStateOf("mBoyLibrary")
     val profileName = mutableStateOf("Jugador")
     val avatarStamp = mutableIntStateOf(0)
 
@@ -132,7 +132,7 @@ object Settings {
         bgMode.intValue = p.getInt("bgMode", 0)
         bgColor.intValue = p.getInt("bgColor", 0xFF1B2838.toInt())
         bgStamp.intValue = p.getInt("bgStamp", 0)
-        appName.value = p.getString("appName", "GBA Library") ?: "GBA Library"
+        appName.value = p.getString("appName", "mBoyLibrary") ?: "mBoyLibrary"
         profileName.value = p.getString("profileName", "Jugador") ?: "Jugador"
         avatarStamp.intValue = p.getInt("avatarStamp", 0)
         musicUri.value = p.getString("musicUri", "") ?: ""
