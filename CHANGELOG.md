@@ -1,3 +1,10 @@
+## 1.13.0
+- Cajas: sin lomo con texto, todas con la misma altura y caras alineadas con el borde.
+- Interfaz mas pequena por defecto (0.6x) y dialogos que se ajustan a la pantalla (recorte, sobres).
+- Ficha del juego estilo Steam.
+- Ventana propia de musica (disco, progreso, anterior/siguiente, aleatorio, volumen).
+- Icono de pawbs blanco.
+
 ## 1.12.1
 - Nuevo icono de la app (el zorro con consola).
 

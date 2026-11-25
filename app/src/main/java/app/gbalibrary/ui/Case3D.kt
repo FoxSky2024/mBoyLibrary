@@ -25,6 +25,7 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.asAndroidBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.Alignment
@@ -106,17 +107,17 @@ fun Case3D(
     val frontBmp = rememberBitmap(game, "front")
     val spineImg = back?.spine ?: rememberBitmap(game, "spine")
     val aspect = frontBmp?.let { it.width.toFloat() / it.height }?.takeIf { it in 0.4f..1.3f }
-    var fw = width
-    var fh = height
-    if (aspect != null) { if (height * aspect <= width) fw = height * aspect else { fw = width; fh = width / aspect } }
+    // Todas las cajas miden lo mismo de alto; el ancho sale de las proporciones del arte.
+    val fh = height
+    val fw = if (aspect != null) height * aspect else width
     val spAspect = spineImg?.let { it.width.toFloat() / it.height }?.takeIf { it in 0.04f..0.3f }
     val depth = if (spAspect != null) fh * spAspect else fh * style.depthRatio
     val wPx = with(density) { fw.toPx() }
     val dPx = with(density) { depth.toPx() }
-    val camera = 48f * density.density // perspectiva suave: frente y laterales conservan la misma altura
+    val camera = 2400f * density.density // casi sin perspectiva: frente, lomo y reverso miden lo mismo de alto
 
     Box(modifier.size(width, height), contentAlignment = Alignment.BottomCenter) {
-        Box(Modifier.size(fw, fh)) {
+        Box(Modifier.requiredSize(fw, fh)) {
             CaseFace(0f, 0f, dPx / 2f, fw, fh, angle, camera) {
                 FrontFace(game, style, glarePhase, glareStrength, cheap, fitted = aspect != null)
             }
@@ -251,75 +252,20 @@ private fun Spine(
     phase: () -> Float, strength: () -> Float, cheap: Boolean, real: ImageBitmap? = null,
 ) {
     val base = if (real == null) rememberBase(console, "spine") else null
-    val fs = (sideW.value * 0.50f).coerceIn(5f, 12f)
-    val hue = (game.id.hashCode().absoluteValue % 360).toFloat()
-    // fondo, bloque del logo, texto del logo, color del titulo
-    val bg: Brush
-    val logoBg: Color
-    val logoColor: Color
-    val titleColor: Color
-    when (style.kind) {
-        CaseKind.GBA -> { // carton negro con bloque verde
-            bg = Brush.horizontalGradient(listOf(Color(0xFF0E1110), Color(0xFF1D2320)))
-            logoBg = Color(0xFF2E9A4E); logoColor = Color.White; titleColor = Color.White
-        }
-        CaseKind.GBC -> { // carton con el color del juego
-            val base = Color.hsv(hue, 0.55f, 0.50f)
-            bg = Brush.horizontalGradient(listOf(base, Color.hsv(hue, 0.60f, 0.36f)))
-            logoBg = Color.Black.copy(alpha = 0.45f); logoColor = Color.White; titleColor = Color.White
-        }
-        CaseKind.GB -> { // carton gris clasico
-            bg = Brush.horizontalGradient(listOf(Color(0xFFD2D5D9), Color(0xFFB4B8BD)))
-            logoBg = Color(0xFF8D9196); logoColor = Color(0xFF16181B); titleColor = Color(0xFF1B1D20)
-        }
-        CaseKind.DS -> { // plastico negro brillante
-            bg = Brush.horizontalGradient(listOf(Color(0xFF16161A), Color(0xFF050506)))
-            logoBg = Color(0xFF26262C); logoColor = Color.White; titleColor = Color.White
-        }
-        CaseKind.GENERIC -> {
-            bg = Brush.horizontalGradient(listOf(console.bgTop, Color(0xFF050506)))
-            logoBg = console.accent.copy(alpha = 0.55f); logoColor = Color.White; titleColor = Color.White
+    // Sin lomo real: color tomado del arte del frente + molde de la consola (logo arriba, Nintendo abajo). Sin texto.
+    val front = if (real == null) rememberBitmap(game, "front") else null
+    val tint = remember(front) {
+        front?.let {
+            try {
+                val px = android.graphics.Bitmap.createScaledBitmap(it.asAndroidBitmap(), 1, 1, true).getPixel(0, 0)
+                Color(px).let { c -> Color(c.red * 0.7f, c.green * 0.7f, c.blue * 0.7f, 1f) }
+            } catch (e: Exception) { null }
         }
     }
+    val bg = tint?.let { Brush.horizontalGradient(listOf(it, Color(it.red * 0.8f, it.green * 0.8f, it.blue * 0.8f, 1f))) }
+        ?: Brush.horizontalGradient(listOf(console.bgTop, Color(0xFF050506)))
     Box(Modifier.fillMaxSize().clipToBounds().background(bg)) {
         if (real != null) Image(real, null, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds) // lomo real del wrap / ScreenScraper
-        if (real == null && base != null) {
-            // titulo en la ventana central del molde de la consola
-            Box(Modifier.align(Alignment.BottomCenter).padding(bottom = h * 0.088f).size(sideW, h * 0.65f)) {
-                Text(
-                    game.title, color = titleColor, fontSize = fs.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.align(Alignment.Center).requiredSize(h * 0.62f, sideW).rotate(90f),
-                )
-            }
-        }
-        if (real == null && base == null) Row(
-            Modifier.align(Alignment.Center).requiredSize(h, sideW).rotate(90f),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(Modifier.fillMaxHeight().weight(0.42f).background(logoBg), contentAlignment = Alignment.Center) {
-                if (style.kind == CaseKind.DS) {
-                    Text(
-                        buildAnnotatedString {
-                            withStyle(SpanStyle(fontSize = (fs * 0.75f).sp, fontWeight = FontWeight.Bold, letterSpacing = 0.6.sp)) { append("NINTENDO ") }
-                            withStyle(SpanStyle(fontSize = (fs * 1.25f).sp, fontWeight = FontWeight.Black, fontStyle = FontStyle.Italic)) { append("DS") }
-                        },
-                        color = logoColor, maxLines = 1, softWrap = false,
-                    )
-                } else {
-                    Text(
-                        console.name.uppercase(), color = logoColor, fontSize = (fs * 0.95f).sp,
-                        fontWeight = FontWeight.ExtraBold, fontStyle = FontStyle.Italic, letterSpacing = 0.3.sp,
-                        maxLines = 1, softWrap = false,
-                    )
-                }
-            }
-            Text(
-                game.title, color = titleColor, fontSize = fs.sp, fontWeight = FontWeight.Bold,
-                maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(0.58f).padding(horizontal = 5.dp),
-            )
-        }
         if (base != null) Image(base, null, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
         // volumen del lomo y borde
         Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(Color.White.copy(alpha = 0.12f), Color.Transparent, Color.Black.copy(alpha = 0.30f)))))

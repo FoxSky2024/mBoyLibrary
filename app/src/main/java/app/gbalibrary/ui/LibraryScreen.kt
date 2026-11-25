@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.RssFeed
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.Icons
@@ -132,7 +133,7 @@ fun LibraryApp(vm: LibraryViewModel, actions: LibraryActions, onPlay: (Game) -> 
 
     // Modo de navegacion con mando segun la pantalla visible.
     val navMode = when {
-        showSettings || showGallery || showProfile || showNews || ShopNav.show.value -> MenuNav.Mode.FOCUS
+        showSettings || showGallery || showProfile || showNews || ShopNav.show.value || MusicNav.show.value -> MenuNav.Mode.FOCUS
         detail != null -> MenuNav.Mode.DETAIL
         else -> MenuNav.Mode.HOME
     }
@@ -208,7 +209,7 @@ fun LibraryApp(vm: LibraryViewModel, actions: LibraryActions, onPlay: (Game) -> 
             }
         },
     ) {
-        val shelfFull = Settings.shelfView.value && !showSettings && !showGallery && !showNews && !showProfile && !ShopNav.show.value && detail == null
+        val shelfFull = Settings.shelfView.value && !showSettings && !showGallery && !showNews && !showProfile && !ShopNav.show.value && !MusicNav.show.value && detail == null
         if (!shelfFull) LibraryBackground()
         IncomingHost()
         run {
@@ -224,6 +225,7 @@ fun LibraryApp(vm: LibraryViewModel, actions: LibraryActions, onPlay: (Game) -> 
             when {
                 showSettings -> SettingsScreen(vm, actions, onBack = { showSettings = false })
                 showGallery -> GalleryScreen(onBack = { showGallery = false })
+                MusicNav.show.value -> MusicScreen(actions, onBack = { MusicNav.show.value = false })
                 ShopNav.show.value -> ShopScreen(onBack = { ShopNav.show.value = false })
                 showNews -> NewsScreen(vm, onBack = { showNews = false })
                 showProfile -> ProfileScreen(
@@ -521,6 +523,7 @@ private fun TopBar(
 
         StatusIndicators()
 
+        Ic(Icons.Filled.MusicNote, size = 22.dp, tint = p.dim, modifier = Modifier.clickable { Sfx.click(); MusicNav.show.value = true }.padding(horizontal = 6.dp, vertical = 4.dp))
         PawIcon(22.dp, modifier = Modifier.clickable { Sfx.click(); ShopNav.show.value = true }.padding(horizontal = 6.dp, vertical = 4.dp))
         Ic(Icons.Filled.RssFeed, size = 22.dp, tint = p.dim, modifier = Modifier.clickable { onNews() }.padding(horizontal = 6.dp, vertical = 4.dp))
         Ic(Icons.Filled.PhotoLibrary, size = 22.dp, tint = p.dim, modifier = Modifier.clickable { onGallery() }.padding(horizontal = 6.dp, vertical = 4.dp))

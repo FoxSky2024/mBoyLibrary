@@ -299,19 +299,19 @@ private fun LibrarySection(vm: LibraryViewModel, actions: LibraryActions) {
 
 // ---------- v0.3: escala, portadas, datos ----------
 
-private val ScaleChips = listOf(0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.25f)
+private val ScaleChips = listOf(0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.25f)
 
 @Composable
 private fun ScaleSection() {
     val p = LocalPalette.current
     Section("Escala de la interfaz") {
-        Text("Tamaño ${"%.2f".format(Settings.uiScale.floatValue)}x (por defecto 0.85x)", color = p.text, fontSize = 13.sp)
-        Slider(value = Settings.uiScale.floatValue, onValueChange = { Settings.setUiScale((it * 100).roundToInt() / 100f) }, valueRange = 0.7f..1.25f)
+        Text("Tamaño ${"%.2f".format(Settings.uiScale.floatValue)}x (por defecto 0.6x)", color = p.text, fontSize = 13.sp)
+        Slider(value = Settings.uiScale.floatValue, onValueChange = { Settings.setUiScale((it * 100).roundToInt() / 100f) }, valueRange = 0.5f..1.25f)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             ScaleChips.forEach { v ->
                 AppChip("${v}x", kotlin.math.abs(Settings.uiScale.floatValue - v) < 0.005f, { Settings.setUiScale(v) })
             }
-            AppButton("Por defecto", { Settings.setUiScale(0.85f) })
+            AppButton("Por defecto", { Settings.setUiScale(0.6f) })
         }
         Text("Afecta tarjetas, títulos, barras, botones y texto de la biblioteca y Ajustes. Los controles dentro del juego no cambian.", color = p.dim, fontSize = 12.sp)
     }
