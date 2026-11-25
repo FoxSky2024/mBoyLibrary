@@ -21,6 +21,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.asImageBitmap
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -213,6 +219,28 @@ private fun FrontFace(game: Game, style: CaseStyle, phase: () -> Float, strength
     }
 }
 
+// ------------------------------------------------------------------------------------------ bases por consola
+
+/**
+ * Molde de la caja de cada consola (assets/bases/<consola>_{spine,back}.png): bandas del logo, tabla de compatibilidad,
+ * Nintendo... con la parte central transparente. Se dibuja sobre el lomo / reverso generados cuando no hay imagen real.
+ * Para otra consola basta con poner sus png en assets/bases.
+ */
+@Composable
+private fun rememberBase(console: ConsoleDef, kind: String): ImageBitmap? {
+    val ctx = LocalContext.current.applicationContext
+    val key = console.short.lowercase() + "_" + kind
+    val bmp by produceState<ImageBitmap?>(BaseCache.map[key], key) {
+        if (BaseCache.map.containsKey(key)) { value = BaseCache.map[key]; return@produceState }
+        value = withContext(Dispatchers.IO) {
+            runCatching { ctx.assets.open("bases/$key.png").use { android.graphics.BitmapFactory.decodeStream(it)?.asImageBitmap() } }.getOrNull()
+        }.also { BaseCache.map[key] = it }
+    }
+    return bmp
+}
+
+private object BaseCache { val map = HashMap<String, ImageBitmap?>() }
+
 // ------------------------------------------------------------------------------------------ lomo
 
 @Composable
@@ -220,6 +248,7 @@ private fun Spine(
     game: Game, style: CaseStyle, console: ConsoleDef, sideW: Dp, h: Dp,
     phase: () -> Float, strength: () -> Float, cheap: Boolean, real: ImageBitmap? = null,
 ) {
+    val base = if (real == null) rememberBase(console, "spine") else null
     val fs = (sideW.value * 0.50f).coerceIn(5f, 12f)
     val hue = (game.id.hashCode().absoluteValue % 360).toFloat()
     // fondo, bloque del logo, texto del logo, color del titulo
@@ -252,7 +281,17 @@ private fun Spine(
     }
     Box(Modifier.fillMaxSize().clipToBounds().background(bg)) {
         if (real != null) Image(real, null, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds) // lomo real del wrap / ScreenScraper
-        if (real == null) Row(
+        if (real == null && base != null) {
+            // titulo en la ventana central del molde de la consola
+            Box(Modifier.align(Alignment.BottomCenter).padding(bottom = h * 0.088f).size(sideW, h * 0.65f)) {
+                Text(
+                    game.title, color = titleColor, fontSize = fs.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.align(Alignment.Center).requiredSize(h * 0.62f, sideW).rotate(90f),
+                )
+            }
+        }
+        if (real == null && base == null) Row(
             Modifier.align(Alignment.Center).requiredSize(h, sideW).rotate(90f),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -279,6 +318,7 @@ private fun Spine(
                 modifier = Modifier.weight(0.58f).padding(horizontal = 5.dp),
             )
         }
+        if (base != null) Image(base, null, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
         // volumen del lomo y borde
         Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(Color.White.copy(alpha = 0.12f), Color.Transparent, Color.Black.copy(alpha = 0.30f)))))
         if (style.kind == CaseKind.DS) {
@@ -306,6 +346,8 @@ private fun BackFace(game: Game, style: CaseStyle, console: ConsoleDef, data: Ba
             Image(real, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
         } else {
             NoData()
+            val base = rememberBase(console, "back")
+            if (base != null) Image(base, null, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
         }
         Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.18f), Color.Transparent, Color.White.copy(alpha = 0.10f)))))
         Box(Modifier.fillMaxSize().border(1.dp, style.borderColor, shape))

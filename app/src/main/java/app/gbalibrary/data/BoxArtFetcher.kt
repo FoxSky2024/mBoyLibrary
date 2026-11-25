@@ -55,6 +55,7 @@ object BoxArtFetcher {
     /** true si ya hay lomo y reverso reales (de ScreenScraper o puestos a mano). */
     suspend fun fetchFaces(ctx: Context, game: Game): Boolean = withContext(Dispatchers.IO) {
         try {
+            if (BundledBoxes.install(ctx, game, overwriteFront = false)) return@withContext true
             if (spineFile(ctx, game.id).exists() && backFile(ctx, game.id).exists()) return@withContext true
             val tried = triedFile(ctx, game.id)
             if (tried.exists() && System.currentTimeMillis() - tried.lastModified() < CoverFetcher.RETRY_AFTER_MS) return@withContext false

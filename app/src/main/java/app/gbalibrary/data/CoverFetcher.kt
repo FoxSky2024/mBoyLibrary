@@ -66,6 +66,7 @@ object CoverFetcher {
     suspend fun fetchFor(ctx: Context, game: Game): Boolean = withContext(Dispatchers.IO) {
         try {
             networkFailed = false
+            if (BundledBoxes.install(ctx, game, overwriteFront = true)) return@withContext true // caja completa incluida
             val name = RomHeader.searchName(game.title)
             val toks = tokens(name)
             if (toks.isEmpty()) return@withContext false
