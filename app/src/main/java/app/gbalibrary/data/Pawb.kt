@@ -22,9 +22,10 @@ data class CustomBanner(
     val style: Int,          // 0 liso, 1 diagonal, 2 ondas, 3 puntos
     val creator: String,
     val price: Int,          // precio en Pawb que pide el creador al compartirlo
+    val img: String = "",    // imagen de fondo opcional (JPEG pequeno en base64); viaja dentro del enlace
 ) {
     fun toJson() = JSONObject().put("id", id).put("name", name).put("title", title).put("subtitle", subtitle)
-        .put("colors", JSONArray(colors)).put("style", style).put("creator", creator).put("price", price)
+        .put("colors", JSONArray(colors)).put("style", style).put("creator", creator).put("price", price).put("img", img)
 
     companion object {
         fun fromJson(o: JSONObject): CustomBanner {
@@ -32,7 +33,7 @@ data class CustomBanner(
             return CustomBanner(
                 o.getString("id"), o.optString("name", "Banner"), o.optString("title"), o.optString("subtitle"),
                 (0 until c.length()).map { c.getInt(it) }.ifEmpty { listOf(0xFF2A475E.toInt(), 0xFF16202D.toInt()) },
-                o.optInt("style"), o.optString("creator", "Jugador"), o.optInt("price").coerceIn(0, 999),
+                o.optInt("style"), o.optString("creator", "Jugador"), o.optInt("price").coerceIn(0, 999), o.optString("img"),
             )
         }
     }
@@ -111,8 +112,12 @@ object Pawb {
     // ---- banners propios / de otros jugadores ----
     private fun saveCustom() { p.edit().putString("custom", JSONArray(custom.value.map { it.toJson() }).toString()).apply() }
 
-    fun createBanner(name: String, title: String, subtitle: String, colors: List<Int>, style: Int, price: Int): CustomBanner {
-        val b = CustomBanner("u:" + UUID.randomUUID().toString().take(8), name.ifBlank { "Mi banner" }, title, subtitle, colors, style, playerName, price)
+    const val CREATE_COST = 200
+
+    /** Crear un banner cuesta [CREATE_COST] Pawb. Devuelve null si no alcanza el saldo. */
+    fun createBanner(name: String, title: String, subtitle: String, colors: List<Int>, style: Int, price: Int, img: String = ""): CustomBanner? {
+        if (!spend(CREATE_COST)) return null
+        val b = CustomBanner("u:" + UUID.randomUUID().toString().take(8), name.ifBlank { "Mi banner" }, title, subtitle, colors, style, playerName, price, img)
         custom.value = custom.value + b; saveCustom(); grant(b.id)
         return b
     }

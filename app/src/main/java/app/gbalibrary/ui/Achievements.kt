@@ -1,5 +1,7 @@
 package app.gbalibrary.ui
 
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.ui.draw.drawWithContent
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.SoundPool
@@ -82,16 +84,21 @@ object Achievements {
     }
 }
 
-/** Aviso estilo Steam en la esquina superior derecha, con sonido. */
+/** Aviso estilo Steam (esquina superior derecha): tarjeta con barra de color, icono con brillo, barrido de luz, recompensa en Pawb y sonido. */
 @Composable
 fun AchievementToastHost() {
     val cur = Achievements.queue.firstOrNull()
     var visible by remember { mutableStateOf(false) }
+    val shine = remember { androidx.compose.animation.core.Animatable(0f) }
     LaunchedEffect(cur) {
         if (cur != null) {
+            val reward = if (cur.platinum) 50 else 10
+            app.gbalibrary.data.Pawb.earn(reward)
             AchSound.play(cur.platinum)
             visible = true
-            delay(if (cur.platinum) 6000 else 4200)
+            shine.snapTo(0f)
+            shine.animateTo(1f, androidx.compose.animation.core.tween(1100, delayMillis = 350))
+            delay(if (cur.platinum) 5000 else 3300)
             visible = false
             delay(450)
             if (Achievements.queue.isNotEmpty()) Achievements.queue.removeAt(0)
@@ -100,24 +107,47 @@ fun AchievementToastHost() {
     Box(Modifier.fillMaxSize().safeDrawingPadding().padding(12.dp), contentAlignment = Alignment.TopEnd) {
         AnimatedVisibility(
             visible = visible && cur != null,
-            enter = slideInHorizontally { it } + fadeIn(),
-            exit = slideOutHorizontally { it } + fadeOut(),
+            enter = slideInHorizontally(androidx.compose.animation.core.tween(380, easing = androidx.compose.animation.core.FastOutSlowInEasing)) { it } + fadeIn() +
+                androidx.compose.animation.scaleIn(initialScale = 0.9f),
+            exit = slideOutHorizontally(androidx.compose.animation.core.tween(300)) { it } + fadeOut(),
         ) {
             if (cur != null) {
                 val gold = Color(0xFFFFD54F)
                 val tint = if (cur.platinum) gold else Color(0xFF66C0F4)
+                val shape = RoundedCornerShape(12.dp)
+                val pulse = androidx.compose.animation.core.rememberInfiniteTransition(label = "achPulse")
+                val glow by pulse.animateFloat(0.35f, 0.9f, androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(900), androidx.compose.animation.core.RepeatMode.Reverse), label = "glow")
                 Row(
-                    Modifier.widthIn(max = 320.dp).clip(RoundedCornerShape(10.dp)).background(Color(0xF2171A21))
-                        .border(1.5.dp, tint, RoundedCornerShape(10.dp)).padding(12.dp),
+                    Modifier.widthIn(min = 260.dp, max = 340.dp).clip(shape)
+                        .background(androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(Color(0xF2232B36), Color(0xF2121820))))
+                        .border(1.dp, tint.copy(alpha = 0.6f), shape)
+                        .drawWithContent {
+                            drawContent()
+                            // barrido de luz diagonal
+                            val x = (size.width + 120f) * shine.value - 120f
+                            drawRect(
+                                androidx.compose.ui.graphics.Brush.linearGradient(
+                                    listOf(Color.Transparent, Color.White.copy(alpha = 0.22f), Color.Transparent),
+                                    start = androidx.compose.ui.geometry.Offset(x, 0f), end = androidx.compose.ui.geometry.Offset(x + 120f, size.height),
+                                ),
+                            )
+                            // barra de color a la izquierda
+                            drawRect(tint, size = androidx.compose.ui.geometry.Size(5f, size.height))
+                        }
+                        .padding(start = 16.dp, top = 12.dp, end = 14.dp, bottom = 12.dp),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Box(Modifier.size(44.dp).clip(CircleShape).background(tint.copy(alpha = 0.2f)).border(2.dp, tint, CircleShape), contentAlignment = Alignment.Center) {
-                        Ic(cur.icon, size = 26.dp, tint = tint)
-                    }
-                    Column {
-                        Text(if (cur.platinum) "LOGRO PLATINO" else "Logro desbloqueado", color = tint, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                        Text(cur.title, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Black, maxLines = 1)
-                        Text(cur.desc, color = Color(0xFF8FA3B3), fontSize = 12.sp, maxLines = 2)
+                    Box(
+                        Modifier.size(52.dp).clip(RoundedCornerShape(10.dp))
+                            .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(tint.copy(alpha = 0.35f), tint.copy(alpha = 0.10f))))
+                            .border(2.dp, tint.copy(alpha = glow), RoundedCornerShape(10.dp)),
+                        contentAlignment = Alignment.Center,
+                    ) { Ic(cur.icon, size = 30.dp, tint = tint) }
+                    Column(Modifier.weight(1f, fill = false), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                        Text(if (cur.platinum) "LOGRO PLATINO" else "LOGRO DESBLOQUEADO", color = tint, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp, fontFamily = AppFonts.Display)
+                        Text(cur.title, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1, fontFamily = AppFonts.Display)
+                        Text(cur.desc, color = Color(0xFF9FB1C1), fontSize = 12.sp, maxLines = 2)
+                        Text("🐾 +${if (cur.platinum) 50 else 10} Pawb", color = Color(0xFFF5B642), fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
                     }
                 }
             }

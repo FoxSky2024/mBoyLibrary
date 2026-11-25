@@ -163,7 +163,7 @@ private fun CustomCard(b: CustomBanner, onMsg: (String) -> Unit) {
     val ctx = LocalContext.current
     val clip = LocalClipboardManager.current
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(p.panel).border(1.dp, p.accent.copy(alpha = 0.5f), RoundedCornerShape(12.dp)).padding(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        BannerArt(b.title, b.subtitle, b.colors.map { Color(it) }, b.style, Modifier.fillMaxWidth().height(86.dp))
+        BannerArt(b.title, b.subtitle, b.colors.map { Color(it) }, b.style, Modifier.fillMaxWidth().height(86.dp), b.img)
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Column(Modifier.weight(1f)) {
                 Text(b.name, color = p.text, fontWeight = FontWeight.Bold)
@@ -189,10 +189,15 @@ private fun BannerCreator(onMsg: (String) -> Unit) {
     var style by remember { mutableIntStateOf(1) }
     var price by remember { mutableStateOf("50") }
     var link by remember { mutableStateOf("") }
+    var img by remember { mutableStateOf("") }
+    val ctx = LocalContext.current
+    val pick = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) img = BannerImages.fromUri(ctx, uri) ?: "".also { onMsg("No se pudo leer la imagen") }
+    }
 
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(p.panel).padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("CREAR BANNER", color = p.dim, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.8.sp)
-        BannerArt(title.ifBlank { " " }, sub, listOf(Color(c1), Color(c2)), style, Modifier.fillMaxWidth().height(96.dp))
+        BannerArt(title.ifBlank { " " }, sub, listOf(Color(c1), Color(c2)), style, Modifier.fillMaxWidth().height(96.dp), img)
         OutlinedTextField(name, { name = it.take(24) }, label = { Text("Nombre del objeto") }, singleLine = true, modifier = Modifier.fillMaxWidth())
         OutlinedTextField(title, { title = it.take(22) }, label = { Text("Título") }, singleLine = true, modifier = Modifier.fillMaxWidth())
         OutlinedTextField(sub, { sub = it.take(40) }, label = { Text("Subtítulo") }, singleLine = true, modifier = Modifier.fillMaxWidth())
@@ -207,9 +212,13 @@ private fun BannerCreator(onMsg: (String) -> Unit) {
             }
         }
         OutlinedTextField(price, { price = it.filter(Char::isDigit).take(3) }, label = { Text("Precio en Pawb al compartirlo (0-999)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-        PriceButton("Guardar banner", true) {
-            Pawb.createBanner(name, title, sub, listOf(c1, c2), style, price.toIntOrNull() ?: 0)
-            onMsg("Banner guardado. Está en la pestaña Banners; allí puedes equiparlo o copiar su enlace.")
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            PriceButton(if (img.isEmpty()) "Elegir imagen de fondo" else "Cambiar imagen", true) { pick.launch("image/*") }
+            if (img.isNotEmpty()) PriceButton("Quitar imagen", false) { img = "" }
+        }
+        PriceButton("Guardar banner  🐾 ${Pawb.CREATE_COST}", Pawb.balance.intValue >= Pawb.CREATE_COST) {
+            val b = Pawb.createBanner(name, title, sub, listOf(c1, c2), style, price.toIntOrNull() ?: 0, img)
+            onMsg(if (b == null) "Crear un banner cuesta 🐾 ${Pawb.CREATE_COST}. Te faltan ${Pawb.CREATE_COST - Pawb.balance.intValue}." else "Banner guardado (−🐾 ${Pawb.CREATE_COST}). Está en la pestaña Banners: equípalo o copia su enlace.")
         }
     }
     Column(Modifier.fillMaxWidth().padding(top = 10.dp).clip(RoundedCornerShape(12.dp)).background(p.panel).padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -233,4 +242,20 @@ private fun SwatchRow(selected: Int, onPick: (Int) -> Unit) {
             Box(Modifier.size(24.dp).clip(CircleShape).background(Color(c)).border(if (c == selected) 2.dp else 0.dp, Color.White, CircleShape).clickable { onPick(c) })
         }
     }
+}
+
+/** Imagen de fondo de banner: recorte centrado 3:1, 480x160, JPEG ligero en base64 (cabe en el enlace para compartir). */
+object BannerImages {
+    fun fromUri(ctx: android.content.Context, uri: android.net.Uri): String? = try {
+        val src = ctx.contentResolver.openInputStream(uri)?.use { android.graphics.BitmapFactory.decodeStream(it) } ?: return null
+        val w = 480; val h = 160
+        val scale = maxOf(w / src.width.toFloat(), h / src.height.toFloat())
+        val out = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888)
+        val c = android.graphics.Canvas(out)
+        val m = android.graphics.Matrix().apply { postScale(scale, scale); postTranslate((w - src.width * scale) / 2f, (h - src.height * scale) / 2f) }
+        c.drawBitmap(src, m, android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG))
+        val bos = java.io.ByteArrayOutputStream()
+        out.compress(android.graphics.Bitmap.CompressFormat.JPEG, 55, bos)
+        android.util.Base64.encodeToString(bos.toByteArray(), android.util.Base64.NO_WRAP)
+    } catch (e: Exception) { null }
 }
