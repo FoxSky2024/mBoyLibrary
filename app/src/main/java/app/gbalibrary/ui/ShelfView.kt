@@ -183,8 +183,8 @@ fun ShelfView(
     LaunchedEffect(active) { if (active != null) lastActive = active }
 
     var inspect by remember { mutableStateOf<Game?>(null) }
-    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to top, 0.70f to Color(0xFF05050A), 1f to Color(0xFF020204)))) {
-        ShelfWaves(console.accent)
+    Box(Modifier.fillMaxSize()) {
+        ShelfBackdrop(cur, top)
         if (cur == null) {
             Text(
                 "No hay juegos con este filtro", color = Color.White.copy(alpha = 0.7f),
@@ -364,63 +364,15 @@ fun ShelfView(
             }
         }
 
-        // ---- barra inferior: solo con una caja seleccionada ----
-        val shown = active ?: lastActive
-        AnimatedVisibility(
-            visible = active != null,
-            modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 14.dp),
-            enter = fadeIn(tween(220)) + slideInVertically(tween(260)) { it / 2 },
-            exit = fadeOut(tween(160)) + slideOutVertically(tween(200)) { it / 2 },
-        ) {
-            if (shown != null) {
-                val sc = consoleOf(shown)
-                val p = LocalPalette.current
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        shown.title, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.SemiBold,
-                        maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 24.dp),
-                    )
-                    Text(
-                        "${sc.name} · ${formatPlayTime(shown.playSeconds)}",
-                        color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp,
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text(
-                            "JUGAR", color = p.onPlay, fontSize = 13.sp, fontWeight = FontWeight.Bold,
-                            modifier = Modifier.clip(RoundedCornerShape(50)).background(p.play)
-                                .clickable { onPlay(shown) }.padding(horizontal = 26.dp, vertical = 8.dp),
-                        )
-                        Text(
-                            "Inspeccionar", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium,
-                            modifier = Modifier.clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = 0.14f))
-                                .clickable { inspect = shown }.padding(horizontal = 22.dp, vertical = 8.dp),
-                        )
-                        Text(
-                            "Detalles", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium,
-                            modifier = Modifier.clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = 0.14f))
-                                .clickable { onOpen(shown) }.padding(horizontal = 22.dp, vertical = 8.dp),
-                        )
-                    }
-                }
-            }
+        // ---- panel inferior de cristal (siempre visible, como el video) ----
+        if (cur != null) {
+            ShelfBottomPanel(
+                cur, idx, games.size,
+                onPlay = { onPlay(cur) }, onInspect = { inspect = cur }, onDetails = { onOpen(cur) },
+                modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 10.dp),
+            )
         }
-
-        if (active == null && cur != null) {
-            Column(
-                Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 22.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text(
-                    cur.title, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.SemiBold,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 24.dp),
-                )
-                Text(
-                    "${console.name} · ${formatPlayTime(cur.playSeconds)} · ${idx + 1}/${games.size}",
-                    color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp,
-                )
-            }
-        }
+        ShelfStatusPill(Modifier.align(Alignment.TopCenter).safeDrawingPadding().padding(top = 8.dp))
 
         inspect?.let { g -> InspectOverlay(g, onClose = { inspect = null }, onPlay = { inspect = null; onPlay(g) }) }
 

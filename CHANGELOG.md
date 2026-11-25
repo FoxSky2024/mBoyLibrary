@@ -1,3 +1,6 @@
+## 1.7.0
+- Menu 3D basado en el video: fondo con la portada desenfocada y teñida, pastilla de estado (hora/red/bateria) arriba, panel inferior de cristal con Jugar / Inspeccionar / ··· (Detalles) y puntos de pagina.
+
 ## 1.6.0
 - Estanteria 3D sin banner; inspeccion con caja 3D real (arrastrar para girar: frente, lomo, reverso, canto).
 - Marcos de caja con el color de cada consola (GBA indigo, GBC verde agua, GB gris, DS plata).
