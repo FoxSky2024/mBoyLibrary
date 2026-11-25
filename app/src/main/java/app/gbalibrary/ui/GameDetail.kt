@@ -47,6 +47,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -97,54 +100,63 @@ fun GameDetail(
         value = if (game.hasBackground) withContext(Dispatchers.IO) { Covers.load(Covers.backgroundFile(ctx, game.id)) } else null
     }
 
+    val front = rememberBitmap(game, "front")
+    val steamGreen = Color(0xFF5BA32B)
     Box(Modifier.fillMaxSize()) {
         art?.let { Image(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
-        Box(Modifier.fillMaxSize().background(p.bg.copy(alpha = if (art != null) 0.85f else 1f)))
+        Box(Modifier.fillMaxSize().background(p.bg.copy(alpha = if (art != null) 0.9f else 1f)))
 
         Column(Modifier.fillMaxSize()) {
             ScreenHeader(title = "Ficha del juego", onBack = onBack)
-            BoxWithConstraints(Modifier.fillMaxSize()) {
-                val wide = maxWidth >= 600.dp
-                val coverBox: @Composable (Modifier) -> Unit = { m -> Cover3D(game, m) }
-                val actionBtns: @Composable () -> Unit = {
-                    Column(verticalArrangement = Arrangement.spacedBy(Ds.Gap)) {
-                        AppButton("JUGAR", onPlay, Modifier.fillMaxWidth(), kind = BtnKind.PRIMARY, big = true, icon = Icons.Filled.PlayArrow)
-                        AppButton("Continuar", { onPlaySlot("auto") }, Modifier.fillMaxWidth(), enabled = hasAuto)
-                        AppButton("Guardados", { panel = if (panel == DetailPanel.SAVES) DetailPanel.INFO else DetailPanel.SAVES }, Modifier.fillMaxWidth())
-                        AppButton("Ajustes del juego", { panel = if (panel == DetailPanel.SETTINGS) DetailPanel.INFO else DetailPanel.SETTINGS }, Modifier.fillMaxWidth())
-                        if (!hasAuto) Hint("Aún no hay partida automática: JUGAR empieza desde el principio y se guarda solo al salir.")
+            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                // Cabecera tipo Steam: arte desenfocado de fondo, portada a la izquierda y titulo a la derecha
+                Box(Modifier.fillMaxWidth().height(200.dp).clipToBounds()) {
+                    front?.let { Image(it, null, Modifier.fillMaxSize().blur(28.dp), contentScale = ContentScale.Crop) }
+                    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.25f), p.bg))))
+                    Row(Modifier.fillMaxSize().padding(Ds.Pad), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Cover3D(game, Modifier.width(110.dp))
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(game.title, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Black, lineHeight = 28.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Ds.GapL)) {
+                                SystemBadge(systemOf(game))
+                                Text(formatSize(game.sizeBytes), color = Color.White.copy(alpha = 0.7f), fontSize = Ds.LabelSp.sp, maxLines = 1)
+                            }
+                        }
                     }
                 }
-                val main: @Composable () -> Unit = {
-                    Column(verticalArrangement = Arrangement.spacedBy(Ds.GapL)) {
-                        Text(game.title, color = p.text, fontSize = 26.sp, fontWeight = FontWeight.Black, lineHeight = 30.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Ds.GapL)) {
-                            SystemBadge(systemOf(game))
-                            Text(formatSize(game.sizeBytes), color = p.dim, fontSize = Ds.LabelSp.sp, maxLines = 1)
-                            Text("Última vez: ${formatAgo(game.lastPlayed)}", color = p.dim, fontSize = Ds.LabelSp.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        }
-                        when (panel) {
-                            DetailPanel.INFO -> InfoPanel(game)
-                            DetailPanel.SAVES -> SavesPanel(game, onPlaySlot)
-                            DetailPanel.SETTINGS -> SettingsPanel(
-                                game, vm, actions, collections, note, { note = it }, newCollection, { newCollection = it },
-                                onRename = { renaming = true }, onUrl = { urlDialog = true }, onRemove = { confirmRemove = true },
-                            )
-                        }
-                        Box(Modifier.height(24.dp))
+                // Barra de juego: boton verde grande + estadisticas
+                Row(
+                    Modifier.fillMaxWidth().background(p.card).padding(Ds.Pad),
+                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp),
+                ) {
+                    Box(
+                        Modifier.clip(RoundedCornerShape(4.dp)).background(steamGreen).clickable(onClick = onPlay).padding(horizontal = 26.dp, vertical = 12.dp),
+                        contentAlignment = Alignment.Center,
+                    ) { Text("▶  JUGAR", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Black, maxLines = 1) }
+                    if (hasAuto) AppButton("Continuar", { onPlaySlot("auto") })
+                    Row(Modifier.weight(1f).horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(18.dp)) {
+                        StatBlock("TIEMPO JUGADO", formatPlayTime(game.playSeconds))
+                        StatBlock("ÚLTIMA VEZ", formatAgo(game.lastPlayed))
+                        StatBlock("ABIERTO", "${game.launches}")
                     }
                 }
-                if (wide) {
-                    Row(Modifier.fillMaxSize().padding(Ds.Pad), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                        Column(Modifier.width(240.dp).fillMaxHeight().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(Ds.GapL)) { coverBox(Modifier.fillMaxWidth()); actionBtns() }
-                        Column(Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState())) { main() }
+                // Pestañas
+                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = Ds.Pad, vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    AppChip("Resumen", panel == DetailPanel.INFO, { panel = DetailPanel.INFO })
+                    AppChip("Guardados", panel == DetailPanel.SAVES, { panel = DetailPanel.SAVES })
+                    AppChip("Ajustes", panel == DetailPanel.SETTINGS, { panel = DetailPanel.SETTINGS })
+                }
+                Column(Modifier.fillMaxWidth().padding(horizontal = Ds.Pad), verticalArrangement = Arrangement.spacedBy(Ds.GapL)) {
+                    if (!hasAuto && panel == DetailPanel.INFO) Hint("Aún no hay partida automática: JUGAR empieza desde el principio y se guarda solo al salir.")
+                    when (panel) {
+                        DetailPanel.INFO -> InfoPanel(game)
+                        DetailPanel.SAVES -> SavesPanel(game, onPlaySlot)
+                        DetailPanel.SETTINGS -> SettingsPanel(
+                            game, vm, actions, collections, note, { note = it }, newCollection, { newCollection = it },
+                            onRename = { renaming = true }, onUrl = { urlDialog = true }, onRemove = { confirmRemove = true },
+                        )
                     }
-                } else {
-                    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Ds.Pad), verticalArrangement = Arrangement.spacedBy(Ds.GapL)) {
-                        coverBox(Modifier.width(180.dp).align(Alignment.CenterHorizontally))
-                        actionBtns()
-                        main()
-                    }
+                    Box(Modifier.height(24.dp))
                 }
             }
         }
@@ -302,6 +314,15 @@ private fun SettingsPanel(
         }
     }
     AppButton("Quitar de la biblioteca", onRemove, Modifier.fillMaxWidth(), kind = BtnKind.DANGER)
+}
+
+@Composable
+private fun StatBlock(label: String, value: String) {
+    val p = LocalPalette.current
+    Column {
+        Text(label, color = p.dim, fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+        Text(value, color = p.text, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+    }
 }
 
 @Composable

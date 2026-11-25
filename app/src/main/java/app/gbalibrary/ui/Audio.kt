@@ -59,6 +59,12 @@ object Music {
         try { val v = volume(); player?.setVolume(v, v) } catch (e: Exception) { /* ignorado */ }
     }
 
+    fun positionMs(): Int = try { player?.currentPosition ?: 0 } catch (e: Exception) { 0 }
+    fun durationMs(): Int = try { player?.duration?.coerceAtLeast(0) ?: 0 } catch (e: Exception) { 0 }
+    fun seekTo(ms: Int) { try { player?.seekTo(ms) } catch (e: Exception) { /* ignorado */ } }
+    fun trackCount(): Int = order.size
+    fun queueIndex(): Int = pos
+
     /** Pausa / reanuda a pedido del usuario. */
     fun toggle(ctx: Context) {
         if (playing.value) {

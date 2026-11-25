@@ -12,6 +12,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Slider
@@ -74,11 +79,13 @@ fun BannerCropDialog(
         return Triple(sc, x, y)
     }
 
-    Dialog(onDismissRequest = onCancel) {
+    Dialog(onDismissRequest = onCancel, properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)) {
+      androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize().padding(12.dp), contentAlignment = Alignment.Center) {
         Column(
-            Modifier.clip16().background(p.panel).padding(14.dp),
+            Modifier.widthIn(max = 520.dp).heightIn(max = maxHeight).clip16().background(p.panel).padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+          Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(title, color = p.text, fontSize = 16.sp)
             Text("Arrastra para mover · pellizca para acercar", color = p.dim, fontSize = 11.sp)
             Canvas(
@@ -113,6 +120,7 @@ fun BannerCropDialog(
             Slider(bright, { bright = it }, valueRange = -0.5f..0.5f)
             Text("Saturación", color = p.dim, fontSize = 11.sp)
             Slider(sat, { sat = it }, valueRange = 0f..2f)
+          }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Restablecer", color = p.text, fontSize = 13.sp,
                     modifier = Modifier.clip16().background(p.card).clickable0 { zoom = 1f; off = Offset.Zero; bright = 0f; sat = 1f }.padding(horizontal = 14.dp, vertical = 8.dp))
@@ -144,6 +152,7 @@ fun BannerCropDialog(
                     }.padding(horizontal = 14.dp, vertical = 8.dp))
             }
         }
+      }
     }
 }
 

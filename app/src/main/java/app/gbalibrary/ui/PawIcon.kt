@@ -17,7 +17,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-val PawGold = Color(0xFFF5B642)
+val PawGold = Color.White
 
 /** Icono vectorial de la huella Pawb (sustituye al emoji). */
 @Composable

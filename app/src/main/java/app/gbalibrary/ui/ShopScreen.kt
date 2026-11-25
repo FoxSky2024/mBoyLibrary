@@ -51,6 +51,9 @@ object ShopNav {
     val show = mutableStateOf(false)
 }
 
+/** Ventana propia de la musica. */
+object MusicNav { val show = mutableStateOf(false) }
+
 private val Swatches = listOf(
     0xFFE8892B, 0xFFD64B4B, 0xFFD86B9A, 0xFF8A4CD6, 0xFF3B7DD8, 0xFF2FBF9B,
     0xFF3FA56B, 0xFFF5B642, 0xFF1A1033, 0xFF123566, 0xFF14432B, 0xFF16202D,

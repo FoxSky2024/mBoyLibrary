@@ -192,7 +192,7 @@ private fun SealedPack(name: String, color: Color, onOpen: () -> Unit) {
 }
 
 @Composable
-private fun RevealCard(id: String, onFlip: () -> Unit, flipped: Boolean) {
+private fun RevealCard(id: String, onFlip: () -> Unit, flipped: Boolean, w: androidx.compose.ui.unit.Dp = 124.dp) {
     val r = ShopCatalog.rarityOf(id)
     val rot = remember { Animatable(if (flipped) 180f else 0f) }
     val dens = LocalDensity.current.density
@@ -201,7 +201,7 @@ private fun RevealCard(id: String, onFlip: () -> Unit, flipped: Boolean) {
     val glow by tr.animateFloat(0.35f, 1f, infiniteRepeatable(tween(1100), RepeatMode.Reverse), label = "glow")
     val sweep by tr.animateFloat(0f, 1f, infiniteRepeatable(tween(1800, easing = LinearEasing), RepeatMode.Restart), label = "sweep")
     Box(
-        Modifier.size(124.dp, 176.dp)
+        Modifier.size(w, w * 1.42f)
             .graphicsLayer { rotationY = rot.value; cameraDistance = 14f * dens }
             .clickable(enabled = !flipped) { onFlip() },
         contentAlignment = Alignment.Center,
@@ -242,13 +242,16 @@ fun PackOpening(packName: String, packColor: Color, ids: List<String>, onClose: 
     val flipped = remember { mutableStateListOf<Boolean>().apply { repeat(ids.size) { add(false) } } }
     Box(Modifier.fillMaxSize().background(Color(0xF2080A12)).clickable(enabled = false) {}, contentAlignment = Alignment.Center) {
         if (stage == 0) SealedPack(packName, packColor) { stage = 1 }
-        else Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(18.dp)) {
+        else androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize().padding(12.dp), contentAlignment = Alignment.Center) {
+          val cw = minOf(124.dp, (maxWidth - 12.dp * (ids.size - 1)) / ids.size, (maxHeight - 120.dp) / 1.42f).coerceAtLeast(40.dp)
+          Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Text(if (flipped.all { it }) "¡Todo revelado!" else "Toca cada carta para revelarla", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                ids.forEachIndexed { i, id -> RevealCard(id, flipped = flipped[i], onFlip = { flipped[i] = true }) }
+                ids.forEachIndexed { i, id -> RevealCard(id, flipped = flipped[i], onFlip = { flipped[i] = true }, w = cw) }
             }
             if (flipped.all { it }) PriceButtonPublic("Continuar") { onClose() }
             else Text("Revelar todo", color = Color(0xFF8E7CFF), fontSize = 13.sp, modifier = Modifier.clickable { for (i in flipped.indices) flipped[i] = true }.padding(8.dp))
+          }
         }
     }
 }
