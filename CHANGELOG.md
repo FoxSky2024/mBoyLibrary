@@ -1,3 +1,6 @@
+## 1.14.1
+- Corrige error de compilacion de 1.14.0.
+
 ## 1.14.0
 - Pausa: lista escalonada a la izquierda y ilustracion que entra deslizandose, teñida con el color de la interfaz.
 - Musica: ventana nueva estilo reproductor (tocadiscos, tarjeta, lista, barra inferior, mini).

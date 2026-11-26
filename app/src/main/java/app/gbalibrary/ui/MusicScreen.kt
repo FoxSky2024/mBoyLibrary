@@ -303,7 +303,6 @@ private fun InfoLine(k: String, v: String, t: MusicTheme) {
     }
 }
 
-private fun Modifier.horizontalScroll(rememberScrollState()): Modifier = this
 
 /** Barra inferior: miniatura, titulo, progreso, aleatorio / anterior / play / siguiente / repetir y volumen. */
 @Composable
