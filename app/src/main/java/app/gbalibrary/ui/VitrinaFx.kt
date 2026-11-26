@@ -158,7 +158,7 @@ fun importVitrinaVideo(ctx: Context, uri: Uri): Boolean = try {
 /** Vitrina en JSON para compartir por archivo (no hay servidor: se envia por mensajeria y el amigo la importa). */
 fun exportVitrinaJson(): String {
     val o = org.json.JSONObject()
-    o.put("v", 1); o.put("title", Pawb.vTitle.value); o.put("sub", Pawb.vSub.value); o.put("img", Pawb.vImg.value); o.put("fx", Pawb.vFx.value)
+    o.put("v", 1); o.put("title", Pawb.vTitle.value); o.put("sub", Pawb.vSub.value); o.put("img", Pawb.vImg.value); o.put("fx", Pawb.vFx.value); o.put("w", Pawb.vW.floatValue.toDouble()); o.put("h", Pawb.vH.intValue)
     return o.toString()
 }
 
@@ -167,6 +167,7 @@ fun importVitrinaJson(text: String): Boolean = try {
     if (!o.has("v")) false else {
         Pawb.setVitrina(o.optString("title"), o.optString("sub"), o.optString("img"))
         Pawb.setVitrinaFx(o.optString("fx"))
+        Pawb.setVitrinaSize(o.optDouble("w", 1.0).toFloat(), o.optInt("h", 0))
         true
     }
 } catch (e: Exception) { false }

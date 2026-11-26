@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -81,6 +82,51 @@ private fun DrawScope.frameBack(f: ShopFrame, ph: Float, th: Float) {
             var x = th; while (x < size.width - th) { drawCircle(f.c1, th * 0.28f, Offset(x, th / 2)); drawCircle(f.c1, th * 0.28f, Offset(x, size.height - th / 2)); x += th * 1.6f }
             var y = th; while (y < size.height - th) { drawCircle(f.c1, th * 0.28f, Offset(th / 2, y)); drawCircle(f.c1, th * 0.28f, Offset(size.width - th / 2, y)); y += th * 1.6f }
         }
+        8 -> {
+            val cols = (0..4).map { Color.hsv(((ph * 360f) + it * 55f) % 360f, 0.55f, 1f) }
+            drawRoundRect(Brush.linearGradient(cols, Offset.Zero, Offset(size.width, size.height)), size = full, cornerRadius = r)
+        }
+        9 -> drawRoundRect(Brush.verticalGradient(listOf(f.c1, f.c2, Color(0xFF3E0F05))), size = full, cornerRadius = r)
+        10 -> drawRoundRect(Brush.linearGradient(listOf(f.c1, f.c2, f.c1), Offset.Zero, Offset(size.width, size.height)), size = full, cornerRadius = r)
+        11 -> {
+            drawRoundRect(Brush.linearGradient(listOf(f.c1, f.c2), Offset.Zero, Offset(size.width, size.height)), size = full, cornerRadius = r)
+            var x = -size.height; while (x < size.width) { drawLine(Color.White.copy(alpha = 0.22f), Offset(x, size.height), Offset(x + size.height, 0f), th * 0.5f); x += th * 2.2f }
+        }
+        12 -> {
+            drawRoundRect(f.c2, size = full, cornerRadius = r)
+            val b = th; var i = 0; var x = 0f
+            while (x < size.width) { val c = Color.hsv(((ph * 360f) + i * 40f) % 360f, 0.8f, 1f); drawRect(c, Offset(x, 0f), Size(b, b)); drawRect(c, Offset(x, size.height - b), Size(b, b)); x += b; i++ }
+            var y = 0f; while (y < size.height) { val c = Color.hsv(((ph * 360f) + i * 40f) % 360f, 0.8f, 1f); drawRect(c, Offset(0f, y), Size(b, b)); drawRect(c, Offset(size.width - b, y), Size(b, b)); y += b; i++ }
+        }
+        13 -> {
+            drawRoundRect(Brush.linearGradient(listOf(f.c1, f.c2, f.c1), Offset.Zero, Offset(size.width, size.height)), size = full, cornerRadius = r)
+            for (i in 0 until 40) {
+                val tw = 0.5f + 0.5f * kotlin.math.sin((ph * 2f + (i * 0.37f) % 1f) * 6.2832f)
+                drawCircle(Color.White.copy(alpha = tw.coerceIn(0.1f, 1f)), 1.2f + (i % 3), Offset(((i * 97) % 100) / 100f * size.width, ((i * 53) % 100) / 100f * size.height))
+            }
+        }
+        14 -> {
+            drawRoundRect(Brush.verticalGradient(listOf(f.c1, f.c2)), size = full, cornerRadius = r)
+            for (i in 0 until 16) {
+                val p = (ph + i * 0.0625f) % 1f
+                drawCircle(Color.White.copy(alpha = 0.85f * (1f - p)), th * 0.22f, Offset(((i * 61) % 100) / 100f * size.width, p * size.height))
+            }
+        }
+        15 -> {
+            drawRoundRect(f.c2, size = full, cornerRadius = r)
+            val per = 2f * (size.width + size.height)
+            drawRoundRect(f.c1.copy(alpha = 0.35f), Offset(th * 0.4f, th * 0.4f), Size(size.width - th * 0.8f, size.height - th * 0.8f), r, style = Stroke(3f))
+            for (k in 0 until 3) {
+                val d = ((ph + k / 3f) % 1f) * per
+                val pt = when {
+                    d < size.width -> Offset(d, th * 0.4f)
+                    d < size.width + size.height -> Offset(size.width - th * 0.4f, d - size.width)
+                    d < 2 * size.width + size.height -> Offset(size.width - (d - size.width - size.height), size.height - th * 0.4f)
+                    else -> Offset(th * 0.4f, size.height - (d - 2 * size.width - size.height))
+                }
+                drawCircle(f.c1, th * 0.3f, pt); drawCircle(f.c1.copy(alpha = 0.3f), th * 0.7f, pt)
+            }
+        }
         7 -> {
             drawRoundRect(f.c1, size = full, cornerRadius = r)
             drawRoundRect(f.c2, Offset(th * 0.45f, th * 0.45f), Size(size.width - th * 0.9f, size.height - th * 0.9f), r, style = Stroke(2.5f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(14f, 9f))))
@@ -95,6 +141,27 @@ private fun DrawScope.frameFront(f: ShopFrame, ph: Float, th: Float) {
         val s = th * 0.9f
         listOf(Offset(0f, 0f), Offset(size.width - s * 1.6f, 0f), Offset(0f, size.height - s * 1.6f), Offset(size.width - s * 1.6f, size.height - s * 1.6f)).forEach {
             drawCircle(Color.White.copy(alpha = 0.9f), s * 0.45f, it + Offset(s * 0.8f, s * 0.8f)); drawCircle(f.c2, s * 0.25f, it + Offset(s * 0.8f, s * 0.8f))
+        }
+    }
+    // efecto holografico + destellos en todos los marcos (solo sobre el borde)
+    val ring = androidx.compose.ui.graphics.Path().apply {
+        addRect(androidx.compose.ui.geometry.Rect(0f, 0f, size.width, size.height))
+        addRect(androidx.compose.ui.geometry.Rect(th, th, size.width - th, size.height - th))
+        fillType = androidx.compose.ui.graphics.PathFillType.EvenOdd
+    }
+    androidx.compose.ui.graphics.drawscope.clipPath(ring) {
+        val x0 = size.width * (ph * 2.4f - 0.7f)
+        drawRect(
+            Brush.linearGradient(listOf(Color.Transparent, Color(0x55FF5EC8), Color(0x5500E5FF), Color(0x55FFEB3B), Color.Transparent), Offset(x0 - size.width * 0.3f, 0f), Offset(x0 + size.width * 0.3f, size.height)),
+            blendMode = androidx.compose.ui.graphics.BlendMode.Screen,
+        )
+        for (i in 0 until 6) {
+            val a = (0.5f + 0.5f * kotlin.math.sin((ph * 2f + i * 0.31f) * 6.2832f)).coerceIn(0f, 1f)
+            val cx = ((i * 37 + 11) % 100) / 100f * size.width
+            val cy = if (i % 2 == 0) th * 0.5f else size.height - th * 0.5f
+            val rr = th * 0.55f * a
+            drawLine(Color.White.copy(alpha = a), Offset(cx - rr, cy), Offset(cx + rr, cy), 2f)
+            drawLine(Color.White.copy(alpha = a), Offset(cx, cy - rr), Offset(cx, cy + rr), 2f)
         }
     }
     if (f.kind == 0 || f.kind == 4) {
@@ -152,8 +219,15 @@ fun VitrinaContent(modifier: Modifier = Modifier) {
 /** Vitrina: banner dentro del marco obtenido en los sobres. Se muestra en el perfil. */
 @Composable
 fun Vitrina(modifier: Modifier = Modifier) {
-    // el ancho se adapta a la proporcion de la imagen o video que subiste
-    FramedBox(ShopCatalog.frame(Pawb.vFrame.value), modifier.aspectRatio(vitrinaAspect())) { VitrinaContent(Modifier.fillMaxSize()) }
+    // ancho y alto ajustables; en automatico se adapta a la proporcion de la imagen o video que subiste
+    val aspect = vitrinaAspect()
+    val vh = Pawb.vH.intValue
+    Box(modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        FramedBox(
+            ShopCatalog.frame(Pawb.vFrame.value),
+            Modifier.fillMaxWidth(Pawb.vW.floatValue).then(if (vh > 0) Modifier.height(vh.dp) else Modifier.aspectRatio(aspect)),
+        ) { VitrinaContent(Modifier.fillMaxSize()) }
+    }
 }
 
 // ------------------------------------------------------------------------------------------ vista previa de cualquier objeto

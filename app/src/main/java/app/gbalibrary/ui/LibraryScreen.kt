@@ -224,38 +224,81 @@ fun LibraryApp(vm: LibraryViewModel, actions: LibraryActions, onPlay: (Game) -> 
             }
         }
         // El contenido respeta barra de estado, notch y barra de navegacion (el fondo ocupa todo).
-        Box(if (shelfFull) Modifier.fillMaxSize() else Modifier.fillMaxSize().safeDrawingPadding().padding(Settings.uiMargin.intValue.dp)) {
+        // Estilo "Discord + Steam": barra de iconos redondos a la izquierda (o abajo en vertical) con indicador de seccion activa.
+        androidx.compose.foundation.layout.BoxWithConstraints(
+            if (shelfFull) Modifier.fillMaxSize() else Modifier.fillMaxSize().safeDrawingPadding().padding(Settings.uiMargin.intValue.dp),
+        ) {
+            val wide = maxWidth > maxHeight
+            val current = when {
+                showSettings -> "settings"
+                showGallery -> "gallery"
+                MusicNav.show.value -> "music"
+                ShopNav.show.value -> "shop"
+                showNews -> "news"
+                showProfile -> "profile"
+                else -> "home"
+            }
+            val select: (String) -> Unit = { id ->
+                Sfx.click()
+                showSettings = false; showGallery = false; showNews = false; showProfile = false
+                ShopNav.show.value = false; MusicNav.show.value = false; detailId = null
+                when (id) {
+                    "settings" -> showSettings = true
+                    "gallery" -> showGallery = true
+                    "music" -> MusicNav.show.value = true
+                    "shop" -> ShopNav.show.value = true
+                    "news" -> showNews = true
+                    "profile" -> showProfile = true
+                }
+            }
+            val railMod = if (shelfFull) Modifier.safeDrawingPadding() else Modifier
+            val content: @Composable (Modifier) -> Unit = { m ->
+                Box(m) {
             when {
-                showSettings -> SettingsScreen(vm, actions, onBack = { showSettings = false })
-                showGallery -> GalleryScreen(onBack = { showGallery = false })
-                MusicNav.show.value -> MusicScreen(actions, onBack = { MusicNav.show.value = false })
-                ShopNav.show.value -> ShopScreen(onBack = { ShopNav.show.value = false })
-                showNews -> NewsScreen(vm, onBack = { showNews = false })
-                showProfile -> ProfileScreen(
-                    vm = vm,
-                    onPickAvatar = actions.pickAvatar,
-                    onBack = { showProfile = false },
-                    onOpenGame = { Sfx.click(); showProfile = false; detailId = it.id },
-                    onGallery = { showGallery = true },
-                )
-                detail != null -> GameDetail(
-                    game = detail,
-                    vm = vm,
-                    actions = actions,
-                    onBack = { Sfx.click(); detailId = null },
-                    onPlay = { Sfx.enter(); onPlay(detail) },
-                    onPlaySlot = { slot -> Sfx.enter(); onPlaySlot(detail, slot) },
-                )
-                else -> LibraryHome(
-                    vm = vm,
-                    actions = actions,
-                    onOpen = { Sfx.click(); detailId = it.id },
-                    onPlay = { Sfx.enter(); onPlay(it) },
-                    onSettings = { Sfx.click(); showSettings = true },
-                    onProfile = { Sfx.click(); showProfile = true },
-                    onGallery = { Sfx.click(); showGallery = true },
-                    onNews = { Sfx.click(); showNews = true },
-                )
+                    showSettings -> SettingsScreen(vm, actions, onBack = { showSettings = false })
+                    showGallery -> GalleryScreen(onBack = { showGallery = false })
+                    MusicNav.show.value -> MusicScreen(actions, onBack = { MusicNav.show.value = false })
+                    ShopNav.show.value -> ShopScreen(onBack = { ShopNav.show.value = false })
+                    showNews -> NewsScreen(vm, onBack = { showNews = false })
+                    showProfile -> ProfileScreen(
+                        vm = vm,
+                        onPickAvatar = actions.pickAvatar,
+                        onBack = { showProfile = false },
+                        onOpenGame = { Sfx.click(); showProfile = false; detailId = it.id },
+                        onGallery = { showGallery = true },
+                    )
+                    detail != null -> GameDetail(
+                        game = detail,
+                        vm = vm,
+                        actions = actions,
+                        onBack = { Sfx.click(); detailId = null },
+                        onPlay = { Sfx.enter(); onPlay(detail) },
+                        onPlaySlot = { slot -> Sfx.enter(); onPlaySlot(detail, slot) },
+                    )
+                    else -> LibraryHome(
+                        vm = vm,
+                        actions = actions,
+                        onOpen = { Sfx.click(); detailId = it.id },
+                        onPlay = { Sfx.enter(); onPlay(it) },
+                        onSettings = { Sfx.click(); showSettings = true },
+                        onProfile = { Sfx.click(); showProfile = true },
+                        onGallery = { Sfx.click(); showGallery = true },
+                        onNews = { Sfx.click(); showNews = true },
+                    )
+                }
+    
+                }
+            }
+            if (wide) {
+                Row(Modifier.fillMaxSize()) {
+                    AppRail(true, current, select, railMod)
+                    content(Modifier.weight(1f).fillMaxHeight())
+                }
+            } else {
+                Column(Modifier.fillMaxSize()) {
+                    content(Modifier.weight(1f).fillMaxWidth())
+                    AppRail(false, current, select, railMod)
+                }
             }
         }
         PipOverlay()
@@ -263,7 +306,7 @@ fun LibraryApp(vm: LibraryViewModel, actions: LibraryActions, onPlay: (Game) -> 
         // Vinilo abajo a la derecha (biblioteca y ajustes; nunca dentro del juego)
         if (UiEditNav.show.value) UiEditorOverlay(Modifier.align(Alignment.BottomCenter).padding(8.dp))
         if (MusicNav.mini.value && !MusicNav.show.value) MiniMusicPlayer(Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp))
-        VinylOverlay(Modifier.align(Alignment.BottomEnd))
+        if (!MusicNav.show.value) VinylOverlay(Modifier.align(Alignment.BottomEnd))
     }
 }
 
@@ -527,11 +570,6 @@ private fun TopBar(
         }
 
         StatusIndicators()
-
-        Ic(Icons.Filled.MusicNote, size = 22.dp, tint = p.dim, modifier = Modifier.clickable { Sfx.click(); MusicNav.show.value = true }.padding(horizontal = 6.dp, vertical = 4.dp))
-        PawIcon(22.dp, modifier = Modifier.clickable { Sfx.click(); ShopNav.show.value = true }.padding(horizontal = 6.dp, vertical = 4.dp))
-        Ic(Icons.Filled.RssFeed, size = 22.dp, tint = p.dim, modifier = Modifier.clickable { onNews() }.padding(horizontal = 6.dp, vertical = 4.dp))
-        Ic(Icons.Filled.PhotoLibrary, size = 22.dp, tint = p.dim, modifier = Modifier.clickable { onGallery() }.padding(horizontal = 6.dp, vertical = 4.dp))
         Row(
             Modifier.clip(RoundedCornerShape(24.dp)).clickable(onClick = onProfile).padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -838,4 +876,52 @@ fun FitTitle(
             if (r.hasVisualOverflow && size > minSp) size = maxOf(minSp, size - 0.5f)
         },
     )
+}
+
+
+/** Barra de navegacion estilo Discord (iconos redondos, pastilla de seccion activa) con la paleta oscura de Steam. */
+@Composable
+private fun AppRail(vertical: Boolean, current: String, onSelect: (String) -> Unit, modifier: Modifier = Modifier) {
+    val p = LocalPalette.current
+    val items = listOf("home", "shop", "music", "gallery", "news", "profile", "settings")
+    val bg = androidx.compose.ui.graphics.lerp(p.bg, Color.Black, 0.4f)
+    @Composable
+    fun item(id: String) {
+        val on = current == id
+        val shape = if (on) RoundedCornerShape(14.dp) else CircleShape
+        val tint = if (on) p.onAccent else p.text
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.then(if (vertical) Modifier.fillMaxWidth().height(50.dp) else Modifier.height(54.dp).width(54.dp))) {
+            // pastilla indicadora
+            Box(
+                Modifier.align(if (vertical) Alignment.CenterStart else Alignment.TopCenter)
+                    .then(if (vertical) Modifier.width(4.dp).height(if (on) 26.dp else 0.dp) else Modifier.height(4.dp).width(if (on) 26.dp else 0.dp))
+                    .clip(RoundedCornerShape(50)).background(Color.White),
+            )
+            Box(
+                Modifier.size(42.dp).clip(shape).background(if (on) p.accent else p.card).clickable { onSelect(id) },
+                contentAlignment = Alignment.Center,
+            ) {
+                when (id) {
+                    "home" -> Ic(androidx.compose.material.icons.Icons.Filled.Home, 24.dp, tint)
+                    "shop" -> PawIcon(22.dp, tint)
+                    "music" -> Ic(androidx.compose.material.icons.Icons.Filled.MusicNote, 22.dp, tint)
+                    "gallery" -> Ic(androidx.compose.material.icons.Icons.Filled.PhotoLibrary, 22.dp, tint)
+                    "news" -> Ic(androidx.compose.material.icons.Icons.Filled.RssFeed, 22.dp, tint)
+                    "profile" -> Text(Settings.profileName.value.take(1).uppercase().ifBlank { "?" }, color = tint, fontWeight = FontWeight.Black, fontSize = 17.sp)
+                    else -> Ic(androidx.compose.material.icons.Icons.Filled.Settings, 22.dp, tint)
+                }
+            }
+        }
+    }
+    if (vertical) {
+        Column(modifier.width(62.dp).fillMaxHeight().background(bg).verticalScroll(rememberScrollState()).padding(vertical = 6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            item("home")
+            Box(Modifier.padding(vertical = 4.dp).width(28.dp).height(2.dp).background(p.dim.copy(alpha = 0.4f)))
+            items.drop(1).forEach { item(it) }
+        }
+    } else {
+        Row(modifier.fillMaxWidth().background(bg).padding(horizontal = 6.dp), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
+            items.forEach { item(it) }
+        }
+    }
 }

@@ -79,23 +79,8 @@ fun GameMenu(title: String, speed: Int, layout: ControlLayout, padConnected: Boo
     androidx.compose.foundation.layout.BoxWithConstraints(
         Modifier.fillMaxSize().background(Color(0x55000000)).clickable(onClick = actions.close),
     ) {
-        val illH = maxHeight * 0.42f
-        val illW = illH * (900f / 884f)
+        val portrait = maxHeight > maxWidth
         StatusIndicators(Modifier.align(Alignment.TopEnd).padding(top = 6.dp, end = 12.dp), tint = Color.White)
-
-        // ---- ilustracion (entra desde fuera del borde izquierdo), teñida con tonos claros del color de la interfaz ----
-        val slide = remember { androidx.compose.animation.core.Animatable(0f) }
-        androidx.compose.runtime.LaunchedEffect(Unit) { slide.animateTo(1f, androidx.compose.animation.core.tween(650, easing = androidx.compose.animation.core.FastOutSlowInEasing)) }
-        val tintC = androidx.compose.ui.graphics.lerp(p.accent, Color.White, 0.62f)
-        androidx.compose.foundation.Image(
-            androidx.compose.ui.res.painterResource(app.gbalibrary.R.drawable.pause_mascot), null,
-            Modifier.align(Alignment.BottomStart).size(illW, illH)
-                .graphicsLayer { translationX = -(illW.toPx() + 24.dp.toPx()) * (1f - slide.value); alpha = 0.35f + 0.65f * slide.value }
-                .padding(start = 4.dp, bottom = 4.dp),
-            colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(tintC, androidx.compose.ui.graphics.BlendMode.Modulate),
-            contentScale = androidx.compose.ui.layout.ContentScale.Fit,
-            alignment = Alignment.BottomStart,
-        )
 
         // ---- categorias escalonadas ----
         val entries = listOf("CONTINUAR") + TABS
@@ -135,9 +120,9 @@ fun GameMenu(title: String, speed: Int, layout: ControlLayout, padConnected: Boo
             Column(
                 Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(start = illW + 12.dp, bottom = 10.dp)
-                    .fillMaxWidth(0.62f)
-                    .fillMaxHeight(0.46f)
+                    .padding(start = if (portrait) 10.dp else 12.dp, end = if (portrait) 10.dp else 0.dp, bottom = 10.dp)
+                    .fillMaxWidth(if (portrait) 1f else 0.7f)
+                    .fillMaxHeight(if (portrait) 0.42f else 0.46f)
                     .background(glass, RoundedCornerShape(16.dp))
                     .clickable(enabled = false, onClick = {})
                     .verticalScroll(rememberScrollState())
