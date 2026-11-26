@@ -1,3 +1,6 @@
+## 1.15.1
+- Corrige imports de 1.15.0.
+
 ## 1.15.0
 - Tienda sin fondos ni stickers, mas compacta y paginada (sin scroll); 8 marcos nuevos y todos con efecto holografico y destellos.
 - Vitrina: ancho y alto ajustables.
