@@ -42,6 +42,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
@@ -149,7 +150,7 @@ private fun DrawScope.frameFront(f: ShopFrame, ph: Float, th: Float) {
         addRect(androidx.compose.ui.geometry.Rect(th, th, size.width - th, size.height - th))
         fillType = androidx.compose.ui.graphics.PathFillType.EvenOdd
     }
-    androidx.compose.ui.graphics.drawscope.clipPath(ring) {
+    clipPath(ring) {
         val x0 = size.width * (ph * 2.4f - 0.7f)
         drawRect(
             Brush.linearGradient(listOf(Color.Transparent, Color(0x55FF5EC8), Color(0x5500E5FF), Color(0x55FFEB3B), Color.Transparent), Offset(x0 - size.width * 0.3f, 0f), Offset(x0 + size.width * 0.3f, size.height)),

@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.RssFeed
 import androidx.compose.material.icons.filled.MusicNote
