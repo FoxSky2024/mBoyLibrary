@@ -177,7 +177,7 @@ private fun DrawScope.frameFront(f: ShopFrame, ph: Float, th: Float) {
 @Composable
 fun FramedBox(frame: ShopFrame?, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     if (frame == null) { Box(modifier) { content() }; return }
-    val th = 9.dp
+    val th = 4.dp
     val thPx = with(LocalDensity.current) { th.toPx() }
     val ph by rememberInfiniteTransition(label = "frame").animateFloat(0f, 1f, infiniteRepeatable(tween(3200, easing = LinearEasing), RepeatMode.Restart), label = "ph")
     Box(modifier.clip(RoundedCornerShape(6.dp)).drawBehind { frameBack(frame, ph, thPx) }.padding(th)) {
@@ -223,7 +223,10 @@ fun Vitrina(modifier: Modifier = Modifier) {
     // ancho y alto ajustables; en automatico se adapta a la proporcion de la imagen o video que subiste
     val aspect = vitrinaAspect()
     val vh = Pawb.vH.intValue
-    Box(modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+    Box(
+        modifier.fillMaxWidth().padding(top = Pawb.vDy.intValue.dp),
+        contentAlignment = when (Pawb.vAlign.intValue) { 0 -> Alignment.CenterStart; 2 -> Alignment.CenterEnd; else -> Alignment.Center },
+    ) {
         FramedBox(
             ShopCatalog.frame(Pawb.vFrame.value),
             Modifier.fillMaxWidth(Pawb.vW.floatValue).then(if (vh > 0) Modifier.height(vh.dp) else Modifier.aspectRatio(aspect)),

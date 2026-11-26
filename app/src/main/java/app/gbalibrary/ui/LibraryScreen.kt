@@ -134,7 +134,7 @@ fun LibraryApp(vm: LibraryViewModel, actions: LibraryActions, onPlay: (Game) -> 
 
     // Modo de navegacion con mando segun la pantalla visible.
     val navMode = when {
-        showSettings || showGallery || showProfile || showNews || ShopNav.show.value || MusicNav.show.value -> MenuNav.Mode.FOCUS
+        showSettings || showGallery || showProfile || showNews || ShopNav.show.value || MusicNav.show.value || DevNav.show.value -> MenuNav.Mode.FOCUS
         detail != null -> MenuNav.Mode.DETAIL
         else -> MenuNav.Mode.HOME
     }
@@ -231,6 +231,7 @@ fun LibraryApp(vm: LibraryViewModel, actions: LibraryActions, onPlay: (Game) -> 
         ) {
             val wide = maxWidth > maxHeight
             val current = when {
+                DevNav.show.value -> "settings"
                 showSettings -> "settings"
                 showGallery -> "gallery"
                 MusicNav.show.value -> "music"
@@ -242,7 +243,7 @@ fun LibraryApp(vm: LibraryViewModel, actions: LibraryActions, onPlay: (Game) -> 
             val select: (String) -> Unit = { id ->
                 Sfx.click()
                 showSettings = false; showGallery = false; showNews = false; showProfile = false
-                ShopNav.show.value = false; MusicNav.show.value = false; detailId = null
+                ShopNav.show.value = false; MusicNav.show.value = false; DevNav.show.value = false; detailId = null
                 when (id) {
                     "settings" -> showSettings = true
                     "gallery" -> showGallery = true
@@ -256,6 +257,7 @@ fun LibraryApp(vm: LibraryViewModel, actions: LibraryActions, onPlay: (Game) -> 
             val content: @Composable (Modifier) -> Unit = { m ->
                 Box(m) {
             when {
+                    DevNav.show.value -> DevScreen(onBack = { DevNav.show.value = false })
                     showSettings -> SettingsScreen(vm, actions, onBack = { showSettings = false })
                     showGallery -> GalleryScreen(onBack = { showGallery = false })
                     MusicNav.show.value -> MusicScreen(actions, onBack = { MusicNav.show.value = false })

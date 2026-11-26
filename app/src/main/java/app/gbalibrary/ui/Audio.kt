@@ -261,7 +261,12 @@ object Music {
                 a = r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST)
                 val pic = r.embeddedPicture
                 if (pic != null) {
-                    val o = BitmapFactory.Options().apply { inSampleSize = 4 }
+                    // maxima calidad: resolucion original (solo se reduce si pasa de 2048 px para no agotar memoria)
+                    val b = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                    BitmapFactory.decodeByteArray(pic, 0, pic.size, b)
+                    var ss = 1
+                    while (maxOf(b.outWidth, b.outHeight) / ss > 2048) ss *= 2
+                    val o = BitmapFactory.Options().apply { inSampleSize = ss }
                     bmp = BitmapFactory.decodeByteArray(pic, 0, pic.size, o)?.asImageBitmap()
                 }
             } catch (e: Exception) {

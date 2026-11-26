@@ -123,19 +123,25 @@ object ShopCatalog {
     )
 
     fun skin(id: String) = skins.firstOrNull { it.id == id }
-    fun frame(id: String) = frames.firstOrNull { it.id == id }
+    /** Objetos creados desde el modo desarrollador (se guardan en el dispositivo). */
+    val devBanners = androidx.compose.runtime.mutableStateListOf<ShopBanner>()
+    val devFrames = androidx.compose.runtime.mutableStateListOf<ShopFrame>()
+    fun allBanners(): List<ShopBanner> = banners + devBanners
+    fun allFrames(): List<ShopFrame> = frames + devFrames
+
+    fun frame(id: String) = allFrames().firstOrNull { it.id == id }
     fun sticker(id: String) = stickers.firstOrNull { it.id == id }
     fun bg(id: String) = backgrounds.firstOrNull { it.id == id }
-    fun banner(id: String) = banners.firstOrNull { it.id == id }
+    fun banner(id: String) = allBanners().firstOrNull { it.id == id }
     fun custom(id: String) = Pawb.custom.value.firstOrNull { it.id == id }
 
     /** Abre un paquete: elige objetos que no tengas, con probabilidad segun rareza. Devuelve los ids ganados. */
     fun openPack(pack: ShopPack): List<String>? {
         val pool = buildList {
             if ("bg" in pack.kinds) backgrounds.filter { !Pawb.has(it.id) }.forEach { add(it.id to it.rarity) }
-            if ("banner" in pack.kinds) banners.filter { !Pawb.has(it.id) }.forEach { add(it.id to it.rarity) }
+            if ("banner" in pack.kinds) allBanners().filter { !Pawb.has(it.id) }.forEach { add(it.id to it.rarity) }
             if ("sticker" in pack.kinds) stickers.filter { !Pawb.has(it.id) }.forEach { add(it.id to it.rarity) }
-            if ("frame" in pack.kinds) frames.filter { !Pawb.has(it.id) }.forEach { add(it.id to it.rarity) }
+            if ("frame" in pack.kinds) allFrames().filter { !Pawb.has(it.id) }.forEach { add(it.id to it.rarity) }
         }.toMutableList()
         if (pool.isEmpty() || !Pawb.spend(pack.price)) return null
         val won = mutableListOf<String>()

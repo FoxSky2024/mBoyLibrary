@@ -14,5 +14,6 @@ class GbaApp : Application() {
         DataDir.init(this)
         Settings.init(this)
         app.gbalibrary.data.Pawb.init(this)
+        app.gbalibrary.ui.DevStore.load(this)
     }
 }

@@ -1,3 +1,11 @@
+## 1.16.0
+- Frentes por consola para juegos sin portada (assets/bases/<consola>_font.png) y plantillas/cajas actualizadas.
+- Pausa: botones y chips con el estilo de las categorias.
+- Marcos delgados.
+- Banner debajo del nombre del jugador; editar ancho, alto y posicion desde Editar perfil.
+- Musica: disco centrado en la placa, tamaño corregido, portada en maxima calidad.
+- Modo desarrollador (Ajustes): cuenta local, saldo ilimitado, crear banners y marcos para la tienda.
+
 ## 1.15.1
 - Corrige imports de 1.15.0.
 

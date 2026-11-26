@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -143,32 +144,37 @@ private fun Turntable(t: MusicTheme, art: androidx.compose.ui.graphics.ImageBitm
     val arm = remember { androidx.compose.animation.core.Animatable(0f) }
     LaunchedEffect(playing) { while (playing) { delay(33); angle = (angle + 2.4f) % 360f } }
     LaunchedEffect(playing) { arm.animateTo(if (playing) 1f else 0f, androidx.compose.animation.core.tween(700)) }
-    BoxWithConstraints(modifier.clip(RoundedCornerShape(14.dp)).background(lerp(t.card2, Color.Black, 0.25f)), contentAlignment = Alignment.Center) {
-        val d = minOf(maxWidth, maxHeight)
+    BoxWithConstraints(modifier.clip(RoundedCornerShape(14.dp)).background(lerp(t.card2, Color.Black, 0.25f))) {
+        // el disco se centra en la placa; el brazo gira desde un pivote arriba a la derecha, fuera del disco
+        val rec = minOf(maxHeight * 0.84f, maxWidth * 0.66f)
+        val cxDp = maxWidth * 0.38f
+        val cyDp = maxHeight * 0.5f
         Canvas(Modifier.fillMaxSize()) {
-            val c = Offset(size.width * 0.46f, size.height * 0.5f)
-            val r = size.minDimension * 0.40f
-            drawCircle(Color.Black.copy(alpha = 0.35f), r * 1.1f, c)
-            drawCircle(lerp(t.card, Color.Black, 0.2f), r * 1.06f, c, style = Stroke(r * 0.07f))
-            // brazo
-            val pivot = Offset(size.width * 0.90f, size.height * 0.12f)
-            val tipRest = Offset(size.width * 0.86f, size.height * 0.62f)
-            val tipPlay = Offset(c.x + r * 0.55f, c.y + r * 0.45f)
-            val tip = Offset(tipRest.x + (tipPlay.x - tipRest.x) * arm.value, tipRest.y + (tipPlay.y - tipRest.y) * arm.value)
-            drawLine(t.soft, pivot, tip, strokeWidth = size.minDimension * 0.022f)
-            drawCircle(t.accent, size.minDimension * 0.05f, pivot)
+            val c = Offset(cxDp.toPx(), cyDp.toPx())
+            val r = rec.toPx() / 2f
+            drawCircle(Color.Black.copy(alpha = 0.35f), r * 1.12f, c)
+            drawCircle(lerp(t.card, Color.Black, 0.2f), r * 1.09f, c, style = Stroke(r * 0.06f))
+            val pivot = Offset(size.width * 0.90f, size.height * 0.16f)
+            val tipRest = Offset(size.width * 0.90f, size.height * 0.70f)
+            val tipPlay = Offset(c.x + r * 0.62f, c.y + r * 0.25f)
+            val k = arm.value
+            val tip = Offset(tipRest.x + (tipPlay.x - tipRest.x) * k, tipRest.y + (tipPlay.y - tipRest.y) * k)
+            drawLine(t.soft, pivot, tip, strokeWidth = size.minDimension * 0.02f)
+            drawCircle(t.accent, size.minDimension * 0.045f, pivot)
             drawCircle(t.soft, size.minDimension * 0.02f, tip)
         }
-        Box(Modifier.size(d * 0.8f).rotate(angle).clip(CircleShape).background(Color(0xFF0A0A0C))
-            .padding(1.dp), contentAlignment = Alignment.Center) {
+        Box(
+            Modifier.offset(cxDp - rec / 2, cyDp - rec / 2).size(rec).rotate(angle).clip(CircleShape).background(Color(0xFF0A0A0C)),
+            contentAlignment = Alignment.Center,
+        ) {
             Canvas(Modifier.fillMaxSize()) {
                 val rr = size.minDimension / 2f
                 for (i in 1..9) drawCircle(Color.White.copy(alpha = 0.06f), rr * (0.55f + i * 0.045f), style = Stroke(1f))
             }
-            Box(Modifier.size(d * 0.8f * 0.5f).clip(CircleShape).background(t.card), contentAlignment = Alignment.Center) {
-                art?.let { Image(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) } ?: PawIcon(d * 0.14f, t.soft)
+            Box(Modifier.size(rec * 0.5f).clip(CircleShape).background(t.card), contentAlignment = Alignment.Center) {
+                art?.let { Image(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop, filterQuality = androidx.compose.ui.graphics.FilterQuality.High) } ?: PawIcon(rec * 0.14f, t.soft)
             }
-            Box(Modifier.size(d * 0.04f).clip(CircleShape).background(Color.White.copy(alpha = 0.85f)))
+            Box(Modifier.size(rec * 0.04f).clip(CircleShape).background(Color.White.copy(alpha = 0.85f)))
         }
     }
 }
@@ -228,7 +234,7 @@ fun MusicScreen(actions: LibraryActions, onBack: () -> Unit) {
                                 CookieButton(if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow, t, 54.dp) { Music.toggle(ctx) }
                             }
                         }
-                        Turntable(t, art, playing, Modifier.weight(1f).heightIn(max = 230.dp).aspectRatio(1f))
+                        Turntable(t, art, playing, Modifier.weight(1.3f).heightIn(max = 220.dp).aspectRatio(1.25f))
                     }
                     // fila de controles + siguientes
                     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(t.card2).padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -268,7 +274,7 @@ fun MusicScreen(actions: LibraryActions, onBack: () -> Unit) {
                         when (panel) {
                             0 -> {
                                 Box(Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(18.dp)).background(t.card), contentAlignment = Alignment.Center) {
-                                    art?.let { Image(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) } ?: PawIcon(48.dp, t.soft)
+                                    art?.let { Image(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop, filterQuality = androidx.compose.ui.graphics.FilterQuality.High) } ?: PawIcon(48.dp, t.soft)
                                 }
                                 Text("Información", color = t.soft, fontWeight = FontWeight.Black, fontSize = 14.sp)
                                 InfoLine("Nombre", title.ifBlank { "—" }, t); InfoLine("Artista", artist.ifBlank { "—" }, t)
@@ -334,7 +340,7 @@ private fun BottomBar(t: MusicTheme, art: androidx.compose.ui.graphics.ImageBitm
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)).background(t.card2).padding(horizontal = 12.dp, vertical = 8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Box(Modifier.size(44.dp).clip(RoundedCornerShape(10.dp)).background(t.card), contentAlignment = Alignment.Center) {
-                art?.let { Image(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+                art?.let { Image(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop, filterQuality = androidx.compose.ui.graphics.FilterQuality.High) }
             }
             Column(Modifier.weight(1f)) {
                 Text(title.ifBlank { "—" }, color = t.soft, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -371,7 +377,7 @@ fun MiniMusicPlayer(modifier: Modifier = Modifier) {
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Box(Modifier.size(38.dp).clip(CircleShape).background(t.card), contentAlignment = Alignment.Center) {
-            art?.let { Image(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) } ?: PawIcon(18.dp, t.soft)
+            art?.let { Image(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop, filterQuality = androidx.compose.ui.graphics.FilterQuality.High) } ?: PawIcon(18.dp, t.soft)
         }
         Column(Modifier.width(120.dp)) {
             Text(title.ifBlank { "Música" }, color = t.soft, fontWeight = FontWeight.Bold, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)

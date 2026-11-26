@@ -16,6 +16,7 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -37,8 +38,18 @@ fun CoverImage(game: Game, modifier: Modifier = Modifier) {
         value = if (game.hasCover) withContext(Dispatchers.IO) { Covers.load(Covers.coverFile(ctx, game.id)) } else null
     }
     val bmp = bitmap
+    // sin portada: frente generico de la consola (assets/bases/<consola>_font.png)
+    val key = consoleOf(game).short.lowercase() + "_font"
+    val tpl by produceState<ImageBitmap?>(FrontTemplates.map[key], key) {
+        if (FrontTemplates.map.containsKey(key)) { value = FrontTemplates.map[key]; return@produceState }
+        value = withContext(Dispatchers.IO) {
+            runCatching { ctx.assets.open("bases/$key.png").use { android.graphics.BitmapFactory.decodeStream(it)?.asImageBitmap() } }.getOrNull()
+        }.also { FrontTemplates.map[key] = it }
+    }
     if (bmp != null) {
         Image(bitmap = bmp, contentDescription = game.title, modifier = modifier, contentScale = ContentScale.Crop)
+    } else if (tpl != null) {
+        Image(bitmap = tpl!!, contentDescription = game.title, modifier = modifier, contentScale = ContentScale.Crop)
     } else {
         val hue = (game.id.hashCode().absoluteValue % 360).toFloat()
         val top = Color.hsv(hue, 0.55f, 0.55f)
@@ -73,3 +84,6 @@ fun CoverImage(game: Game, modifier: Modifier = Modifier) {
         }
     }
 }
+
+
+private object FrontTemplates { val map = HashMap<String, ImageBitmap?>() }

@@ -112,6 +112,8 @@ fun ProfileScreen(
                         Avatar(116, ring, RoundedCornerShape(4.dp))
                         Column(Modifier.weight(1f).padding(end = 44.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(Settings.profileName.value.ifBlank { "Jugador" }, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            // la vitrina (banner con marco) va justo debajo del nombre
+                            if (app.gbalibrary.data.Pawb.banner.value.isNotEmpty() || app.gbalibrary.data.Pawb.vFrame.value.isNotEmpty() || app.gbalibrary.data.Pawb.vTitle.value.isNotEmpty() || app.gbalibrary.data.Pawb.vImg.value.isNotEmpty()) Vitrina()
                             if (Profile.location.value.isNotBlank()) Text(Profile.location.value, color = p.dim, fontSize = 12.sp)
                             if (Profile.headline.value.isNotBlank()) Text(Profile.headline.value, color = p.text, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 2)
                             if (Profile.bio.value.isNotBlank()) Text(Profile.bio.value, color = p.dim, fontSize = 12.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
@@ -123,10 +125,6 @@ fun ProfileScreen(
                         modifier = Modifier.align(Alignment.TopEnd).clip(RoundedCornerShape(8.dp)).clickable { Sfx.click(); showQr = true }.padding(6.dp),
                     )
                 }
-            }
-            // ---- Vitrina (banner dentro del marco de los sobres) ----
-            if (app.gbalibrary.data.Pawb.banner.value.isNotEmpty() || app.gbalibrary.data.Pawb.vFrame.value.isNotEmpty() || app.gbalibrary.data.Pawb.vTitle.value.isNotEmpty()) {
-                item { Vitrina() }
             }
             // ---- Pestañas ----
             item {
@@ -278,6 +276,12 @@ fun ProfileScreen(
                     }
                 }
                 else -> {
+                    item {
+                        Panel {
+                            Text("BANNER · tamaño y posición", color = p.dim, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            VitrinaSizeControls()
+                        }
+                    }
                     item {
                         Panel {
                             Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
