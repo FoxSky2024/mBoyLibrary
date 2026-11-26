@@ -76,7 +76,7 @@ fun ShopScreen(onBack: () -> Unit) {
 
     Column(Modifier.fillMaxSize().screenBackdrop()) {
         ScreenHeader("Tienda de Pawb", onBack) {
-            PawAmount("${Pawb.balance.intValue}", fontSize = 16.sp, iconSize = 18.dp)
+            PawAmount(if (Pawb.devUnlimited.value) "∞" else "${Pawb.balance.intValue}", fontSize = 16.sp, iconSize = 18.dp)
         }
         Row(Modifier.fillMaxSize().padding(horizontal = 10.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             // pestañas en columna a la izquierda: dejan todo el alto para el contenido
@@ -92,13 +92,13 @@ fun ShopScreen(onBack: () -> Unit) {
             }
             Box(Modifier.weight(1f).fillMaxHeight()) {
                 when (tab) {
-                    0 -> FitGrid(ShopCatalog.frames, 150.dp, 118.dp) { f ->
+                    0 -> FitGrid(ShopCatalog.allFrames(), 150.dp, 118.dp) { f ->
                         ItemCard(
                             name = f.name, rarity = f.rarity, price = f.price, id = f.id, equipped = Pawb.vFrame.value == f.id,
                             onEquip = { Pawb.equipFrame(if (Pawb.vFrame.value == f.id) "" else f.id) }, onMsg = { msg = it },
                         ) { ItemPreview(f.id) }
                     }
-                    1 -> FitGrid(ShopCatalog.banners.map { it as Any } + Pawb.custom.value.map { it as Any }, 170.dp, 118.dp) { any ->
+                    1 -> FitGrid(ShopCatalog.allBanners().map { it as Any } + Pawb.custom.value.map { it as Any }, 170.dp, 118.dp) { any ->
                         if (any is ShopBanner) ItemCard(
                             name = any.name, rarity = any.rarity, price = any.price, id = any.id, equipped = Pawb.banner.value == any.id,
                             onEquip = { Pawb.equipBanner(if (Pawb.banner.value == any.id) "" else any.id) }, onMsg = { msg = it },
@@ -141,7 +141,7 @@ fun ShopScreen(onBack: () -> Unit) {
                                 ) { PawIcon(30.dp, Color.White) }
                                 Text(pk.name, color = p.text, fontWeight = FontWeight.Bold, fontSize = 13.sp, maxLines = 1)
                                 Text(pk.desc, color = p.dim, fontSize = 10.sp, maxLines = 2)
-                                PriceButton("${pk.price}", Pawb.balance.intValue >= pk.price, paw = true) {
+                                PriceButton("${pk.price}", Pawb.canAfford(pk.price), paw = true) {
                                     val r = ShopCatalog.openPack(pk)
                                     if (r == null) msg = if (Pawb.balance.intValue < pk.price) "No tienes suficientes Pawb" else "Ya tienes todo lo de este paquete" else packOpen = Triple(pk.name, pk.color, r)
                                 }
@@ -216,17 +216,17 @@ private fun VitrinaEditor(onMsg: (String) -> Unit) {
             val sel = Pawb.vFrame.value
             Text("Sin marco", color = if (sel.isEmpty()) p.onPlay else p.text, fontSize = 12.sp,
                 modifier = Modifier.clip(RoundedCornerShape(10.dp)).background(if (sel.isEmpty()) p.accent else p.card).clickable { Pawb.equipFrame("") }.padding(horizontal = 14.dp, vertical = 22.dp))
-            ShopCatalog.frames.filter { Pawb.has(it.id) }.forEach { f ->
+            ShopCatalog.allFrames().filter { Pawb.has(it.id) }.forEach { f ->
                 Box(Modifier.size(92.dp, 64.dp).clip(RoundedCornerShape(10.dp)).border(if (sel == f.id) 2.dp else 0.dp, p.accent, RoundedCornerShape(10.dp)).clickable { Pawb.equipFrame(f.id) }) { ItemPreview(f.id) }
             }
         }
-        if (ShopCatalog.frames.none { Pawb.has(it.id) }) Text("Aún no tienes marcos: consíguelos en la pestaña Marcos o en los sobres.", color = p.dim, fontSize = 11.sp)
+        if (ShopCatalog.allFrames().none { Pawb.has(it.id) }) Text("Aún no tienes marcos: consíguelos en la pestaña Marcos o en los sobres.", color = p.dim, fontSize = 11.sp)
         Text("DISEÑO DE BASE", color = p.dim, fontSize = 11.sp, fontWeight = FontWeight.Bold)
         Row(Modifier.horizontalScroll(androidx.compose.foundation.rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             val cur = Pawb.banner.value
             Text("Ninguno", color = if (cur.isEmpty()) p.onPlay else p.text, fontSize = 12.sp,
                 modifier = Modifier.clip(RoundedCornerShape(50)).background(if (cur.isEmpty()) p.accent else p.card).clickable { Pawb.equipBanner("") }.padding(horizontal = 14.dp, vertical = 8.dp))
-            ShopCatalog.banners.filter { Pawb.has(it.id) || it.price == 0 }.forEach { b ->
+            ShopCatalog.allBanners().filter { Pawb.has(it.id) || it.price == 0 }.forEach { b ->
                 Text(b.name, color = if (cur == b.id) p.onPlay else p.text, fontSize = 12.sp,
                     modifier = Modifier.clip(RoundedCornerShape(50)).background(if (cur == b.id) p.accent else p.card).clickable { Pawb.equipBanner(b.id) }.padding(horizontal = 14.dp, vertical = 8.dp))
             }
@@ -298,7 +298,7 @@ private fun ItemCard(
             if (owned) {
                 PriceButton(actionLabel ?: if (equipped) "✓ Equipado" else "Equipar", true) { onEquip() }
             } else {
-                PriceButton("$price", Pawb.balance.intValue >= price, paw = true) {
+                PriceButton("$price", Pawb.canAfford(price), paw = true) {
                     if (Pawb.buy(id, price)) onMsg("Compraste «$name»") else onMsg("Te faltan ${price - Pawb.balance.intValue} Pawb")
                 }
             }

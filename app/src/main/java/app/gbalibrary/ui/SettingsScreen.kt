@@ -100,6 +100,7 @@ fun SettingsScreen(vm: LibraryViewModel, actions: LibraryActions, onBack: () -> 
                     LibrarySection(vm, actions)
                     CoversSection(vm)
                     DataSection(actions)
+                    Section("Desarrollador") { AppButton("Modo desarrollador", { DevNav.show.value = true }) }
                 }
             }
         }

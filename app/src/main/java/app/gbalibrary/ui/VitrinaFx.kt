@@ -158,7 +158,7 @@ fun importVitrinaVideo(ctx: Context, uri: Uri): Boolean = try {
 /** Vitrina en JSON para compartir por archivo (no hay servidor: se envia por mensajeria y el amigo la importa). */
 fun exportVitrinaJson(): String {
     val o = org.json.JSONObject()
-    o.put("v", 1); o.put("title", Pawb.vTitle.value); o.put("sub", Pawb.vSub.value); o.put("img", Pawb.vImg.value); o.put("fx", Pawb.vFx.value); o.put("w", Pawb.vW.floatValue.toDouble()); o.put("h", Pawb.vH.intValue)
+    o.put("v", 1); o.put("title", Pawb.vTitle.value); o.put("sub", Pawb.vSub.value); o.put("img", Pawb.vImg.value); o.put("fx", Pawb.vFx.value); o.put("w", Pawb.vW.floatValue.toDouble()); o.put("h", Pawb.vH.intValue); o.put("al", Pawb.vAlign.intValue); o.put("dy", Pawb.vDy.intValue)
     return o.toString()
 }
 
@@ -171,3 +171,22 @@ fun importVitrinaJson(text: String): Boolean = try {
         true
     }
 } catch (e: Exception) { false }
+
+
+/** Controles de tamaño y posicion de la vitrina (ancho, alto, alineacion y separacion superior). */
+@Composable
+fun VitrinaSizeControls() {
+    val p = LocalPalette.current
+    androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(4.dp)) {
+        androidx.compose.material3.Text("Ancho ${(Pawb.vW.floatValue * 100).toInt()}%", color = p.dim, fontSize = androidx.compose.ui.unit.TextUnit(11f, androidx.compose.ui.unit.TextUnitType.Sp))
+        androidx.compose.material3.Slider(Pawb.vW.floatValue, { Pawb.setVitrinaSize(it, Pawb.vH.intValue) }, valueRange = 0.3f..1f)
+        androidx.compose.material3.Text("Alto ${if (Pawb.vH.intValue == 0) "automático" else "${Pawb.vH.intValue} dp"}", color = p.dim, fontSize = androidx.compose.ui.unit.TextUnit(11f, androidx.compose.ui.unit.TextUnitType.Sp))
+        androidx.compose.material3.Slider(Pawb.vH.intValue.toFloat(), { Pawb.setVitrinaSize(Pawb.vW.floatValue, (it / 10f).toInt() * 10) }, valueRange = 0f..320f)
+        androidx.compose.material3.Text("Posición", color = p.dim, fontSize = androidx.compose.ui.unit.TextUnit(11f, androidx.compose.ui.unit.TextUnitType.Sp))
+        androidx.compose.foundation.layout.Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+            listOf("Izquierda", "Centro", "Derecha").forEachIndexed { i, n -> AppChip(n, Pawb.vAlign.intValue == i, { Pawb.setVitrinaPos(i, Pawb.vDy.intValue) }) }
+        }
+        androidx.compose.material3.Text("Separación superior ${Pawb.vDy.intValue} dp", color = p.dim, fontSize = androidx.compose.ui.unit.TextUnit(11f, androidx.compose.ui.unit.TextUnitType.Sp))
+        androidx.compose.material3.Slider(Pawb.vDy.intValue.toFloat(), { Pawb.setVitrinaPos(Pawb.vAlign.intValue, it.toInt()) }, valueRange = 0f..80f)
+    }
+}

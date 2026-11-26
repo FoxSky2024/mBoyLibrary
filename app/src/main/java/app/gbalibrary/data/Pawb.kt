@@ -69,14 +69,14 @@ object Pawb {
 
     private fun load() {
         if (!p.contains("balance")) p.edit().putInt("balance", 100).apply() // regalo de bienvenida
-        balance.intValue = p.getInt("balance", 0)
+        balance.intValue = p.getInt("balance", 0); devUnlimited.value = p.getBoolean("devunl", false)
         owned.value = p.getString("owned", "").orEmpty().split(",").filter { it.isNotBlank() }.toSet()
         bg.value = p.getString("bg", "").orEmpty()
         banner.value = p.getString("banner", "").orEmpty()
         skin.value = p.getString("skin", "").orEmpty()
         vFrame.value = p.getString("vframe", "").orEmpty(); vTitle.value = p.getString("vtitle", "").orEmpty()
         vSub.value = p.getString("vsub", "").orEmpty(); vImg.value = p.getString("vimg", "").orEmpty()
-        vFx.value = p.getString("vfx", "").orEmpty(); vW.floatValue = p.getFloat("vw", 1f); vH.intValue = p.getInt("vh", 0); vVideo.value = p.getString("vvid", "").orEmpty()
+        vFx.value = p.getString("vfx", "").orEmpty(); vW.floatValue = p.getFloat("vw", 1f); vH.intValue = p.getInt("vh", 0); vAlign.intValue = p.getInt("valign", 0); vDy.intValue = p.getInt("vdy", 0); vVideo.value = p.getString("vvid", "").orEmpty()
         placed.value = try {
             val a = JSONArray(p.getString("placed", "[]"))
             (0 until a.length()).map { val o = a.getJSONObject(it); PlacedSticker(o.getString("u"), o.getString("s"), o.getDouble("x").toFloat(), o.getDouble("y").toFloat(), o.getDouble("k").toFloat(), o.getDouble("r").toFloat()) }
@@ -97,7 +97,15 @@ object Pawb {
         p.edit().putInt("balance", balance.intValue).apply()
     }
 
+    /** Modo desarrollador: saldo ilimitado (no descuenta nada). */
+    val devUnlimited = mutableStateOf(false)
+    fun setDevUnlimited(v: Boolean) { devUnlimited.value = v; p.edit().putBoolean("devunl", v).apply() }
+    fun canAfford(n: Int) = devUnlimited.value || balance.intValue >= n
+    fun setBalance(n: Int) { balance.intValue = n.coerceAtLeast(0); p.edit().putInt("balance", balance.intValue).apply() }
+    fun revokeAll() { owned.value = emptySet(); saveOwned() }
+
     fun spend(n: Int): Boolean {
+        if (devUnlimited.value) return true
         if (n > balance.intValue) return false
         balance.intValue -= n
         p.edit().putInt("balance", balance.intValue).apply()
@@ -143,6 +151,9 @@ object Pawb {
     val vW = androidx.compose.runtime.mutableFloatStateOf(1f)
     val vH = mutableIntStateOf(0)
     fun setVitrinaSize(w: Float, h: Int) { vW.floatValue = w.coerceIn(0.3f, 1f); vH.intValue = h.coerceIn(0, 320); p.edit().putFloat("vw", vW.floatValue).putInt("vh", vH.intValue).apply() }
+    val vAlign = mutableIntStateOf(0)  // 0 izquierda, 1 centro, 2 derecha
+    val vDy = mutableIntStateOf(0)     // separacion superior en dp
+    fun setVitrinaPos(a: Int, dy: Int) { vAlign.intValue = a.coerceIn(0, 2); vDy.intValue = dy.coerceIn(0, 80); p.edit().putInt("valign", vAlign.intValue).putInt("vdy", vDy.intValue).apply() }
     val vFx = mutableStateOf("")      // efecto animado: holo, destellos, nieve, brasas, lluvia, glitch
     val vVideo = mutableStateOf("")   // ruta del video de la vitrina (copiado a GBALibrary/Banners)
     fun setVitrinaFx(fx: String) { vFx.value = fx; p.edit().putString("vfx", fx).apply() }

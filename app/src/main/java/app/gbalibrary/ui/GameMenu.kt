@@ -145,14 +145,34 @@ fun GameMenu(title: String, speed: Int, layout: ControlLayout, padConnected: Boo
 
 @Composable
 private fun GmLabel(text: String) {
-    Text(text, color = LocalPalette.current.accent, fontWeight = FontWeight.Bold)
+    Text(text.uppercase(), color = LocalPalette.current.accent, fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = 1.sp)
+}
+
+/** Boton con el mismo estilo que las categorias de arriba: caja con borde; resaltado = borde y texto del color de acento. */
+@Composable
+fun GmButton(highlight: Boolean, onClick: () -> Unit, content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit) {
+    val p = LocalPalette.current
+    val c = if (highlight) p.accent else Color.White
+    Row(
+        Modifier
+            .then(if (highlight) Modifier.background(Color(0xCC000000)) else Modifier)
+            .border(1.5.dp, if (highlight) p.accent else Color.White.copy(alpha = 0.3f))
+            .clickable { Sfx.click(); onClick() }
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        androidx.compose.runtime.CompositionLocalProvider(androidx.compose.material3.LocalContentColor provides c) {
+            androidx.compose.material3.ProvideTextStyle(androidx.compose.ui.text.TextStyle(fontWeight = FontWeight.Bold, fontSize = 14.sp, letterSpacing = 0.8.sp)) { content() }
+        }
+    }
 }
 
 @Composable
 private fun GmChips(options: List<String>, selected: Int, onSelect: (Int) -> Unit) {
     Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         options.forEachIndexed { i, name ->
-            FilterChip(selected = i == selected, onClick = { onSelect(i) }, label = { Text(name) })
+            GmButton(i == selected, onClick = { onSelect(i) }) { Text(name) }
         }
     }
 }
@@ -207,7 +227,7 @@ private fun VideoTab(a: MenuActions) {
         GmLabel("Nintendo DS: pantallas")
         GmChips(listOf("Arriba / abajo", "Lado a lado", "Solo arriba", "Solo abajo", "Grande + pequeña"), Settings.dsLayout.intValue) { Settings.setDsLayout(it) }
         GmSwitch("Intercambiar pantallas", Settings.dsSwap.value) { Settings.setDsSwap(it) }
-        Button(onClick = a.editDsScreens) { Text("Editar pantallas (mover, escalar, rotar)") }
+        GmButton(true, onClick = a.editDsScreens) { Text("Editar pantallas (mover, escalar, rotar)") }
         Text("La pantalla inferior es táctil en todas las distribuciones. La posición se guarda por juego y orientación.", color = LocalPalette.current.dim)
     }
 }
@@ -235,16 +255,16 @@ private fun ControlsTab(layout: ControlLayout, padConnected: Boolean, forceTouch
     }
     if (layout.moveType == MoveType.STICK) {
         GmSlider("Zona muerta", layout.deadzone, 0.05f..0.7f, "${(layout.deadzone * 100).toInt()}%") { layout.deadzone = it }
-        OutlinedButton(onClick = a.persistLayout) { Text("Aplicar zona muerta") }
+        GmButton(false, onClick = a.persistLayout) { Text("Aplicar zona muerta") }
     }
     androidx.compose.foundation.layout.FlowRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Button(onClick = a.editControls) { Text("Editar controles") }
-        OutlinedButton(onClick = a.saveGameLayout) { Text("Guardar para este juego") }
-        OutlinedButton(onClick = a.saveGlobalLayout) { Text("Guardar global") }
-        OutlinedButton(onClick = a.resetLayout) { Text("Restablecer") }
+        GmButton(true, onClick = a.editControls) { Text("Editar controles") }
+        GmButton(false, onClick = a.saveGameLayout) { Text("Guardar para este juego") }
+        GmButton(false, onClick = a.saveGlobalLayout) { Text("Guardar global") }
+        GmButton(false, onClick = a.resetLayout) { Text("Restablecer") }
     }
 }
 
@@ -259,8 +279,8 @@ private fun GameTab(speed: Int, a: MenuActions) {
     }
     GmLabel("Guardado rapido  ·  ${when_("quick")}")
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Button(onClick = { a.save("quick"); tick++ }) { Text("Guardar") }
-        OutlinedButton(onClick = { a.load("quick") }) { Text("Cargar") }
+        GmButton(true, onClick = { a.save("quick"); tick++ }) { Text("Guardar") }
+        GmButton(false, onClick = { a.load("quick") }) { Text("Cargar") }
     }
     GmLabel("Estados (3 ranuras)")
     (1..3).forEach { slot ->
@@ -269,8 +289,8 @@ private fun GameTab(speed: Int, a: MenuActions) {
                 Text("Ranura $slot", color = LocalPalette.current.text)
                 Text(when_("slot$slot"), color = LocalPalette.current.dim, fontSize = 11.sp)
             }
-            Button(onClick = { a.save("slot$slot"); tick++ }) { Text("Guardar") }
-            OutlinedButton(onClick = { a.load("slot$slot") }) { Text("Cargar") }
+            GmButton(true, onClick = { a.save("slot$slot"); tick++ }) { Text("Guardar") }
+            GmButton(false, onClick = { a.load("slot$slot") }) { Text("Cargar") }
         }
     }
     GmLabel("Velocidad")
@@ -280,8 +300,8 @@ private fun GameTab(speed: Int, a: MenuActions) {
     if (Settings.musicInGame.value && Music.hasSource()) {
         GmLabel("Música")
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = a.toggleMusic) { Text(if (Music.playing.value) "Pausar música" else "Reanudar música") }
-            OutlinedButton(onClick = { Music.next() }) { Text("Siguiente") }
+            GmButton(true, onClick = a.toggleMusic) { Text(if (Music.playing.value) "Pausar música" else "Reanudar música") }
+            GmButton(false, onClick = { Music.next() }) { Text("Siguiente") }
         }
         GmSlider("Volumen música", Settings.musicVolume.floatValue, 0f..1f, "${(Settings.musicVolume.floatValue * 100).toInt()}%") {
             Settings.setMusicVolume(it)
@@ -292,10 +312,10 @@ private fun GameTab(speed: Int, a: MenuActions) {
     GmLabel("Rendimiento")
     PerfControls()
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        OutlinedButton(onClick = {
+        GmButton(false, onClick = {
             if (confirmReset) { confirmReset = false; a.reset() } else confirmReset = true
         }) { Text(if (confirmReset) "¿Seguro? Reiniciar" else "Reiniciar juego", color = if (confirmReset) Color(0xFFFF8A80) else Color.Unspecified) }
-        OutlinedButton(onClick = a.screenshot) { Text("Captura de pantalla") }
+        GmButton(false, onClick = a.screenshot) { Text("Captura de pantalla") }
     }
 }
 

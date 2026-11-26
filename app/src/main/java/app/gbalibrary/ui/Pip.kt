@@ -154,19 +154,19 @@ fun PipControls(pickVideo: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("Fuente del video", color = p.accent, fontSize = 12.sp, fontWeight = FontWeight.Bold)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            OutlinedButton(onClick = pickVideo) { Text("Video de la galería") }
-            if (Pip.kind.intValue != Pip.NONE) OutlinedButton(onClick = { Pip.close() }) { Text("Cerrar ventana") }
+            GmButton(false, onClick = pickVideo) { Text("Video de la galería") }
+            if (Pip.kind.intValue != Pip.NONE) GmButton(false, onClick = { Pip.close() }) { Text("Cerrar ventana") }
         }
         Text("Posición", color = p.accent, fontSize = 12.sp, fontWeight = FontWeight.Bold)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             listOf("Sup. izq.", "Sup. der.", "Inf. izq.", "Inf. der.").forEachIndexed { i, n ->
-                FilterChip(selected = Settings.pipCorner.intValue == i && Pip.custom.value == null, onClick = { Settings.setPipCorner(i); Pip.custom.value = null }, label = { Text(n) })
+                GmButton(Settings.pipCorner.intValue == i && Pip.custom.value == null, onClick = { Settings.setPipCorner(i); Pip.custom.value = null }) { Text(n) }
             }
         }
         Text("Tamaño", color = p.accent, fontSize = 12.sp, fontWeight = FontWeight.Bold)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             listOf("Pequeño", "Mediano", "Grande").forEachIndexed { i, n ->
-                FilterChip(selected = Settings.pipSize.intValue == i, onClick = { Settings.setPipSize(i) }, label = { Text(n) })
+                GmButton(Settings.pipSize.intValue == i, onClick = { Settings.setPipSize(i) }) { Text(n) }
             }
         }
         Text("Opacidad ${(Settings.pipOpacity.floatValue * 100).roundToInt()}%", color = p.text, fontSize = 13.sp)
