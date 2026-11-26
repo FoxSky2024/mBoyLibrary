@@ -126,7 +126,7 @@ fun ProfileScreen(
             }
             // ---- Vitrina (banner dentro del marco de los sobres) ----
             if (app.gbalibrary.data.Pawb.banner.value.isNotEmpty() || app.gbalibrary.data.Pawb.vFrame.value.isNotEmpty() || app.gbalibrary.data.Pawb.vTitle.value.isNotEmpty()) {
-                item { Vitrina(Modifier.fillMaxWidth().height(110.dp)) }
+                item { Vitrina(Modifier.fillMaxWidth()) }
             }
             // ---- Pestañas ----
             item {

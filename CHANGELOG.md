@@ -1,3 +1,9 @@
+## 1.14.0
+- Pausa: lista escalonada a la izquierda y ilustracion que entra deslizandose, teñida con el color de la interfaz.
+- Musica: ventana nueva estilo reproductor (tocadiscos, tarjeta, lista, barra inferior, mini).
+- Editor de interfaz en vivo (Ajustes > Escala > Editar interfaz en vivo).
+- Vitrina: ancho adaptable a imagen/video, video de fondo, efectos animados, exportar/importar.
+
 ## 1.13.0
 - Cajas: sin lomo con texto, todas con la misma altura y caras alineadas con el borde.
 - Interfaz mas pequena por defecto (0.6x) y dialogos que se ajustan a la pantalla (recorte, sobres).

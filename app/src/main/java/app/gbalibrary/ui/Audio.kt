@@ -62,6 +62,9 @@ object Music {
     fun positionMs(): Int = try { player?.currentPosition ?: 0 } catch (e: Exception) { 0 }
     fun durationMs(): Int = try { player?.duration?.coerceAtLeast(0) ?: 0 } catch (e: Exception) { 0 }
     fun seekTo(ms: Int) { try { player?.seekTo(ms) } catch (e: Exception) { /* ignorado */ } }
+    val repeat = mutableStateOf(false)
+    fun setRepeat(v: Boolean) { repeat.value = v; try { player?.isLooping = v || tracks.size == 1 } catch (e: Exception) { /* ignorado */ } }
+    fun queueTitles(max: Int): List<String> = (0 until minOf(max, order.size)).map { peek(it) }
     fun trackCount(): Int = order.size
     fun queueIndex(): Int = pos
 
@@ -174,7 +177,7 @@ object Music {
                     if (failures <= tracks.size) skip(false) else release()
                     true
                 }
-                mp.isLooping = tracks.size == 1
+                mp.isLooping = tracks.size == 1 || repeat.value
                 mp.prepare()
                 val v = volume()
                 mp.setVolume(v, v)

@@ -76,6 +76,7 @@ object Pawb {
         skin.value = p.getString("skin", "").orEmpty()
         vFrame.value = p.getString("vframe", "").orEmpty(); vTitle.value = p.getString("vtitle", "").orEmpty()
         vSub.value = p.getString("vsub", "").orEmpty(); vImg.value = p.getString("vimg", "").orEmpty()
+        vFx.value = p.getString("vfx", "").orEmpty(); vVideo.value = p.getString("vvid", "").orEmpty()
         placed.value = try {
             val a = JSONArray(p.getString("placed", "[]"))
             (0 until a.length()).map { val o = a.getJSONObject(it); PlacedSticker(o.getString("u"), o.getString("s"), o.getDouble("x").toFloat(), o.getDouble("y").toFloat(), o.getDouble("k").toFloat(), o.getDouble("r").toFloat()) }
@@ -138,6 +139,11 @@ object Pawb {
     val vTitle = mutableStateOf("")
     val vSub = mutableStateOf("")
     val vImg = mutableStateOf("")   // base64 JPEG (alta calidad)
+    val vFx = mutableStateOf("")      // efecto animado: holo, destellos, nieve, brasas, lluvia, glitch
+    val vVideo = mutableStateOf("")   // ruta del video de la vitrina (copiado a GBALibrary/Banners)
+    fun setVitrinaFx(fx: String) { vFx.value = fx; p.edit().putString("vfx", fx).apply() }
+    fun setVitrinaVideo(path: String) { vVideo.value = path; p.edit().putString("vvid", path).apply() }
+    fun bannerDir(ctx: Context) = java.io.File(DataDir.root(ctx), "Banners").apply { mkdirs() }
     fun equipFrame(id: String) { vFrame.value = id; p.edit().putString("vframe", id).apply() }
     fun setVitrina(title: String, sub: String, img: String) {
         vTitle.value = title; vSub.value = sub; vImg.value = img
