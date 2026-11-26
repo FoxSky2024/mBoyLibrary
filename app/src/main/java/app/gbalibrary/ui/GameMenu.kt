@@ -7,6 +7,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -70,45 +74,60 @@ fun GameMenu(title: String, speed: Int, layout: ControlLayout, padConnected: Boo
     val p = LocalPalette.current
     var tab by remember { mutableIntStateOf(0) } // -1 = panel de ajustes plegado
     val glass = p.panel.copy(alpha = 0.93f)
-    // El centro de la pantalla queda libre: categorias en el borde izquierdo, ajustes abajo en el centro.
-    Box(
-        Modifier.fillMaxSize().background(Color(0x40000000)).clickable(onClick = actions.close),
+    // Lista escalonada arriba a la izquierda (como un menu de juego), ajustes abajo al centro y una ilustracion
+    // que entra deslizandose desde el borde izquierdo en la esquina inferior izquierda.
+    androidx.compose.foundation.layout.BoxWithConstraints(
+        Modifier.fillMaxSize().background(Color(0x55000000)).clickable(onClick = actions.close),
     ) {
+        val illH = maxHeight * 0.42f
+        val illW = illH * (900f / 884f)
         StatusIndicators(Modifier.align(Alignment.TopEnd).padding(top = 6.dp, end = 12.dp), tint = Color.White)
 
-        // ---- categorias (borde izquierdo) ----
+        // ---- ilustracion (entra desde fuera del borde izquierdo), teñida con tonos claros del color de la interfaz ----
+        val slide = remember { androidx.compose.animation.core.Animatable(0f) }
+        androidx.compose.runtime.LaunchedEffect(Unit) { slide.animateTo(1f, androidx.compose.animation.core.tween(650, easing = androidx.compose.animation.core.FastOutSlowInEasing)) }
+        val tintC = androidx.compose.ui.graphics.lerp(p.accent, Color.White, 0.62f)
+        androidx.compose.foundation.Image(
+            androidx.compose.ui.res.painterResource(app.gbalibrary.R.drawable.pause_mascot), null,
+            Modifier.align(Alignment.BottomStart).size(illW, illH)
+                .graphicsLayer { translationX = -(illW.toPx() + 24.dp.toPx()) * (1f - slide.value); alpha = 0.35f + 0.65f * slide.value }
+                .padding(start = 4.dp, bottom = 4.dp),
+            colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(tintC, androidx.compose.ui.graphics.BlendMode.Modulate),
+            contentScale = androidx.compose.ui.layout.ContentScale.Fit,
+            alignment = Alignment.BottomStart,
+        )
+
+        // ---- categorias escalonadas ----
+        val entries = listOf("CONTINUAR") + TABS
         Column(
-            Modifier
-                .align(Alignment.CenterStart)
-                .fillMaxHeight(0.92f)
-                .width(132.dp)
-                .background(glass, RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp))
-                .clickable(enabled = false, onClick = {})
-                .padding(vertical = 10.dp),
+            Modifier.align(Alignment.TopStart).padding(top = 14.dp).fillMaxWidth().clickable(enabled = false, onClick = {}),
         ) {
             Text(
-                title, color = p.text, fontWeight = FontWeight.Bold, maxLines = 2, fontSize = 13.sp,
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                title, color = Color.White.copy(alpha = 0.75f), fontWeight = FontWeight.Bold, maxLines = 1, fontSize = 12.sp,
+                modifier = Modifier.padding(start = 22.dp, bottom = 4.dp),
             )
-            TABS.forEachIndexed { i, name ->
-                Text(
-                    name,
-                    color = if (i == tab) p.accent else p.text,
-                    fontWeight = if (i == tab) FontWeight.Bold else FontWeight.Normal,
-                    fontSize = 13.sp,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(if (i == tab) p.card else Color.Transparent)
-                        .clickable { Sfx.click(); tab = if (tab == i && i != TABS.lastIndex) -1 else i }
-                        .padding(horizontal = 14.dp, vertical = 10.dp),
-                )
+            entries.forEachIndexed { i, name ->
+                val sel = i > 0 && i - 1 == tab
+                Box(Modifier.fillMaxWidth().height(40.dp), contentAlignment = Alignment.CenterStart) {
+                    if (sel) Box(Modifier.fillMaxWidth().height(1.5.dp).background(p.accent))
+                    Box(
+                        Modifier
+                            .padding(start = 22.dp + 16.dp * i)
+                            .then(if (sel) Modifier.border(1.5.dp, p.accent).background(Color(0xCC000000)) else Modifier)
+                            .clickable {
+                                Sfx.click()
+                                if (i == 0) actions.close() else tab = if (tab == i - 1 && i - 1 != TABS.lastIndex) -1 else i - 1
+                            }
+                            .padding(horizontal = 12.dp, vertical = 5.dp),
+                    ) {
+                        Text(
+                            name + if (sel) "  \u270E" else "",
+                            color = if (sel) p.accent else Color.White,
+                            fontWeight = FontWeight.Bold, fontSize = 17.sp, letterSpacing = 1.sp, maxLines = 1,
+                        )
+                    }
+                }
             }
-            Box(Modifier.weight(1f))
-            Button(
-                onClick = actions.close,
-                colors = ButtonDefaults.buttonColors(containerColor = p.play),
-                modifier = Modifier.padding(horizontal = 10.dp).fillMaxWidth(),
-            ) { Text("Continuar", color = Color.White, fontSize = 13.sp) }
         }
 
         // ---- ajustes (abajo, centrado, sin tapar el juego) ----
@@ -116,8 +135,8 @@ fun GameMenu(title: String, speed: Int, layout: ControlLayout, padConnected: Boo
             Column(
                 Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(start = 140.dp, bottom = 10.dp)
-                    .fillMaxWidth(0.66f)
+                    .padding(start = illW + 12.dp, bottom = 10.dp)
+                    .fillMaxWidth(0.62f)
                     .fillMaxHeight(0.46f)
                     .background(glass, RoundedCornerShape(16.dp))
                     .clickable(enabled = false, onClick = {})

@@ -152,6 +152,9 @@ fun LibraryApp(vm: LibraryViewModel, actions: LibraryActions, onPlay: (Game) -> 
         }
     }
 
+    androidx.compose.runtime.LaunchedEffect(UiEditNav.request.value) {
+        if (UiEditNav.request.value) { UiEditNav.request.value = false; showSettings = false; UiEditNav.show.value = true }
+    }
     androidx.compose.runtime.LaunchedEffect(ShopNav.openProfile.value) {
         if (ShopNav.openProfile.value) { ShopNav.openProfile.value = false; ShopNav.show.value = false; showProfile = true }
     }
@@ -258,6 +261,8 @@ fun LibraryApp(vm: LibraryViewModel, actions: LibraryActions, onPlay: (Game) -> 
         PipOverlay()
         AchievementToastHost()
         // Vinilo abajo a la derecha (biblioteca y ajustes; nunca dentro del juego)
+        if (UiEditNav.show.value) UiEditorOverlay(Modifier.align(Alignment.BottomCenter).padding(8.dp))
+        if (MusicNav.mini.value && !MusicNav.show.value) MiniMusicPlayer(Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp))
         VinylOverlay(Modifier.align(Alignment.BottomEnd))
     }
 }

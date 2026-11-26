@@ -52,7 +52,7 @@ object ShopNav {
 }
 
 /** Ventana propia de la musica. */
-object MusicNav { val show = mutableStateOf(false) }
+object MusicNav { val show = mutableStateOf(false); val mini = mutableStateOf(false) }
 
 private val Swatches = listOf(
     0xFFE8892B, 0xFFD64B4B, 0xFFD86B9A, 0xFF8A4CD6, 0xFF3B7DD8, 0xFF2FBF9B,
@@ -217,11 +217,28 @@ private fun VitrinaEditor(onMsg: (String) -> Unit) {
         if (uri != null) crop = decodeForCrop(ctx, uri) ?: null.also { onMsg("No se pudo leer la imagen") }
     }
     crop?.let { bm ->
-        BannerCropDialog(bm, onDone = { Pawb.setVitrina(title, sub, android.util.Base64.encodeToString(it, android.util.Base64.NO_WRAP)); crop = null }, onCancel = { crop = null })
+        // el recorte conserva la proporcion de la imagen (no se fuerza 3:1)
+        val asp = (bm.width.toFloat() / bm.height).coerceIn(1.2f, 5f)
+        val ow = minOf(1600, bm.width).coerceAtLeast(600)
+        BannerCropDialog(bm, aspect = asp, outW = ow, outH = (ow / asp).toInt(),
+            onDone = { Pawb.setVitrina(title, sub, android.util.Base64.encodeToString(it, android.util.Base64.NO_WRAP)); Pawb.setVitrinaVideo(""); crop = null }, onCancel = { crop = null })
+    }
+    val pickVideo = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) onMsg(if (importVitrinaVideo(ctx, uri)) "Video aplicado" else "No se pudo usar el video (máx. 40 MB)")
+    }
+    val exportLauncher = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        if (uri != null) try { ctx.contentResolver.openOutputStream(uri)?.use { it.write(exportVitrinaJson().toByteArray()) }; onMsg("Vitrina exportada") } catch (e: Exception) { onMsg("No se pudo exportar") }
+    }
+    val importLauncher = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) {
+            val ok = try { importVitrinaJson(ctx.contentResolver.openInputStream(uri)?.use { String(it.readBytes()) } ?: "") } catch (e: Exception) { false }
+            if (ok) { title = Pawb.vTitle.value; sub = Pawb.vSub.value }
+            onMsg(if (ok) "Vitrina importada" else "Archivo no válido")
+        }
     }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("Tu vitrina se muestra en tu perfil. Elige un marco de tus sobres y cambia lo que hay dentro.", color = p.dim, fontSize = 12.sp)
-        Vitrina(Modifier.fillMaxWidth().height(120.dp))
+        Vitrina(Modifier.fillMaxWidth())
         Text("MARCO", color = p.dim, fontSize = 11.sp, fontWeight = FontWeight.Bold)
         Row(Modifier.horizontalScroll(androidx.compose.foundation.rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             val sel = Pawb.vFrame.value
@@ -252,6 +269,24 @@ private fun VitrinaEditor(onMsg: (String) -> Unit) {
             PriceButton(if (Pawb.vImg.value.isEmpty()) "Imagen de fondo" else "Cambiar / recortar imagen", true) { pick.launch("image/*") }
             if (Pawb.vImg.value.isNotEmpty()) PriceButton("Quitar imagen", true) { Pawb.setVitrina(title, sub, "") }
         }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            PriceButton(if (Pawb.vVideo.value.isEmpty()) "Video de fondo" else "Cambiar video", true) { pickVideo.launch("video/*") }
+            if (Pawb.vVideo.value.isNotEmpty()) PriceButton("Quitar video", true) { Pawb.setVitrinaVideo("") }
+        }
+        Text("EFECTO ANIMADO", color = p.dim, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        Row(Modifier.horizontalScroll(androidx.compose.foundation.rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            VitrinaFxList.forEach { (id, name) ->
+                val on = Pawb.vFx.value == id
+                Text(name, color = if (on) p.onPlay else p.text, fontSize = 12.sp,
+                    modifier = Modifier.clip(RoundedCornerShape(50)).background(if (on) p.accent else p.card).clickable { Sfx.click(); Pawb.setVitrinaFx(id) }.padding(horizontal = 14.dp, vertical = 8.dp))
+            }
+        }
+        Text("COMPARTIR", color = p.dim, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            PriceButton("Exportar mi vitrina", true) { exportLauncher.launch("vitrina.mbanner.json") }
+            PriceButton("Importar la de un amigo", true) { importLauncher.launch("*/*") }
+        }
+        Text("Aún no hay servidor: tu vitrina no aparece sola a otros. Exporta el archivo y mándalo; quien lo importe la verá igual (el video no se incluye, solo imagen, textos y efecto).", color = p.dim, fontSize = 11.sp)
     }
 }
 

@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -131,13 +132,28 @@ fun VitrinaContent(modifier: Modifier = Modifier) {
     val colors = cat?.colors ?: cus?.colors?.map { Color(it) } ?: listOf(p.accent, p.bg)
     val style = cat?.style ?: cus?.style ?: 1
     val img = Pawb.vImg.value.ifEmpty { cus?.img ?: "" }
-    BannerArt(Pawb.vTitle.value.ifEmpty { baseTitle }, Pawb.vSub.value.ifEmpty { baseSub }, colors, style, modifier, img)
+    val vid = Pawb.vVideo.value
+    Box(modifier) {
+        BannerArt(Pawb.vTitle.value.ifEmpty { baseTitle }, Pawb.vSub.value.ifEmpty { baseSub }, colors, style, Modifier.fillMaxSize(), img)
+        if (vid.isNotEmpty() && java.io.File(vid).exists()) {
+            VideoBanner(vid, Modifier.fillMaxSize())
+            Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.45f), Color.Transparent))))
+            Column(Modifier.align(Alignment.CenterStart).padding(start = 18.dp)) {
+                val tt = Pawb.vTitle.value.ifEmpty { baseTitle }
+                Text(tt, color = Color.White, fontSize = 22.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, maxLines = 1)
+                val ss = Pawb.vSub.value.ifEmpty { baseSub }
+                if (ss.isNotBlank()) Text(ss, color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, maxLines = 1)
+            }
+        }
+        BannerFx(Pawb.vFx.value, Modifier.fillMaxSize())
+    }
 }
 
 /** Vitrina: banner dentro del marco obtenido en los sobres. Se muestra en el perfil. */
 @Composable
 fun Vitrina(modifier: Modifier = Modifier) {
-    FramedBox(ShopCatalog.frame(Pawb.vFrame.value), modifier) { VitrinaContent(Modifier.fillMaxSize()) }
+    // el ancho se adapta a la proporcion de la imagen o video que subiste
+    FramedBox(ShopCatalog.frame(Pawb.vFrame.value), modifier.aspectRatio(vitrinaAspect())) { VitrinaContent(Modifier.fillMaxSize()) }
 }
 
 // ------------------------------------------------------------------------------------------ vista previa de cualquier objeto

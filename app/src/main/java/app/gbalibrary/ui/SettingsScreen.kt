@@ -313,6 +313,7 @@ private fun ScaleSection() {
             }
             AppButton("Por defecto", { Settings.setUiScale(0.6f) })
         }
+        AppButton("Editar interfaz en vivo", { UiEditNav.request.value = true }, kind = BtnKind.PRIMARY)
         Text("Afecta tarjetas, títulos, barras, botones y texto de la biblioteca y Ajustes. Los controles dentro del juego no cambian.", color = p.dim, fontSize = 12.sp)
     }
 }
