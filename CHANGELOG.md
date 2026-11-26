@@ -1,3 +1,6 @@
+## 1.16.1
+- Corrige import de 1.16.0.
+
 ## 1.16.0
 - Frentes por consola para juegos sin portada (assets/bases/<consola>_font.png) y plantillas/cajas actualizadas.
 - Pausa: botones y chips con el estilo de las categorias.
