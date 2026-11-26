@@ -95,6 +95,14 @@ object ShopCatalog {
         ShopFrame("fr_paws", "Huellas", 130, Rarity.RARE, 6, c(0xFFF5B642), c(0xFF2A1A4A)),
         ShopFrame("fr_ornate", "Ornamentado", 190, Rarity.EPIC, 5, c(0xFFE8C766), c(0xFF6B1E2E)),
         ShopFrame("fr_holo", "Holográfico", 260, Rarity.LEGENDARY, 4, c(0xFFFFFFFF), c(0xFF000000)),
+        ShopFrame("fr_aurora", "Aurora", 150, Rarity.RARE, 8, c(0xFF69F0AE), c(0xFFB388FF)),
+        ShopFrame("fr_fire", "Fuego", 170, Rarity.EPIC, 9, c(0xFFFFD54F), c(0xFFD84315)),
+        ShopFrame("fr_ice", "Hielo", 140, Rarity.RARE, 10, c(0xFFE1F5FE), c(0xFF4FC3F7)),
+        ShopFrame("fr_crystal", "Cristal", 210, Rarity.EPIC, 11, c(0xFFB3E5FC), c(0xFF7E57C2)),
+        ShopFrame("fr_rainbow", "Píxel arcoíris", 160, Rarity.RARE, 12, c(0xFFFFFFFF), c(0xFF101018)),
+        ShopFrame("fr_galaxy", "Galaxia", 240, Rarity.LEGENDARY, 13, c(0xFF1A1040), c(0xFF05060F)),
+        ShopFrame("fr_sakura", "Sakura", 120, Rarity.RARE, 14, c(0xFFFFC1D9), c(0xFFD81B60)),
+        ShopFrame("fr_circuit", "Circuito", 180, Rarity.EPIC, 15, c(0xFF00E676), c(0xFF06210F)),
     )
 
     val stickers = listOf(
@@ -109,11 +117,9 @@ object ShopCatalog {
     )
 
     val packs = listOf(
-        ShopPack("pk_bg", "Sobre de fondos", "1 fondo aleatorio", 40, setOf("bg"), 1, c(0xFF3B7DD8)),
         ShopPack("pk_bn", "Sobre de banners", "1 banner aleatorio", 40, setOf("banner"), 1, c(0xFF8A4CD6)),
-        ShopPack("pk_stk", "Sobre de stickers", "3 stickers aleatorios", 60, setOf("sticker"), 3, c(0xFFE8892B)),
-        ShopPack("pk_frm", "Sobre de marcos", "1 marco aleatorio para tu vitrina", 80, setOf("frame"), 1, c(0xFFD4A017)),
-        ShopPack("pk_mix", "Sobre sorpresa", "3 objetos de cualquier tipo", 120, setOf("bg", "banner", "sticker", "frame"), 3, c(0xFFD64B4B)),
+        ShopPack("pk_frm", "Sobre de marcos", "1 marco aleatorio con efectos", 80, setOf("frame"), 1, c(0xFFD4A017)),
+        ShopPack("pk_mix", "Sobre sorpresa", "3 objetos: banners y marcos", 120, setOf("banner", "frame"), 3, c(0xFFD64B4B)),
     )
 
     fun skin(id: String) = skins.firstOrNull { it.id == id }
@@ -214,7 +220,4 @@ fun EquippedBannerArt(modifier: Modifier = Modifier): Boolean {
 
 /** Fondo de pantalla equipado (si hay), sobre el color base. */
 @Composable
-fun Modifier.equippedBackground(): Modifier {
-    val b = ShopCatalog.bg(Pawb.bg.value) ?: return this
-    return this.then(Modifier.drawBehind { drawStyled(b.colors.map { it.copy(alpha = 0.7f) }, b.style) })
-}
+fun Modifier.equippedBackground(): Modifier = this // los fondos de la tienda se retiraron

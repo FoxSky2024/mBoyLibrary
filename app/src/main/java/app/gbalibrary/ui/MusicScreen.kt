@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -34,8 +35,10 @@ import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material.icons.filled.UnfoldLess
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -225,7 +228,7 @@ fun MusicScreen(actions: LibraryActions, onBack: () -> Unit) {
                                 CookieButton(if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow, t, 54.dp) { Music.toggle(ctx) }
                             }
                         }
-                        Turntable(t, art, playing, Modifier.weight(1f).aspectRatio(1f))
+                        Turntable(t, art, playing, Modifier.weight(1f).heightIn(max = 230.dp).aspectRatio(1f))
                     }
                     // fila de controles + siguientes
                     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(t.card2).padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -304,6 +307,24 @@ private fun InfoLine(k: String, v: String, t: MusicTheme) {
 }
 
 
+/** Barra de progreso propia (la de Material dibuja un pulgar enorme en esta version). */
+@Composable
+private fun SeekBar(frac: Float, color: Color, track: Color, modifier: Modifier = Modifier, onChange: (Float) -> Unit, onFinish: () -> Unit) {
+    var w by remember { mutableFloatStateOf(1f) }
+    Box(
+        modifier.height(22.dp)
+            .onSizeChanged { w = it.width.toFloat().coerceAtLeast(1f) }
+            .pointerInput(Unit) { detectTapGestures { o -> onChange((o.x / w).coerceIn(0f, 1f)); onFinish() } }
+            .pointerInput(Unit) {
+                detectHorizontalDragGestures(onDragEnd = { onFinish() }, onDragCancel = { onFinish() }) { ch, _ -> onChange((ch.position.x / w).coerceIn(0f, 1f)) }
+            },
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        Box(Modifier.fillMaxWidth().height(5.dp).clip(RoundedCornerShape(50)).background(track))
+        Box(Modifier.fillMaxWidth(frac.coerceIn(0f, 1f)).height(5.dp).clip(RoundedCornerShape(50)).background(color))
+    }
+}
+
 /** Barra inferior: miniatura, titulo, progreso, aleatorio / anterior / play / siguiente / repetir y volumen. */
 @Composable
 private fun BottomBar(t: MusicTheme, art: androidx.compose.ui.graphics.ImageBitmap?, title: String, artist: String, posMs: Int, durMs: Int, playing: Boolean) {
@@ -325,14 +346,11 @@ private fun BottomBar(t: MusicTheme, art: androidx.compose.ui.graphics.ImageBitm
             Ic(Icons.Filled.SkipNext, 24.dp, t.soft, Modifier.clip(CircleShape).clickable { Sfx.click(); Music.change(1) }.padding(6.dp))
             Ic(if (Music.repeat.value) Icons.Filled.RepeatOne else Icons.Filled.Repeat, 20.dp, if (Music.repeat.value) t.accent else t.soft.copy(alpha = 0.5f), Modifier.clip(CircleShape).clickable { Sfx.click(); Music.setRepeat(!Music.repeat.value) }.padding(6.dp))
             Ic(if (Settings.musicMuted.value) Icons.Filled.VolumeOff else Icons.Filled.VolumeUp, 20.dp, t.soft, Modifier.clip(CircleShape).clickable { Sfx.click(); Settings.setMusicMuted(!Settings.musicMuted.value); Music.applyVolume() }.padding(6.dp))
-            Slider(Settings.musicVolume.floatValue, { Settings.setMusicVolume(it); Music.applyVolume() }, Modifier.width(90.dp),
-                colors = SliderDefaults.colors(thumbColor = t.accent, activeTrackColor = t.accent, inactiveTrackColor = t.card))
+            SeekBar(Settings.musicVolume.floatValue, t.accent, t.card, Modifier.width(80.dp), onChange = { Settings.setMusicVolume(it); Music.applyVolume() }, onFinish = {})
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(fmt(if (drag != null) (drag!! * durMs).toInt() else posMs), color = t.accent.copy(alpha = 0.7f), fontSize = 11.sp)
-            Slider(frac.coerceIn(0f, 1f), { drag = it }, Modifier.weight(1f),
-                onValueChangeFinished = { drag?.let { Music.seekTo((it * durMs).toInt()) }; drag = null },
-                colors = SliderDefaults.colors(thumbColor = t.accent, activeTrackColor = t.accent, inactiveTrackColor = t.card))
+            SeekBar(frac, t.accent, t.card, Modifier.weight(1f), onChange = { drag = it }, onFinish = { drag?.let { Music.seekTo((it * durMs).toInt()) }; drag = null })
             Text(fmt(durMs), color = t.accent.copy(alpha = 0.7f), fontSize = 11.sp)
         }
     }

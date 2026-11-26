@@ -8,11 +8,15 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -74,126 +78,90 @@ fun ShopScreen(onBack: () -> Unit) {
         ScreenHeader("Tienda de Pawb", onBack) {
             PawAmount("${Pawb.balance.intValue}", fontSize = 16.sp, iconSize = 18.dp)
         }
-        Row(Modifier.fillMaxWidth().horizontalScroll(androidx.compose.foundation.rememberScrollState()).padding(horizontal = 12.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf("Fondos", "Banners", "Marcos", "Skins", "Stickers", "Sobres", "Vitrina", "Gratis").forEachIndexed { i, t ->
-                Text(
-                    t, color = if (tab == i) p.onPlay else p.text, fontWeight = FontWeight.SemiBold, fontSize = 13.sp,
-                    modifier = Modifier.clip(RoundedCornerShape(50)).background(if (tab == i) p.accent else p.card).clickable { Sfx.click(); tab = i }.padding(horizontal = 16.dp, vertical = 8.dp),
-                )
-            }
-        }
-        LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            item {
-                Text("Gana Pawb jugando (1 por cada 5 min) y con el bonus diario (+25).", color = p.dim, fontSize = 12.sp)
-            }
-            when (tab) {
-                0 -> items(ShopCatalog.backgrounds, key = { it.id }) { b ->
-                    ItemCard(
-                        name = b.name, rarity = b.rarity, price = b.price, id = b.id, equipped = Pawb.bg.value == b.id,
-                        onEquip = { Pawb.equipBg(if (Pawb.bg.value == b.id) "" else b.id) }, onMsg = { msg = it },
-                    ) { Canvas(Modifier.fillMaxSize()) { drawStyled(b.colors, b.style) } }
+        Row(Modifier.fillMaxSize().padding(horizontal = 10.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            // pestañas en columna a la izquierda: dejan todo el alto para el contenido
+            Column(Modifier.width(104.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                listOf("Marcos", "Banners", "Skins", "Sobres", "Vitrina", "Gratis").forEachIndexed { i, t ->
+                    Text(
+                        t, color = if (tab == i) p.onPlay else p.text, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, maxLines = 1,
+                        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(if (tab == i) p.accent else p.card).clickable { Sfx.click(); tab = i }.padding(horizontal = 12.dp, vertical = 10.dp),
+                    )
                 }
-                1 -> {
-                    items(ShopCatalog.banners, key = { it.id }) { b ->
+                Box(Modifier.weight(1f))
+                Text("Gana Pawb jugando (1 por 5 min) y con el bonus diario.", color = p.dim, fontSize = 10.sp)
+            }
+            Box(Modifier.weight(1f).fillMaxHeight()) {
+                when (tab) {
+                    0 -> FitGrid(ShopCatalog.frames, 150.dp, 118.dp) { f ->
                         ItemCard(
-                            name = b.name, rarity = b.rarity, price = b.price, id = b.id, equipped = Pawb.banner.value == b.id,
-                            onEquip = { Pawb.equipBanner(if (Pawb.banner.value == b.id) "" else b.id) }, onMsg = { msg = it },
-                        ) { BannerArt(b.title, b.subtitle, b.colors, b.style, Modifier.fillMaxSize()) }
+                            name = f.name, rarity = f.rarity, price = f.price, id = f.id, equipped = Pawb.vFrame.value == f.id,
+                            onEquip = { Pawb.equipFrame(if (Pawb.vFrame.value == f.id) "" else f.id) }, onMsg = { msg = it },
+                        ) { ItemPreview(f.id) }
                     }
-                    items(Pawb.custom.value, key = { it.id }) { b -> CustomCard(b, onMsg = { msg = it }) }
-                }
-                5 -> items(ShopCatalog.packs, key = { it.id }) { pk ->
-                    Row(
-                        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(p.panel).padding(14.dp),
-                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        Box(
-                            Modifier.size(54.dp, 74.dp).clip(RoundedCornerShape(8.dp))
-                                .background(Brush.verticalGradient(listOf(pk.color, pk.color.copy(alpha = 0.5f), Color(0xFF14101F))))
-                                .border(1.5.dp, Color.White.copy(alpha = 0.6f), RoundedCornerShape(8.dp)),
-                            contentAlignment = Alignment.Center,
-                        ) { PawIcon(26.dp, Color.White) }
-                        Column(Modifier.weight(1f)) {
-                            Text(pk.name, color = p.text, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                            Text(pk.desc, color = p.dim, fontSize = 12.sp)
-                            Text("Probabilidad: común 60% · raro 28% · épico 10% · legendario 2%", color = p.dim, fontSize = 10.sp)
-                        }
-                        PriceButton("${pk.price}", Pawb.balance.intValue >= pk.price, paw = true) {
-                            val r = ShopCatalog.openPack(pk)
-                            if (r == null) msg = if (Pawb.balance.intValue < pk.price) "No tienes suficientes Pawb" else "Ya tienes todo lo de este paquete" else packOpen = Triple(pk.name, pk.color, r)
-                        }
+                    1 -> FitGrid(ShopCatalog.banners.map { it as Any } + Pawb.custom.value.map { it as Any }, 170.dp, 118.dp) { any ->
+                        if (any is ShopBanner) ItemCard(
+                            name = any.name, rarity = any.rarity, price = any.price, id = any.id, equipped = Pawb.banner.value == any.id,
+                            onEquip = { Pawb.equipBanner(if (Pawb.banner.value == any.id) "" else any.id) }, onMsg = { msg = it },
+                        ) { BannerArt(any.title, any.subtitle, any.colors, any.style, Modifier.fillMaxSize()) }
+                        else if (any is CustomBanner) ItemCard(
+                            name = any.name, rarity = Rarity.COMMON, price = 0, id = any.id, equipped = Pawb.banner.value == any.id,
+                            onEquip = { Pawb.equipBanner(if (Pawb.banner.value == any.id) "" else any.id) }, onMsg = { msg = it },
+                        ) { BannerArt(any.title, any.subtitle, any.colors.map { Color(it) }, any.style, Modifier.fillMaxSize(), any.img) }
                     }
-                }
-                3 -> items(ShopCatalog.skins, key = { it.id }) { k ->
-                    ItemCard(
-                        name = k.name, rarity = k.rarity, price = k.price, id = k.id, equipped = Pawb.skin.value == k.id, sub = k.theme,
-                        onEquip = { Pawb.equipSkin(if (Pawb.skin.value == k.id) "" else k.id) }, onMsg = { msg = it },
-                    ) {
-                        Row(Modifier.fillMaxSize().background(Color(0xFF1B2430)), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-                            listOf("A" to true, "B" to true, "L" to false, "▶" to false).forEach { (g, round) ->
-                                val sh = skinShape(k, if (round) CircleShape else RoundedCornerShape(14.dp), round)
-                                val w = if (round) 50.dp else 58.dp
-                                Box(
-                                    Modifier.size(w, if (round) 50.dp else 34.dp).clip(sh)
-                                        .then(if (k.idle2 != null) Modifier.background(Brush.verticalGradient(listOf(k.idle, k.idle2))) else Modifier.background(k.idle))
-                                        .then(if (k.pattern != 0) Modifier.drawBehind { skinPattern(k.pattern) } else Modifier)
-                                        .border(2.dp, k.border, sh),
-                                    contentAlignment = Alignment.Center,
-                                ) { Text(g, color = k.glyph, fontWeight = FontWeight.Bold, fontSize = 16.sp) }
-                            }
-                        }
-                    }
-                }
-                4 -> {
-                    item {
-                        Text("Compra stickers y pégalos en tu perfil, como pegatinas en una consola real. Un sticker se puede pegar las veces que quieras.", color = p.dim, fontSize = 12.sp)
-                        var stSrc by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
-                        val stPick = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri ->
-                            if (uri != null) stSrc = decodeForCrop(ctx, uri) ?: null.also { msg = "No se pudo leer la imagen" }
-                        }
-                        PriceButton("Crear sticker con mi imagen (gratis)", true) { stPick.launch("image/*") }
-                        stSrc?.let { bm ->
-                            BannerCropDialog(bm, aspect = 1f, outW = 512, outH = 512, png = true, round = true, title = "Recortar sticker",
-                                onDone = { Pawb.addCustomSticker(ctx, it); stSrc = null; msg = "Sticker creado" }, onCancel = { stSrc = null })
-                        }
-                        if (Pawb.customStickers.value.isNotEmpty()) Text("MIS STICKERS", color = p.dim, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                        Row(Modifier.horizontalScroll(androidx.compose.foundation.rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Pawb.customStickers.value.forEach { cs ->
-                                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    StickerArt(cs, 56.dp)
-                                    Text("Pegar", color = p.accent, fontSize = 12.sp, modifier = Modifier.clickable { Pawb.placeSticker(cs); Pawb.stickerEdit.value = true; ShopNav.openProfile.value = true; ShopNav.show.value = false })
-                                    Text("Borrar", color = p.dim, fontSize = 11.sp, modifier = Modifier.clickable { Pawb.deleteCustomSticker(ctx, cs) })
+                    2 -> FitGrid(ShopCatalog.skins, 170.dp, 118.dp) { k ->
+                        ItemCard(
+                            name = k.name, rarity = k.rarity, price = k.price, id = k.id, equipped = Pawb.skin.value == k.id, sub = k.theme,
+                            onEquip = { Pawb.equipSkin(if (Pawb.skin.value == k.id) "" else k.id) }, onMsg = { msg = it },
+                        ) {
+                            Row(Modifier.fillMaxSize().background(Color(0xFF1B2430)), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
+                                listOf("A" to true, "B" to true, "L" to false, "▶" to false).forEach { (g, round) ->
+                                    val sh = skinShape(k, if (round) CircleShape else RoundedCornerShape(14.dp), round)
+                                    Box(
+                                        Modifier.size(if (round) 34.dp else 40.dp, if (round) 34.dp else 24.dp).clip(sh)
+                                            .then(if (k.idle2 != null) Modifier.background(Brush.verticalGradient(listOf(k.idle, k.idle2))) else Modifier.background(k.idle))
+                                            .then(if (k.pattern != 0) Modifier.drawBehind { skinPattern(k.pattern) } else Modifier)
+                                            .border(2.dp, k.border, sh),
+                                        contentAlignment = Alignment.Center,
+                                    ) { Text(g, color = k.glyph, fontWeight = FontWeight.Bold, fontSize = 13.sp) }
                                 }
                             }
                         }
-                        if (Pawb.placed.value.isNotEmpty()) PriceButton("Editar stickers pegados (${Pawb.placed.value.size})", true) { Pawb.stickerEdit.value = true; ShopNav.openProfile.value = true; ShopNav.show.value = false }
                     }
-                    items(ShopCatalog.stickers, key = { it.id }) { st ->
-                        ItemCard(
-                            name = st.name, rarity = st.rarity, price = st.price, id = st.id, equipped = false, actionLabel = "Pegar",
-                            onEquip = { Pawb.placeSticker(st.id); Pawb.stickerEdit.value = true; ShopNav.openProfile.value = true; ShopNav.show.value = false }, onMsg = { msg = it },
-                        ) { Box(Modifier.fillMaxSize().background(Color(0xFF1B2430)), contentAlignment = Alignment.Center) { StickerArt(st.id, 56.dp) } }
-                    }
-                }
-                7 -> item {
-                    val act = generateSequence(ctx) { (it as? android.content.ContextWrapper)?.baseContext }.filterIsInstance<android.app.Activity>().firstOrNull()
-                    val left = Pawb.adsLeft.intValue
-                    val ready = app.gbalibrary.data.Ads.ready.value
-                    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(p.panel).padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("ANUNCIO VOLUNTARIO", color = p.dim, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.8.sp)
-                        Text("Mira un anuncio corto y gana ${Pawb.AD_REWARD} Pawb. Hoy te quedan $left de ${Pawb.AD_DAILY_CAP}.", color = p.text, fontSize = 13.sp)
-                        PriceButton(if (left <= 0) "Vuelve mañana" else if (ready) "Ver anuncio  +${Pawb.AD_REWARD}" else "Cargando anuncio…", left > 0 && ready) {
-                            if (act != null) app.gbalibrary.data.Ads.show(act) { msg = it }
+                    3 -> Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        ShopCatalog.packs.forEach { pk ->
+                            Column(
+                                Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(14.dp)).background(p.panel).padding(10.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp),
+                            ) {
+                                Box(
+                                    Modifier.weight(1f).aspectRatio(0.72f).clip(RoundedCornerShape(10.dp))
+                                        .background(Brush.verticalGradient(listOf(pk.color, pk.color.copy(alpha = 0.5f), Color(0xFF14101F))))
+                                        .border(1.5.dp, Color.White.copy(alpha = 0.6f), RoundedCornerShape(10.dp)),
+                                    contentAlignment = Alignment.Center,
+                                ) { PawIcon(30.dp, Color.White) }
+                                Text(pk.name, color = p.text, fontWeight = FontWeight.Bold, fontSize = 13.sp, maxLines = 1)
+                                Text(pk.desc, color = p.dim, fontSize = 10.sp, maxLines = 2)
+                                PriceButton("${pk.price}", Pawb.balance.intValue >= pk.price, paw = true) {
+                                    val r = ShopCatalog.openPack(pk)
+                                    if (r == null) msg = if (Pawb.balance.intValue < pk.price) "No tienes suficientes Pawb" else "Ya tienes todo lo de este paquete" else packOpen = Triple(pk.name, pk.color, r)
+                                }
+                            }
                         }
                     }
+                    5 -> {
+                        val act = generateSequence(ctx) { (it as? android.content.ContextWrapper)?.baseContext }.filterIsInstance<android.app.Activity>().firstOrNull()
+                        val left = Pawb.adsLeft.intValue
+                        val ready = app.gbalibrary.data.Ads.ready.value
+                        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(p.panel).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("ANUNCIO VOLUNTARIO", color = p.dim, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.8.sp)
+                            Text("Mira un anuncio corto y gana ${Pawb.AD_REWARD} Pawb. Hoy te quedan $left de ${Pawb.AD_DAILY_CAP}.", color = p.text, fontSize = 13.sp)
+                            PriceButton(if (left <= 0) "Vuelve mañana" else if (ready) "Ver anuncio  +${Pawb.AD_REWARD}" else "Cargando anuncio…", left > 0 && ready) {
+                                if (act != null) app.gbalibrary.data.Ads.show(act) { msg = it }
+                            }
+                        }
+                    }
+                    else -> VitrinaEditor(onMsg = { msg = it })
                 }
-                2 -> items(ShopCatalog.frames, key = { it.id }) { f ->
-                    ItemCard(
-                        name = f.name, rarity = f.rarity, price = f.price, id = f.id, equipped = Pawb.vFrame.value == f.id,
-                        onEquip = { Pawb.equipFrame(if (Pawb.vFrame.value == f.id) "" else f.id) }, onMsg = { msg = it },
-                    ) { ItemPreview(f.id) }
-                }
-                else -> item { VitrinaEditor(onMsg = { msg = it }) }
             }
         }
     }
@@ -236,9 +204,13 @@ private fun VitrinaEditor(onMsg: (String) -> Unit) {
             onMsg(if (ok) "Vitrina importada" else "Archivo no válido")
         }
     }
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text("Tu vitrina se muestra en tu perfil. Elige un marco de tus sobres y cambia lo que hay dentro.", color = p.dim, fontSize = 12.sp)
-        Vitrina(Modifier.fillMaxWidth())
+    Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+      Column(Modifier.weight(1f).verticalScroll(androidx.compose.foundation.rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text("Tu vitrina se muestra en tu perfil. Elige un marco de tus sobres y cambia lo que hay dentro.", color = p.dim, fontSize = 11.sp)
+        Vitrina()
+        Text("TAMAÑO  ·  ancho ${(Pawb.vW.floatValue * 100).toInt()}%  ·  alto ${if (Pawb.vH.intValue == 0) "auto" else "${Pawb.vH.intValue}"}", color = p.dim, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        androidx.compose.material3.Slider(Pawb.vW.floatValue, { Pawb.setVitrinaSize(it, Pawb.vH.intValue) }, valueRange = 0.3f..1f)
+        androidx.compose.material3.Slider(Pawb.vH.intValue.toFloat(), { Pawb.setVitrinaSize(Pawb.vW.floatValue, (it / 10f).toInt() * 10) }, valueRange = 0f..320f)
         Text("MARCO", color = p.dim, fontSize = 11.sp, fontWeight = FontWeight.Bold)
         Row(Modifier.horizontalScroll(androidx.compose.foundation.rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             val sel = Pawb.vFrame.value
@@ -263,6 +235,8 @@ private fun VitrinaEditor(onMsg: (String) -> Unit) {
                     modifier = Modifier.clip(RoundedCornerShape(50)).background(if (cur == b.id) p.accent else p.card).clickable { Pawb.equipBanner(b.id) }.padding(horizontal = 14.dp, vertical = 8.dp))
             }
         }
+      }
+      Column(Modifier.weight(1f).verticalScroll(androidx.compose.foundation.rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         androidx.compose.material3.OutlinedTextField(title, { title = it; Pawb.setVitrina(it, sub, Pawb.vImg.value) }, label = { Text("Título") }, singleLine = true, modifier = Modifier.fillMaxWidth())
         androidx.compose.material3.OutlinedTextField(sub, { sub = it; Pawb.setVitrina(title, it, Pawb.vImg.value) }, label = { Text("Subtítulo") }, singleLine = true, modifier = Modifier.fillMaxWidth())
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -287,6 +261,7 @@ private fun VitrinaEditor(onMsg: (String) -> Unit) {
             PriceButton("Importar la de un amigo", true) { importLauncher.launch("*/*") }
         }
         Text("Aún no hay servidor: tu vitrina no aparece sola a otros. Exporta el archivo y mándalo; quien lo importe la verá igual (el video no se incluye, solo imagen, textos y efecto).", color = p.dim, fontSize = 11.sp)
+      }
     }
 }
 
@@ -311,14 +286,14 @@ private fun ItemCard(
     val p = LocalPalette.current
     val owned = Pawb.has(id) || price == 0
     Column(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(p.panel).border(1.dp, rarity.color.copy(alpha = 0.5f), RoundedCornerShape(12.dp)).padding(10.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp)).background(p.panel).border(1.dp, rarity.color.copy(alpha = 0.5f), RoundedCornerShape(12.dp)).padding(8.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Box(Modifier.fillMaxWidth().height(112.dp).clip(RoundedCornerShape(8.dp))) { preview() }
+        Box(Modifier.fillMaxWidth().weight(1f).clip(RoundedCornerShape(8.dp))) { preview() }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Column(Modifier.weight(1f)) {
-                Text(name, color = p.text, fontWeight = FontWeight.Bold)
-                Text(rarity.label + if (sub != null) " · $sub" else "", color = rarity.color, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                Text(name, color = p.text, fontWeight = FontWeight.Bold, fontSize = 13.sp, maxLines = 1)
+                Text(rarity.label + if (sub != null) " · $sub" else "", color = rarity.color, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
             }
             if (owned) {
                 PriceButton(actionLabel ?: if (equipped) "✓ Equipado" else "Equipar", true) { onEquip() }
@@ -434,4 +409,45 @@ object BannerImages {
         out.compress(android.graphics.Bitmap.CompressFormat.JPEG, 55, bos)
         android.util.Base64.encodeToString(bos.toByteArray(), android.util.Base64.NO_WRAP)
     } catch (e: Exception) { null }
+}
+
+
+/** Reparte los elementos en una cuadricula que cabe en el espacio disponible; si no caben todos, pagina (sin scroll). */
+@Composable
+private fun <T> FitGrid(items: List<T>, minW: androidx.compose.ui.unit.Dp, minH: androidx.compose.ui.unit.Dp, cell: @Composable (T) -> Unit) {
+    val p = LocalPalette.current
+    val gap = 8.dp
+    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
+        val navH = 36.dp
+        val maxCols = ((maxWidth + gap) / (minW + gap)).toInt().coerceAtLeast(1)
+        val maxRows = ((maxHeight + gap) / (minH + gap)).toInt().coerceAtLeast(1)
+        val single = items.size <= maxCols * maxRows
+        val availH = if (single) maxHeight else maxHeight - navH
+        val rows0 = ((availH + gap) / (minH + gap)).toInt().coerceAtLeast(1)
+        val cap = maxCols * rows0
+        val pages = (items.size + cap - 1) / cap
+        var page by remember(items.size) { mutableIntStateOf(0) }
+        val cur = page.coerceIn(0, (pages - 1).coerceAtLeast(0))
+        val slice = items.drop(cur * cap).take(cap)
+        // si todo cabe, reparte en el numero justo de columnas para que las tarjetas llenen el espacio
+        val cols = if (single) minOf(maxCols, slice.size).coerceAtLeast(1) else maxCols
+        val rows = (slice.size + cols - 1) / cols
+        val cw = (maxWidth - gap * (cols - 1)) / cols
+        val ch = ((availH - gap * (rows - 1)) / rows).coerceAtMost(minH * 1.6f)
+        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(gap)) {
+            for (r in 0 until rows) {
+                Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
+                    for (c in 0 until cols) {
+                        val i = r * cols + c
+                        if (i < slice.size) Box(Modifier.size(cw, ch)) { cell(slice[i]) } else Box(Modifier.size(cw, ch))
+                    }
+                }
+            }
+            if (!single) Row(Modifier.fillMaxWidth().height(navH), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                Text("‹", color = if (cur > 0) p.text else p.dim, fontSize = 22.sp, modifier = Modifier.clickable(enabled = cur > 0) { Sfx.click(); page = cur - 1 }.padding(horizontal = 18.dp))
+                Text("${cur + 1} / $pages", color = p.dim, fontSize = 13.sp)
+                Text("›", color = if (cur < pages - 1) p.text else p.dim, fontSize = 22.sp, modifier = Modifier.clickable(enabled = cur < pages - 1) { Sfx.click(); page = cur + 1 }.padding(horizontal = 18.dp))
+            }
+        }
+    }
 }

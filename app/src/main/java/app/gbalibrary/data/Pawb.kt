@@ -76,7 +76,7 @@ object Pawb {
         skin.value = p.getString("skin", "").orEmpty()
         vFrame.value = p.getString("vframe", "").orEmpty(); vTitle.value = p.getString("vtitle", "").orEmpty()
         vSub.value = p.getString("vsub", "").orEmpty(); vImg.value = p.getString("vimg", "").orEmpty()
-        vFx.value = p.getString("vfx", "").orEmpty(); vVideo.value = p.getString("vvid", "").orEmpty()
+        vFx.value = p.getString("vfx", "").orEmpty(); vW.floatValue = p.getFloat("vw", 1f); vH.intValue = p.getInt("vh", 0); vVideo.value = p.getString("vvid", "").orEmpty()
         placed.value = try {
             val a = JSONArray(p.getString("placed", "[]"))
             (0 until a.length()).map { val o = a.getJSONObject(it); PlacedSticker(o.getString("u"), o.getString("s"), o.getDouble("x").toFloat(), o.getDouble("y").toFloat(), o.getDouble("k").toFloat(), o.getDouble("r").toFloat()) }
@@ -139,6 +139,10 @@ object Pawb {
     val vTitle = mutableStateOf("")
     val vSub = mutableStateOf("")
     val vImg = mutableStateOf("")   // base64 JPEG (alta calidad)
+    /** Tamaño de la vitrina: ancho como fraccion (0.3..1) y alto en dp (0 = automatico segun la imagen/video). */
+    val vW = androidx.compose.runtime.mutableFloatStateOf(1f)
+    val vH = mutableIntStateOf(0)
+    fun setVitrinaSize(w: Float, h: Int) { vW.floatValue = w.coerceIn(0.3f, 1f); vH.intValue = h.coerceIn(0, 320); p.edit().putFloat("vw", vW.floatValue).putInt("vh", vH.intValue).apply() }
     val vFx = mutableStateOf("")      // efecto animado: holo, destellos, nieve, brasas, lluvia, glitch
     val vVideo = mutableStateOf("")   // ruta del video de la vitrina (copiado a GBALibrary/Banners)
     fun setVitrinaFx(fx: String) { vFx.value = fx; p.edit().putString("vfx", fx).apply() }

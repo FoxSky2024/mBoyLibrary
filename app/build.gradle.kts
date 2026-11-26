@@ -15,8 +15,8 @@ android {
         applicationId = "app.gbalibrary"
         minSdk = 24
         targetSdk = 35
-        versionCode = 37
-        versionName = "1.14.1"
+        versionCode = 38
+        versionName = "1.15.0"
 
         ndk {
             abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")

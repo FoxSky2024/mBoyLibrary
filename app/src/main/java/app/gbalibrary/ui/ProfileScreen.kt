@@ -126,7 +126,7 @@ fun ProfileScreen(
             }
             // ---- Vitrina (banner dentro del marco de los sobres) ----
             if (app.gbalibrary.data.Pawb.banner.value.isNotEmpty() || app.gbalibrary.data.Pawb.vFrame.value.isNotEmpty() || app.gbalibrary.data.Pawb.vTitle.value.isNotEmpty()) {
-                item { Vitrina(Modifier.fillMaxWidth()) }
+                item { Vitrina() }
             }
             // ---- Pestañas ----
             item {
@@ -188,7 +188,6 @@ fun ProfileScreen(
                         }
                     }
                     item { AppButton("Galería de capturas ($shotCount)", onGallery, Modifier.fillMaxWidth(), icon = Icons.Filled.PhotoLibrary) }
-                    item { AppButton("Stickers del perfil (${app.gbalibrary.data.Pawb.placed.value.size}) · editar", { app.gbalibrary.data.Pawb.stickerEdit.value = true }, Modifier.fillMaxWidth()) }
                     item { AppButton("Tienda de Pawb (${app.gbalibrary.data.Pawb.balance.intValue})", { ShopNav.show.value = true }, Modifier.fillMaxWidth()) }
                 }
                 1 -> {
@@ -348,7 +347,6 @@ fun ProfileScreen(
         ProfileSidebar(st, status, ring, shotCount, onTab = { tab = it }, onGallery = onGallery, modifier = Modifier.width(250.dp).fillMaxHeight())
         }
     }
-    StickerLayer(Modifier.fillMaxSize())
     }
     if (showQr) {
         val link = remember(all, st, showQr, Profile.status.intValue, Profile.headline.value, Profile.bio.value, Profile.location.value, Profile.frame.intValue, Profile.banner.intValue, Profile.showcase.value, Profile.showGames.value, Profile.showTime.value, Profile.acceptNotes.value, Settings.profileName.value) {

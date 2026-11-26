@@ -1,3 +1,10 @@
+## 1.15.0
+- Tienda sin fondos ni stickers, mas compacta y paginada (sin scroll); 8 marcos nuevos y todos con efecto holografico y destellos.
+- Vitrina: ancho y alto ajustables.
+- Musica: corregida (barra de progreso, tamaños, sin vinilo encima).
+- Pausa: sin ilustracion por ahora; los ajustes se ven en vertical.
+- Menu principal estilo Discord + Steam: barra de iconos redondos con seccion activa (izquierda o abajo en vertical).
+
 ## 1.14.1
 - Corrige error de compilacion de 1.14.0.
 
