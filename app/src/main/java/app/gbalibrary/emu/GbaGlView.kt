@@ -169,6 +169,8 @@ class GbaGlView(context: Context) : GLSurfaceView(context) {
     @Volatile var filter = VideoFilter.PIXEL
     @Volatile var scaleMode = VideoScale.FIT
     @Volatile var brightness = 1.0f
+    /** 0 = nitido, 1 = un poco borroso (al abrir el disco de musica en el juego). */
+    @Volatile var blur = 0f
 
     private val renderer = GlRenderer()
 
@@ -192,6 +194,7 @@ class GbaGlView(context: Context) : GLSurfaceView(context) {
         private var aUv = 0
         private var uTex = 0
         private var uBright = 0
+        private var uBlur = 0
         private var uScan = 0
         private var surfaceW = 1
         private var surfaceH = 1
@@ -222,10 +225,20 @@ class GbaGlView(context: Context) : GLSurfaceView(context) {
                 varying vec2 vUv;
                 uniform sampler2D uTex;
                 uniform float uBright;
+                uniform float uBlur;
                 uniform float uScan;
                 uniform float uLines;
                 void main() {
-                    vec3 c = texture2D(uTex, vUv).rgb * uBright;
+                    vec3 c = texture2D(uTex, vUv).rgb;
+                    if (uBlur > 0.0) {
+                        float o = uBlur * 0.010;
+                        c += texture2D(uTex, vUv + vec2(o, 0.0)).rgb + texture2D(uTex, vUv - vec2(o, 0.0)).rgb
+                           + texture2D(uTex, vUv + vec2(0.0, o)).rgb + texture2D(uTex, vUv - vec2(0.0, o)).rgb
+                           + texture2D(uTex, vUv + vec2(o, o)).rgb + texture2D(uTex, vUv - vec2(o, o)).rgb
+                           + texture2D(uTex, vUv + vec2(o, -o)).rgb + texture2D(uTex, vUv + vec2(-o, o)).rgb;
+                        c /= 9.0;
+                    }
+                    c *= uBright;
                     float f = fract(vUv.y * uLines);
                     float d = abs(f - 0.5) * 2.0;
                     float line = 1.0 - uScan * 0.38 * d * d;
@@ -238,6 +251,7 @@ class GbaGlView(context: Context) : GLSurfaceView(context) {
             aUv = GLES20.glGetAttribLocation(program, "aUv")
             uTex = GLES20.glGetUniformLocation(program, "uTex")
             uBright = GLES20.glGetUniformLocation(program, "uBright")
+            uBlur = GLES20.glGetUniformLocation(program, "uBlur")
             uScan = GLES20.glGetUniformLocation(program, "uScan")
             uScanH = GLES20.glGetUniformLocation(program, "uLines")
 
@@ -327,6 +341,7 @@ class GbaGlView(context: Context) : GLSurfaceView(context) {
             GLES20.glUseProgram(program)
             GLES20.glUniform1i(uTex, 0)
             GLES20.glUniform1f(uBright, brightness)
+            GLES20.glUniform1f(uBlur, blur)
             GLES20.glUniform1f(uScanH, h.toFloat())
             GLES20.glUniform1f(uScan, if (f == VideoFilter.CRT) 1f else 0f)
 
@@ -373,6 +388,7 @@ class GbaGlView(context: Context) : GLSurfaceView(context) {
                 }
                 val dim = DsScreens.editing && DsScreens.selected != which
                 GLES20.glUniform1f(uBright, if (dim) brightness * 0.5f else brightness)
+                GLES20.glUniform1f(uBlur, blur)
                 dsQuad.position(0)
                 GLES20.glVertexAttribPointer(aPos, 2, GLES20.GL_FLOAT, false, 16, dsQuad)
                 GLES20.glEnableVertexAttribArray(aPos)

@@ -591,6 +591,7 @@ class EmulatorActivity : ComponentActivity() {
                     v.filter = effectiveFilter()
                     v.scaleMode = Settings.scale.intValue
                     v.brightness = Settings.brightness.floatValue
+                    v.blur = if (app.gbalibrary.ui.DiscNav.open.value) 1f else 0f
                 },
             )
 

@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -184,24 +186,65 @@ fun GalleryScreen(onBack: () -> Unit) {
     var stamp by remember { mutableIntStateOf(0) }
     val shots by produceState(emptyList<Shots.Shot>(), stamp) { value = withContext(Dispatchers.IO) { Shots.list(ctx) } }
     var open by remember { mutableStateOf<Int?>(null) }
+    var gameFilter by remember { mutableStateOf<String?>(null) }
+    val games = remember(shots) { shots.map { it.gameName }.distinct().sorted() }
+    val shown = remember(shots, gameFilter) { if (gameFilter == null) shots else shots.filter { it.gameName == gameFilter } }
+    val dayFmt = remember { java.text.SimpleDateFormat("EEEE d 'de' MMMM yyyy", java.util.Locale("es")) }
     Column(Modifier.fillMaxSize().screenBackdrop()) {
         ScreenHeader("Galería de capturas (${shots.size})", onBack)
         if (shots.isEmpty()) {
             Text("Todavía no hay capturas.", color = p.dim, modifier = Modifier.padding(24.dp))
         } else {
+            // filtro por juego
+            androidx.compose.foundation.lazy.LazyRow(
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 14.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                item {
+                    Text("Todos ${shots.size}", color = if (gameFilter == null) p.onPlay else p.text, fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.clip(RoundedCornerShape(50)).background(if (gameFilter == null) p.accent else p.card).clickable { Sfx.click(); gameFilter = null }.padding(horizontal = 14.dp, vertical = 7.dp))
+                }
+                items(games.size) { gi ->
+                    val g = games[gi]
+                    val on = gameFilter == g
+                    Text(g, color = if (on) p.onPlay else p.text, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.widthIn(max = 200.dp).clip(RoundedCornerShape(50)).background(if (on) p.accent else p.card).clickable { Sfx.click(); gameFilter = g }.padding(horizontal = 14.dp, vertical = 7.dp))
+                }
+            }
             LazyVerticalGrid(
-                columns = GridCells.Adaptive(150.dp), contentPadding = androidx.compose.foundation.layout.PaddingValues(12.dp),
+                columns = GridCells.Adaptive(168.dp), contentPadding = androidx.compose.foundation.layout.PaddingValues(14.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                items(shots.size) { i ->
-                    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                        ShotThumb(shots[i], Modifier.fillMaxWidth().height(100.dp)) { open = i }
-                        Text(shots[i].gameName, color = p.text, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text(formatDate(shots[i].time), color = p.dim, fontSize = 10.sp)
+                var lastDay = ""
+                shown.forEachIndexed { i, sh ->
+                    val day = dayFmt.format(java.util.Date(sh.time)).replaceFirstChar { it.uppercase() }
+                    if (day != lastDay) {
+                        lastDay = day
+                        val count = shown.count { dayFmt.format(java.util.Date(it.time)).replaceFirstChar { c -> c.uppercase() } == day }
+                        item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }, key = "h_$day") {
+                            Row(Modifier.fillMaxWidth().padding(top = if (i == 0) 0.dp else 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(day, color = p.text, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                Text("$count", color = p.dim, fontSize = 11.sp)
+                                Box(Modifier.weight(1f).height(1.dp).background(p.dim.copy(alpha = 0.25f)))
+                            }
+                        }
+                    }
+                    item(key = sh.file.path) {
+                        Box(Modifier.fillMaxWidth().aspectRatio(1.5f)) {
+                            ShotThumb(sh, Modifier.fillMaxSize()) { open = i }
+                            Column(
+                                Modifier.align(Alignment.BottomStart).fillMaxWidth()
+                                    .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.75f))), RoundedCornerShape(bottomStart = 8.dp, bottomEnd = 8.dp))
+                                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                            ) {
+                                Text(sh.gameName, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(formatDate(sh.time), color = Color.White.copy(alpha = 0.7f), fontSize = 9.sp)
+                            }
+                        }
                     }
                 }
             }
         }
     }
-    open?.let { start -> ShotViewer(shots, start, onClose = { open = null }, onDelete = { Shots.delete(it); stamp++ }) }
+    open?.let { start -> ShotViewer(shown, start, onClose = { open = null }, onDelete = { Shots.delete(it); stamp++ }) }
 }

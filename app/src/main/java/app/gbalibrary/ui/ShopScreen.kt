@@ -85,7 +85,7 @@ fun ShopScreen(onBack: () -> Unit) {
         Row(Modifier.fillMaxSize().padding(horizontal = 10.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             // pestañas en columna a la izquierda: dejan todo el alto para el contenido
             Column(Modifier.width(104.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                listOf("Marcos", "Banners", "Skins", "Sobres", "Vitrina", "Gratis").forEachIndexed { i, t ->
+                listOf("Marcos" to 0, "Banners" to 1, "Skins" to 2, "Llaveros" to 6, "Sobres" to 3, "Vitrina" to 4, "Gratis" to 5).forEach { (t, i) ->
                     Text(
                         t, color = if (tab == i) p.onPlay else p.text, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, maxLines = 1,
                         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(if (tab == i) p.accent else p.card).clickable { Sfx.click(); tab = i }.padding(horizontal = 12.dp, vertical = 10.dp),
@@ -95,7 +95,7 @@ fun ShopScreen(onBack: () -> Unit) {
                 Text("Gana Pawb jugando (1 por 5 min) y con el bonus diario.", color = p.dim, fontSize = 10.sp)
             }
             Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            if (tab in 0..2) {
+            if (tab in 0..2 || tab == 6) {
                 // filtros: calidad, tenencia y (marcos) donde se aplica
                 Row(Modifier.fillMaxWidth().horizontalScroll(androidx.compose.foundation.rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                     listOf<Pair<String, Rarity?>>("Todas" to null, "Común" to Rarity.COMMON, "Raro" to Rarity.RARE, "Épico" to Rarity.EPIC, "Legendario" to Rarity.LEGENDARY).forEach { (n, r) ->
@@ -157,6 +157,12 @@ fun ShopScreen(onBack: () -> Unit) {
                                 }
                             }
                         }
+                    }
+                    6 -> FitGrid(ShopCatalog.keychainsAll().filter { keep(it.rarity, it.id) }, 150.dp, 150.dp) { k ->
+                        ItemCard(
+                            name = k.name, rarity = k.rarity, price = k.price, id = k.id, equipped = Pawb.keychain.value == k.id,
+                            onEquip = { Pawb.equipKeychain(if (Pawb.keychain.value == k.id) "" else k.id) }, onMsg = { msg = it },
+                        ) { Box(Modifier.fillMaxSize().background(Color(0xFF1B2430)), contentAlignment = Alignment.TopCenter) { KeychainView(k.id, scale = 0.62f) } }
                     }
                     3 -> Row(Modifier.fillMaxSize().horizontalScroll(androidx.compose.foundation.rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         ShopCatalog.packs.forEach { pk ->
@@ -317,11 +323,14 @@ private fun ItemCard(
 ) {
     val p = LocalPalette.current
     val owned = Pawb.has(id) || price == 0
+    var showPreview by remember { mutableStateOf(false) }
+    if (showPreview) ItemPreviewDialog(name, rarity, price, id, equipped, onEquip, onMsg, actionLabel, preview) { showPreview = false }
     Column(
         Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp)).background(p.panel).border(1.dp, rarity.color.copy(alpha = 0.5f), RoundedCornerShape(12.dp)).padding(8.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Box(Modifier.fillMaxWidth().weight(1f).clip(RoundedCornerShape(8.dp))) { preview() }
+        // tocar la imagen abre la vista previa grande (antes de comprar)
+        Box(Modifier.fillMaxWidth().weight(1f).clip(RoundedCornerShape(8.dp)).clickable { Sfx.click(); showPreview = true }) { preview() }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Column(Modifier.weight(1f)) {
                 Text(name, color = p.text, fontWeight = FontWeight.Bold, fontSize = 13.sp, maxLines = 1)
@@ -332,6 +341,54 @@ private fun ItemCard(
             } else {
                 PriceButton("$price", Pawb.canAfford(price), paw = true) {
                     if (Pawb.buy(id, price)) onMsg("Compraste «$name»") else onMsg("Te faltan ${price - Pawb.balance.intValue} Pawb")
+                }
+            }
+        }
+    }
+}
+
+/** Vista previa grande del objeto, con ejemplos en contexto, antes de comprarlo o equiparlo. */
+@Composable
+private fun ItemPreviewDialog(
+    name: String, rarity: Rarity, price: Int, id: String, equipped: Boolean,
+    onEquip: () -> Unit, onMsg: (String) -> Unit, actionLabel: String?, preview: @Composable () -> Unit, onClose: () -> Unit,
+) {
+    val p = LocalPalette.current
+    val owned = Pawb.has(id) || price == 0
+    androidx.compose.ui.window.Dialog(onDismissRequest = onClose, properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)) {
+        Column(
+            Modifier.fillMaxWidth(0.62f).clip(RoundedCornerShape(18.dp)).background(p.panel).border(1.5.dp, rarity.color.copy(alpha = 0.7f), RoundedCornerShape(18.dp)).padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(name, color = p.text, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text(rarity.label, color = rarity.color, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                }
+                Text("✕", color = p.dim, fontSize = 18.sp, modifier = Modifier.clickable { onClose() }.padding(8.dp))
+            }
+            val fr = ShopCatalog.frame(id)
+            val bn = ShopCatalog.banner(id)
+            when {
+                fr != null -> Row(Modifier.fillMaxWidth().height(120.dp), horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                    // sobre un banner y sobre la foto de perfil
+                    FramedBox(fr, Modifier.weight(1f).fillMaxHeight()) { Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(Color(0xFF3B5B8A), Color(0xFF1A2438))))) }
+                    FramedBox(fr, Modifier.size(100.dp)) { Box(Modifier.fillMaxSize().background(Color(0xFF243247)), contentAlignment = Alignment.Center) { PawIcon(44.dp) } }
+                }
+                bn != null -> Box(Modifier.fillMaxWidth().aspectRatio(3.55f).clip(RoundedCornerShape(8.dp))) {
+                    BannerArt(bn.title, bn.subtitle, bn.colors, bn.style, Modifier.fillMaxSize(), asset = bn.img)
+                    Text("Jugador", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp, modifier = Modifier.align(Alignment.TopStart).padding(10.dp))
+                }
+                else -> Box(Modifier.fillMaxWidth().height(150.dp).clip(RoundedCornerShape(10.dp))) { preview() }
+            }
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Box(Modifier.weight(1f))
+                if (owned) {
+                    PriceButton(actionLabel ?: if (equipped) "✓ Equipado" else "Equipar", true) { onEquip(); onClose() }
+                } else {
+                    PriceButton("Comprar · $price", Pawb.canAfford(price), paw = true) {
+                        if (Pawb.buy(id, price)) { onMsg("Compraste «$name»"); onClose() } else onMsg("Te faltan ${price - Pawb.balance.intValue} Pawb")
+                    }
                 }
             }
         }

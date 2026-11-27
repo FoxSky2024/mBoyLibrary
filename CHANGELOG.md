@@ -1,3 +1,10 @@
+## 1.19.0
+- Pantalla de carga negra (5 s al abrir la app, 2 s al abrir juegos) con sprite y barra.
+- Tienda: vista previa grande al tocar un objeto, pestana Llaveros (assets/shop/keychains).
+- Llavero en el perfil que se balancea y se queda quieto.
+- Disco: imagen con degradado de opacidad; el juego se difumina al abrirlo.
+- Galeria y pantalla principal mejor organizadas; sonido de logros mas suave; estanteria con zoom out 40%.
+
 ## 1.18.1
 - Corrige compilacion de 1.18.0.
 
