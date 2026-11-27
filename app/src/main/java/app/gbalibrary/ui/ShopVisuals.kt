@@ -219,7 +219,7 @@ fun VitrinaContent(modifier: Modifier = Modifier) {
 
 /** Vitrina: banner dentro del marco obtenido en los sobres. Se muestra en el perfil. */
 @Composable
-fun Vitrina(modifier: Modifier = Modifier) {
+fun Vitrina(modifier: Modifier = Modifier, overlayName: String? = null) {
     // ancho y alto ajustables; en automatico se adapta a la proporcion de la imagen o video que subiste
     val aspect = vitrinaAspect()
     val vh = Pawb.vH.intValue
@@ -230,7 +230,20 @@ fun Vitrina(modifier: Modifier = Modifier) {
         FramedBox(
             ShopCatalog.frame(Pawb.vFrame.value),
             Modifier.fillMaxWidth(Pawb.vW.floatValue).then(if (vh > 0) Modifier.height(vh.dp) else Modifier.aspectRatio(aspect)),
-        ) { VitrinaContent(Modifier.fillMaxSize()) }
+        ) {
+            Box(Modifier.fillMaxSize()) {
+                VitrinaContent(Modifier.fillMaxSize())
+                // el nombre del jugador va dentro del banner, arriba a la izquierda
+                if (overlayName != null) {
+                    Text(
+                        overlayName, color = Color.White, fontSize = 20.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                        style = androidx.compose.ui.text.TextStyle(shadow = androidx.compose.ui.graphics.Shadow(Color.Black.copy(alpha = 0.8f), Offset(1f, 2f), 6f)),
+                        modifier = Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 8.dp, end = 12.dp),
+                    )
+                }
+            }
+        }
     }
 }
 

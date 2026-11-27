@@ -1,3 +1,14 @@
+## 1.17.0
+- Barra lateral transparente que se esconde sola; se saca deslizando desde el borde y difumina un poco el resto.
+- Cajas con el tamaño de los archivos de la consola (la caratula no las reescala). Zoom de la estanteria al 60% (-40%).
+- Zoom de interfaz por defecto 50%.
+- Musica: aguja sobre el disco, botones redondos, disco giratorio antiguo reemplazado.
+- Disco flotante (biblioteca y juegos) con dos estados: girando / ampliado con controles, lista y modo aleatorio.
+- Pausa: opciones centradas con fondo translucido, texto mas pequeño, misma fuente y barras tipo pastilla.
+- Nombre del jugador dentro del banner (arriba a la izquierda).
+- QR: solo la imagen en tarjeta; se muestra y oculta tocando el icono.
+- Tienda: mas banners, marcos, skins y sobres.
+
 ## 1.16.1
 - Corrige import de 1.16.0.
 

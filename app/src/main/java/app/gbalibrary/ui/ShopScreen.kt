@@ -127,14 +127,14 @@ fun ShopScreen(onBack: () -> Unit) {
                             }
                         }
                     }
-                    3 -> Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    3 -> Row(Modifier.fillMaxSize().horizontalScroll(androidx.compose.foundation.rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         ShopCatalog.packs.forEach { pk ->
                             Column(
-                                Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(14.dp)).background(p.panel).padding(10.dp),
+                                Modifier.width(150.dp).fillMaxHeight().clip(RoundedCornerShape(14.dp)).background(p.panel).padding(10.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp),
                             ) {
                                 Box(
-                                    Modifier.weight(1f).aspectRatio(0.72f).clip(RoundedCornerShape(10.dp))
+                                    Modifier.weight(1f, fill = false).aspectRatio(0.72f).clip(RoundedCornerShape(10.dp))
                                         .background(Brush.verticalGradient(listOf(pk.color, pk.color.copy(alpha = 0.5f), Color(0xFF14101F))))
                                         .border(1.5.dp, Color.White.copy(alpha = 0.6f), RoundedCornerShape(10.dp)),
                                     contentAlignment = Alignment.Center,

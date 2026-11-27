@@ -170,7 +170,7 @@ fun PipControls(pickVideo: () -> Unit) {
             }
         }
         Text("Opacidad ${(Settings.pipOpacity.floatValue * 100).roundToInt()}%", color = p.text, fontSize = 13.sp)
-        Slider(value = Settings.pipOpacity.floatValue, onValueChange = { Settings.setPipOpacity(it) }, valueRange = 0.2f..1f)
+        PillSlider(Settings.pipOpacity.floatValue, 0.2f..1f, { Settings.setPipOpacity(it) })
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("Siempre encima (sobre los botones táctiles)", color = p.text, modifier = Modifier.weight(1f))
             Switch(checked = Settings.pipOnTop.value, onCheckedChange = { Settings.setPipOnTop(it) })

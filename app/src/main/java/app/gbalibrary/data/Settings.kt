@@ -54,7 +54,7 @@ object Settings {
     val padRumble = mutableStateOf(true)
 
     // Escala de la interfaz (biblioteca y ajustes): 0.7 .. 1.25, por defecto 0.85 (compacto)
-    val uiScale = mutableFloatStateOf(0.6f)
+    val uiScale = mutableFloatStateOf(0.5f)
 
     // Opacidad de paneles / barras / tarjetas: 40%..100% (sin glass ni blur)
     val boxOpacity = mutableFloatStateOf(0.9f)
@@ -145,7 +145,7 @@ object Settings {
         musicShuffle.value = p.getBoolean("musicShuffle", false)
         padAutoHide.value = p.getBoolean("padAutoHide", true)
         padRumble.value = p.getBoolean("padRumble", true)
-        uiScale.floatValue = p.getFloat("uiScale2", 0.6f).coerceIn(0.5f, 1.25f)
+        uiScale.floatValue = p.getFloat("uiScale3", 0.5f).coerceIn(0.5f, 1.25f)
         boxOpacity.floatValue = p.getFloat("boxOpacity", 0.9f).coerceIn(0.4f, 1f)
         entryAnim.value = p.getBoolean("entryAnim", true)
         showStatus.value = p.getBoolean("showStatus", true)
@@ -209,7 +209,7 @@ object Settings {
     fun setMusicShuffle(v: Boolean) { musicShuffle.value = v; edit { putBoolean("musicShuffle", v) } }
     fun setPadAutoHide(v: Boolean) { padAutoHide.value = v; edit { putBoolean("padAutoHide", v) } }
     fun setPadRumble(v: Boolean) { padRumble.value = v; edit { putBoolean("padRumble", v) } }
-    fun setUiScale(v: Float) { val c = v.coerceIn(0.5f, 1.25f); uiScale.floatValue = c; edit { putFloat("uiScale2", c) } }
+    fun setUiScale(v: Float) { val c = v.coerceIn(0.5f, 1.25f); uiScale.floatValue = c; edit { putFloat("uiScale3", c) } }
     fun setBoxOpacity(v: Float) { val c = v.coerceIn(0.4f, 1f); boxOpacity.floatValue = c; edit { putFloat("boxOpacity", c) } }
     fun setEntryAnim(v: Boolean) { entryAnim.value = v; edit { putBoolean("entryAnim", v) } }
     fun setShowStatus(v: Boolean) { showStatus.value = v; edit { putBoolean("showStatus", v) } }

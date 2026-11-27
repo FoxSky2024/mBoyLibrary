@@ -27,6 +27,8 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.RepeatOne
@@ -154,14 +156,6 @@ private fun Turntable(t: MusicTheme, art: androidx.compose.ui.graphics.ImageBitm
             val r = rec.toPx() / 2f
             drawCircle(Color.Black.copy(alpha = 0.35f), r * 1.12f, c)
             drawCircle(lerp(t.card, Color.Black, 0.2f), r * 1.09f, c, style = Stroke(r * 0.06f))
-            val pivot = Offset(size.width * 0.90f, size.height * 0.16f)
-            val tipRest = Offset(size.width * 0.90f, size.height * 0.70f)
-            val tipPlay = Offset(c.x + r * 0.62f, c.y + r * 0.25f)
-            val k = arm.value
-            val tip = Offset(tipRest.x + (tipPlay.x - tipRest.x) * k, tipRest.y + (tipPlay.y - tipRest.y) * k)
-            drawLine(t.soft, pivot, tip, strokeWidth = size.minDimension * 0.02f)
-            drawCircle(t.accent, size.minDimension * 0.045f, pivot)
-            drawCircle(t.soft, size.minDimension * 0.02f, tip)
         }
         Box(
             Modifier.offset(cxDp - rec / 2, cyDp - rec / 2).size(rec).rotate(angle).clip(CircleShape).background(Color(0xFF0A0A0C)),
@@ -175,6 +169,19 @@ private fun Turntable(t: MusicTheme, art: androidx.compose.ui.graphics.ImageBitm
                 art?.let { Image(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop, filterQuality = androidx.compose.ui.graphics.FilterQuality.High) } ?: PawIcon(rec * 0.14f, t.soft)
             }
             Box(Modifier.size(rec * 0.04f).clip(CircleShape).background(Color.White.copy(alpha = 0.85f)))
+        }
+        // la aguja va POR ENCIMA del disco
+        Canvas(Modifier.fillMaxSize()) {
+            val c = Offset(cxDp.toPx(), cyDp.toPx())
+            val r = rec.toPx() / 2f
+            val pivot = Offset(size.width * 0.90f, size.height * 0.16f)
+            val tipRest = Offset(c.x + r * 1.0f, c.y - r * 0.1f)
+            val tipPlay = Offset(c.x + r * 0.62f, c.y + r * 0.25f)
+            val k = arm.value
+            val tip = Offset(tipRest.x + (tipPlay.x - tipRest.x) * k, tipRest.y + (tipPlay.y - tipRest.y) * k)
+            drawLine(t.soft, pivot, tip, strokeWidth = size.minDimension * 0.02f)
+            drawCircle(t.accent, size.minDimension * 0.045f, pivot)
+            drawCircle(t.soft, size.minDimension * 0.02f, tip)
         }
     }
 }
@@ -203,7 +210,7 @@ fun MusicScreen(actions: LibraryActions, onBack: () -> Unit) {
     val (posMs, durMs) = rememberMusicTick()
     var panel by remember { mutableIntStateOf(0) } // 0 Info, 1 Lista, 2 Letra
     val hasSource = Settings.musicFolder.value.isNotEmpty() || Settings.musicUri.value.isNotEmpty()
-    val queue by produceState(emptyList<String>(), title, hasSource) {
+    val queue by produceState(emptyList<String>(), title, hasSource, Settings.musicShuffle.value) {
         value = withContext(Dispatchers.IO) { Music.queueTitles(40) }
     }
 
@@ -243,7 +250,7 @@ fun MusicScreen(actions: LibraryActions, onBack: () -> Unit) {
                                 Text("A continuación", color = t.soft, fontWeight = FontWeight.Black, fontSize = 16.sp)
                                 Text("Lo próximo en tu lista", color = t.accent.copy(alpha = 0.7f), fontSize = 11.sp)
                             }
-                            Ic(Icons.Filled.Shuffle, 22.dp, if (Settings.musicShuffle.value) t.accent else t.soft.copy(alpha = 0.5f), Modifier.clip(CircleShape).clickable { Sfx.click(); Settings.setMusicShuffle(!Settings.musicShuffle.value) }.padding(8.dp))
+                            Ic(Icons.Filled.Shuffle, 22.dp, if (Settings.musicShuffle.value) t.accent else t.soft.copy(alpha = 0.5f), Modifier.clip(CircleShape).clickable { Sfx.click(); Music.setShuffle(!Settings.musicShuffle.value) }.padding(8.dp))
                             CookieButton(Icons.Filled.SkipPrevious, t, 40.dp) { Music.change(-1) }
                             Box(Modifier.width(6.dp))
                             CookieButton(Icons.Filled.SkipNext, t, 40.dp) { Music.change(1) }
@@ -256,8 +263,9 @@ fun MusicScreen(actions: LibraryActions, onBack: () -> Unit) {
                         }
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        AppButton("Elegir carpeta", actions.pickMusicFolder)
-                        AppButton("Un archivo", actions.pickMusic)
+                        // botones redondos: elegir carpeta / elegir un archivo
+                        Box(Modifier.size(52.dp).clip(CircleShape).background(t.soft).clickable { Sfx.click(); actions.pickMusicFolder() }, contentAlignment = Alignment.Center) { Ic(Icons.Filled.Folder, 24.dp, t.bg) }
+                        Box(Modifier.size(52.dp).clip(CircleShape).background(t.soft).clickable { Sfx.click(); actions.pickMusic() }, contentAlignment = Alignment.Center) { Ic(Icons.Filled.MusicNote, 24.dp, t.bg) }
                     }
                     Box(Modifier.height(8.dp))
                 }
@@ -346,7 +354,7 @@ private fun BottomBar(t: MusicTheme, art: androidx.compose.ui.graphics.ImageBitm
                 Text(title.ifBlank { "—" }, color = t.soft, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(artist, color = t.accent.copy(alpha = 0.7f), fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
-            Ic(Icons.Filled.Shuffle, 20.dp, if (Settings.musicShuffle.value) t.accent else t.soft.copy(alpha = 0.5f), Modifier.clip(CircleShape).clickable { Sfx.click(); Settings.setMusicShuffle(!Settings.musicShuffle.value) }.padding(6.dp))
+            Ic(Icons.Filled.Shuffle, 20.dp, if (Settings.musicShuffle.value) t.accent else t.soft.copy(alpha = 0.5f), Modifier.clip(CircleShape).clickable { Sfx.click(); Music.setShuffle(!Settings.musicShuffle.value) }.padding(6.dp))
             Ic(Icons.Filled.SkipPrevious, 24.dp, t.soft, Modifier.clip(CircleShape).clickable { Sfx.click(); Music.change(-1) }.padding(6.dp))
             CookieButton(if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow, t, 44.dp) { Music.toggle(ctx) }
             Ic(Icons.Filled.SkipNext, 24.dp, t.soft, Modifier.clip(CircleShape).clickable { Sfx.click(); Music.change(1) }.padding(6.dp))

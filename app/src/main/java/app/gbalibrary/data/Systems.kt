@@ -38,13 +38,13 @@ object Systems {
     /** Sistemas que ya ejecuta la app por dentro. */
     val builtIn: List<ConsoleDef> = listOf(
         ConsoleDef("gba", "GBA", "Game Boy Advance", "Nintendo", setOf("gba", "agb"),
-            Color(0xFF5C6BC0), Color(0xFF1F2459), Color(0xFF070816), emptyList(), 0.80f, emptyList(),
+            Color(0xFF5C6BC0), Color(0xFF1F2459), Color(0xFF070816), emptyList(), 0.637f, emptyList(),
             "Nintendo - Game Boy Advance", true, "mGBA"),
         ConsoleDef("gbc", "GBC", "Game Boy Color", "Nintendo", setOf("gbc"),
-            Color(0xFF26A69A), Color(0xFF0F4A44), Color(0xFF041412), emptyList(), 0.80f, emptyList(),
+            Color(0xFF26A69A), Color(0xFF0F4A44), Color(0xFF041412), emptyList(), 0.637f, emptyList(),
             "Nintendo - Game Boy Color", true, "mGBA"),
         ConsoleDef("gb", "GB", "Game Boy", "Nintendo", setOf("gb"),
-            Color(0xFF9BBC0F), Color(0xFF3B4A12), Color(0xFF0B1004), emptyList(), 0.80f, emptyList(),
+            Color(0xFF9BBC0F), Color(0xFF3B4A12), Color(0xFF0B1004), emptyList(), 0.637f, emptyList(),
             "Nintendo - Game Boy", true, "mGBA"),
         ConsoleDef("nds", "DS", "Nintendo DS", "Nintendo", setOf("nds"),
             Color(0xFFAB47BC), Color(0xFF3B1A47), Color(0xFF0D0610), emptyList(), 0.72f, emptyList(),

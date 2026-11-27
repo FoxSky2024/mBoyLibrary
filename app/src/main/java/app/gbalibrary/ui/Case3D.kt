@@ -106,11 +106,16 @@ fun Case3D(
     // La caja toma las proporciones REALES del arte (frente y lomo): asi calzan tamano y bordes.
     val frontBmp = rememberBitmap(game, "front")
     val spineImg = back?.spine ?: rememberBitmap(game, "spine")
-    val aspect = frontBmp?.let { it.width.toFloat() / it.height }?.takeIf { it in 0.4f..1.3f }
-    // Todas las cajas miden lo mismo de alto; el ancho sale de las proporciones del arte.
+    // La caja conserva SIEMPRE el tamano (proporciones) de los archivos de la consola (assets/bases/<consola>_font / _spine);
+    // la caratula se ajusta dentro de ella y nunca la reescala. Sin molde: se usa el arte real.
+    val tplFront = rememberBase(console, "font")
+    val tplSpine = rememberBase(console, "spine")
+    val aspect = (tplFront?.let { it.width.toFloat() / it.height }
+        ?: frontBmp?.let { it.width.toFloat() / it.height })?.takeIf { it in 0.4f..1.3f }
     val fh = height
     val fw = if (aspect != null) height * aspect else width
-    val spAspect = spineImg?.let { it.width.toFloat() / it.height }?.takeIf { it in 0.04f..0.3f }
+    val spAspect = (tplSpine?.let { it.width.toFloat() / it.height }
+        ?: spineImg?.let { it.width.toFloat() / it.height })?.takeIf { it in 0.04f..0.3f }
     val depth = if (spAspect != null) fh * spAspect else fh * style.depthRatio
     val wPx = with(density) { fw.toPx() }
     val dPx = with(density) { depth.toPx() }
@@ -216,7 +221,7 @@ private fun FrontFace(game: Game, style: CaseStyle, phase: () -> Float, strength
             .then(if (cheap) Modifier else Modifier.glare(phase, strength)),
     ) {
         // sin marco ni borde propio: solo el arte de la caja
-        FrontArt(game, Modifier.fillMaxSize(), if (fitted) ContentScale.FillBounds else ContentScale.Crop)
+        FrontArt(game, Modifier.fillMaxSize(), ContentScale.Crop)
         // volumen: realce a la izquierda (lado del lomo) y sombra a la derecha
         Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(Color.White.copy(alpha = 0.10f), Color.Transparent, Color.Black.copy(alpha = 0.14f)))))
     }
