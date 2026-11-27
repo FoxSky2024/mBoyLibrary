@@ -82,7 +82,7 @@ fun GameMenu(title: String, speed: Int, layout: ControlLayout, padConnected: Boo
     // Lista escalonada arriba a la izquierda (como un menu de juego), ajustes abajo al centro y una ilustracion
     // que entra deslizandose desde el borde izquierdo en la esquina inferior izquierda.
     androidx.compose.foundation.layout.BoxWithConstraints(
-        Modifier.fillMaxSize().background(Color(0x55000000)).clickable(onClick = actions.close),
+        Modifier.fillMaxSize().background(Color(0xB3000000)).clickable(onClick = actions.close),
     ) {
         val portrait = maxHeight > maxWidth
         StatusIndicators(Modifier.align(Alignment.TopEnd).padding(top = 6.dp, end = 12.dp), tint = Color.White)
@@ -99,11 +99,11 @@ fun GameMenu(title: String, speed: Int, layout: ControlLayout, padConnected: Boo
             entries.forEachIndexed { i, name ->
                 val sel = i > 0 && i - 1 == tab
                 Box(Modifier.fillMaxWidth().height(34.dp), contentAlignment = Alignment.CenterStart) {
-                    if (sel) Box(Modifier.fillMaxWidth().height(1.5.dp).background(p.accent))
+                    if (sel) Box(Modifier.fillMaxWidth().height(0.5.dp).background(p.accent))
                     Box(
                         Modifier
                             .padding(start = 22.dp + 16.dp * i)
-                            .then(if (sel) Modifier.border(1.5.dp, p.accent).background(Color(0xCC000000)) else Modifier)
+                            .then(if (sel) Modifier.border(0.8.dp, p.accent).background(Color(0xCC000000)) else Modifier)
                             .clickable {
                                 Sfx.click()
                                 if (i == 0) actions.close() else tab = if (tab == i - 1 && i - 1 != TABS.lastIndex) -1 else i - 1
@@ -129,7 +129,7 @@ fun GameMenu(title: String, speed: Int, layout: ControlLayout, padConnected: Boo
                     .fillMaxWidth(if (portrait) 1f else 0.62f)
                     .fillMaxHeight(if (portrait) 0.5f else 0.66f)
                     .background(p.panel.copy(alpha = 0.58f), RoundedCornerShape(16.dp))
-                    .border(1.dp, Color.White.copy(alpha = 0.18f), RoundedCornerShape(16.dp))
+                    .border(0.5.dp, Color.White.copy(alpha = 0.18f), RoundedCornerShape(16.dp))
                     .clickable(enabled = false, onClick = {})
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 18.dp, vertical = 12.dp),
@@ -164,7 +164,7 @@ fun GmButton(highlight: Boolean, onClick: () -> Unit, content: @Composable andro
     Row(
         Modifier
             .then(if (highlight) Modifier.background(Color(0xCC000000)) else Modifier)
-            .border(1.5.dp, if (highlight) p.accent else Color.White.copy(alpha = 0.3f))
+            .border(0.8.dp, if (highlight) p.accent else Color.White.copy(alpha = 0.3f))
             .clickable { Sfx.click(); onClick() }
             .padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,

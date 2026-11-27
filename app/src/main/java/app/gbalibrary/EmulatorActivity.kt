@@ -77,7 +77,6 @@ import app.gbalibrary.data.Archive
 import app.gbalibrary.data.DataDir
 import app.gbalibrary.data.RomImport
 import app.gbalibrary.input.PadInput
-import app.gbalibrary.ui.EntrySplash
 import app.gbalibrary.ui.Pip
 import app.gbalibrary.ui.PipOverlay
 import app.gbalibrary.ui.Music
@@ -623,20 +622,6 @@ class EmulatorActivity : ComponentActivity() {
             if (Settings.pipOnTop.value) PipOverlay()
 
             if (Settings.musicInGame.value && !editing.value) app.gbalibrary.ui.VinylOverlay(Modifier.fillMaxSize())
-            // Boton flotante de musica (solo si "Seguir escuchando musica dentro del juego" esta ON).
-            if (Settings.musicInGame.value && Music.hasSource() && !editing.value) {
-                Box(
-                    Modifier.align(Alignment.TopCenter).padding(top = 6.dp).size(34.dp).alpha(0.45f)
-                        .clip(CircleShape).background(Color(0xAA000000))
-                        .clickable { Music.toggle(this@EmulatorActivity) },
-                    contentAlignment = Alignment.Center,
-                ) { Ic(if (Music.playing.value) Icons.Filled.Pause else Icons.Filled.MusicNote, size = 20.dp, tint = Color.White) }
-            }
-
-            // Animacion de entrada (se puede desactivar en Ajustes > Animaciones).
-            var splash by remember { mutableStateOf(Settings.entryAnim.value) }
-            if (splash) EntrySplash(game.title) { splash = false }
-
             if (Settings.showFps.value) {
                 Text(
                     "$fps FPS",

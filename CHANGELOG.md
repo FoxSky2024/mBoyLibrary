@@ -1,4 +1,9 @@
-## 1.19.1
+## 1.20.0
+- Quitado el boton de pausa de musica y la pantalla de entrada al juego.
+- Menu de pausa: fondo mas oscuro y lineas mas finas.
+- Barra de carga mas fina y larga.
+- Llaveros mas grandes; mantenlos presionados para moverlos.
+- Estanteria 3D: cajas con zoom in 60## 1.19.1
 - Corrige compilacion de 1.19.0.
 
 ## 1.19.0
