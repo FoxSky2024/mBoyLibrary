@@ -1,9 +1,17 @@
+## 1.21.0
+- Perfil: 3 argollas semitransparentes; hasta 3 llaveros a la vez. Mantener presionado y arrastrar para cambiarlos de argolla (solo se sueltan en una argolla). Quedan anclados al contenido del perfil.
+- Llaveros: efecto al tocar, doble toque para inspeccionarlo (giro), y llaveros con particulas (brillo, fuego, hielo, amor, burbujas). Nombres de assets con brillo/fuego/nieve/amor/burbuja activan el efecto.
+- Entrada a juegos: la pantalla de carga se queda hasta que el juego abre (sin volver al menu) y el juego abre ya en la orientacion de la pantalla (automatica por defecto).
+- Modo desarrollador: solo accesible con usuario y contrasena fijos.
+
 ## 1.20.0
 - Quitado el boton de pausa de musica y la pantalla de entrada al juego.
 - Menu de pausa: fondo mas oscuro y lineas mas finas.
 - Barra de carga mas fina y larga.
 - Llaveros mas grandes; mantenlos presionados para moverlos.
-- Estanteria 3D: cajas con zoom in 60## 1.19.1
+- Estanteria 3D: cajas con zoom in 60%.
+
+## 1.19.1
 - Corrige compilacion de 1.19.0.
 
 ## 1.19.0

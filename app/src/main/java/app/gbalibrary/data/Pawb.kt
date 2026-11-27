@@ -74,7 +74,11 @@ object Pawb {
         bg.value = p.getString("bg", "").orEmpty()
         banner.value = p.getString("banner", "").orEmpty()
         skin.value = p.getString("skin", "").orEmpty()
-        kcDx.value = p.getFloat("kcx", 0f); kcDy.value = p.getFloat("kcy", 0f)
+        run {
+            val raw = p.getString("kslots", null)
+            val l = if (raw != null) raw.split(",") else listOf(p.getString("kchain", "").orEmpty())
+            for (i in 0..2) kcSlots[i] = l.getOrElse(i) { "" }
+        }
         keychain.value = p.getString("kchain", "").orEmpty(); aFrame.value = p.getString("aframe", "").orEmpty(); vFrame.value = p.getString("vframe", "").orEmpty(); vTitle.value = p.getString("vtitle", "").orEmpty()
         vSub.value = p.getString("vsub", "").orEmpty(); vImg.value = p.getString("vimg", "").orEmpty()
         vFx.value = p.getString("vfx", "").orEmpty(); vW.floatValue = p.getFloat("vw", 1f); vH.intValue = p.getInt("vh", 0); vAlign.intValue = p.getInt("valign", 0); vDy.intValue = p.getInt("vdy", 0); vVideo.value = p.getString("vvid", "").orEmpty()
@@ -162,10 +166,21 @@ object Pawb {
     fun bannerDir(ctx: Context) = java.io.File(DataDir.root(ctx), "Banners").apply { mkdirs() }
     /** Llavero equipado (cuelga y se balancea en el perfil). */
     val keychain = mutableStateOf("")
-    /** Posicion del llavero en el perfil (dp desde la posicion por defecto). */
-    val kcDx = mutableStateOf(0f)
-    val kcDy = mutableStateOf(0f)
-    fun setKeychainPos(x: Float, y: Float) { kcDx.value = x; kcDy.value = y; p.edit().putFloat("kcx", x).putFloat("kcy", y).apply() }
+    /** Hasta 3 llaveros a la vez, uno por argolla del perfil ("" = argolla vacia). */
+    val kcSlots = androidx.compose.runtime.mutableStateListOf("", "", "")
+    private fun saveSlots() { p.edit().putString("kslots", kcSlots.joinToString(",")).apply() }
+    /** Pone el llavero en la primera argolla libre o lo quita si ya esta puesto. false = argollas llenas. */
+    fun toggleKeychain(id: String): Boolean {
+        val i = kcSlots.indexOf(id)
+        if (i >= 0) { kcSlots[i] = ""; saveSlots(); return true }
+        val f = kcSlots.indexOf("")
+        if (f < 0) return false
+        kcSlots[f] = id; saveSlots(); return true
+    }
+    fun swapKeychain(i: Int, j: Int) {
+        if (i == j || i !in 0..2 || j !in 0..2) return
+        val t = kcSlots[i]; kcSlots[i] = kcSlots[j]; kcSlots[j] = t; saveSlots()
+    }
     fun equipKeychain(id: String) { keychain.value = id; p.edit().putString("kchain", id).apply() }
     /** Marco equipado en la foto de perfil (avatar). */
     val aFrame = mutableStateOf("")

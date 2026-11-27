@@ -64,6 +64,7 @@
 
         <activity
             android:name=".EmulatorActivity"
+            android:screenOrientation="fullSensor"
             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden|keyboard|navigation|uiMode"
             android:exported="false" />
         <provider

@@ -40,7 +40,7 @@ class ShopSkin(
     val id: String, val name: String, val price: Int, val rarity: Rarity, val idle: Color, val border: Color, val glyph: Color, val active: Color?,
     val shape: Int = 0, val pattern: Int = 0, val idle2: Color? = null, val theme: String = "",
 )
-class ShopKeychain(val id: String, val name: String, val price: Int, val rarity: Rarity, val charm: Int, val c1: Color, val c2: Color, val img: String = "")
+class ShopKeychain(val id: String, val name: String, val price: Int, val rarity: Rarity, val charm: Int, val c1: Color, val c2: Color, val img: String = "", val fx: Int = 0)
 class ShopFrame(val id: String, val name: String, val price: Int, val rarity: Rarity, val kind: Int, val c1: Color, val c2: Color, val img: String = "")
 class ShopSticker(val id: String, val name: String, val price: Int, val rarity: Rarity)
 class ShopPack(val id: String, val name: String, val desc: String, val price: Int, val kinds: Set<String>, val count: Int, val color: Color)
@@ -217,7 +217,12 @@ object ShopCatalog {
         ShopKeychain("kc_heart", "Corazón", 80, Rarity.RARE, 2, c(0xFFFF6F9C), c(0xFF9B1B4A)),
         ShopKeychain("kc_gem", "Gema", 130, Rarity.RARE, 3, c(0xFF7FE9FF), c(0xFF1565C0)),
         ShopKeychain("kc_cart", "Cartucho", 170, Rarity.EPIC, 4, c(0xFFB0BEC5), c(0xFF37474F)),
-        ShopKeychain("kc_gpaw", "Huella dorada", 280, Rarity.LEGENDARY, 0, c(0xFFFFE082), c(0xFFB8860B)),
+        ShopKeychain("kc_gpaw", "Huella dorada", 280, Rarity.LEGENDARY, 0, c(0xFFFFE082), c(0xFFB8860B), fx = 1),
+        ShopKeychain("kc_spark", "Estrella brillante", 150, Rarity.RARE, 1, c(0xFFFFF176), c(0xFFF9A825), fx = 1),
+        ShopKeychain("kc_flame", "Corazón de fuego", 220, Rarity.EPIC, 2, c(0xFFFF7043), c(0xFFB71C1C), fx = 2),
+        ShopKeychain("kc_snow", "Gema de hielo", 220, Rarity.EPIC, 3, c(0xFFB3E5FC), c(0xFF0277BD), fx = 3),
+        ShopKeychain("kc_love", "Amor flotante", 200, Rarity.EPIC, 2, c(0xFFF48FB1), c(0xFFAD1457), fx = 4),
+        ShopKeychain("kc_bubble", "Cartucho burbuja", 260, Rarity.LEGENDARY, 4, c(0xFF80DEEA), c(0xFF006064), fx = 5),
     )
     val assetKeychains = androidx.compose.runtime.mutableStateListOf<ShopKeychain>()
     fun keychainsAll(): List<ShopKeychain> = keychains + assetKeychains
@@ -250,7 +255,10 @@ object ShopCatalog {
         assetBanners.clear(); assetFrames.clear(); assetKeychains.clear()
         runCatching { am.list("shop/keychains") }.getOrNull().orEmpty().sorted().forEach { f ->
             val (r, pr, nm) = parseAsset("keychains", f) ?: return@forEach
-            assetKeychains.add(ShopKeychain("as_k_" + f.substringBeforeLast('.'), nm, pr, r, 0, Color.White, Color.Gray, "shop/keychains/$f"))
+            // efecto de particulas segun palabras del nombre: brillo, fuego, nieve, amor, burbuja
+            val ln = nm.lowercase()
+            val fx = when { "brillo" in ln -> 1; "fuego" in ln -> 2; "nieve" in ln -> 3; "amor" in ln -> 4; "burbuja" in ln -> 5; else -> 0 }
+            assetKeychains.add(ShopKeychain("as_k_" + f.substringBeforeLast('.'), nm, pr, r, 0, Color.White, Color.Gray, "shop/keychains/$f", fx))
         }
         runCatching { am.list("shop/banners") }.getOrNull().orEmpty().sorted().forEach { f ->
             val (r, pr, nm) = parseAsset("banners", f) ?: return@forEach

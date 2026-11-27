@@ -54,6 +54,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
@@ -101,6 +103,7 @@ fun ProfileScreen(
     val banner = Banners[Profile.banner.intValue.coerceIn(0, Banners.lastIndex)].second
     val status = Statuses[Profile.status.intValue.coerceIn(0, Statuses.lastIndex)]
 
+    var headerBottom by androidx.compose.runtime.remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
     Box(Modifier.fillMaxSize()) {
     Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(banner[0].copy(alpha = 0.6f), Color.Transparent)))) {
         ScreenHeader("Mi Perfil", onBack)
@@ -108,7 +111,7 @@ fun ProfileScreen(
         LazyColumn(Modifier.weight(1f).fillMaxHeight(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             // ---- Cabecera (estilo Steam) ----
             item {
-                Box(Modifier.fillMaxWidth()) {
+                Box(Modifier.fillMaxWidth().onGloballyPositioned { headerBottom = it.positionInRoot().y + it.size.height }) {
                     Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         Avatar(116, ring, RoundedCornerShape(4.dp))
                         Column(Modifier.weight(1f).padding(end = 44.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -356,18 +359,8 @@ fun ProfileScreen(
     }
     // QR: solo la imagen, en una tarjeta de cristal arriba a la derecha; tocarla (o el icono) la esconde
     Box(Modifier.fillMaxSize()) {
-        // llavero equipado: cuelga arriba y se balancea al entrar al perfil
-        app.gbalibrary.data.Pawb.keychain.value.takeIf { it.isNotEmpty() }?.let { kid ->
-            val dens = androidx.compose.ui.platform.LocalDensity.current
-            // mantener presionado y arrastrar para cambiarlo de lugar
-            KeychainView(
-                kid,
-                Modifier.align(Alignment.TopEnd).padding(end = 120.dp, top = 0.dp)
-                    .offset { androidx.compose.ui.unit.IntOffset(with(dens) { app.gbalibrary.data.Pawb.kcDx.value.dp.roundToPx() }, with(dens) { app.gbalibrary.data.Pawb.kcDy.value.dp.roundToPx() }) },
-                scale = 0.9f,
-                onMove = { dx, dy -> app.gbalibrary.data.Pawb.setKeychainPos(app.gbalibrary.data.Pawb.kcDx.value + dx / dens.density, app.gbalibrary.data.Pawb.kcDy.value + dy / dens.density) },
-            )
-        }
+        // argollas con los llaveros equipados (arrastra manteniendo presionado)
+        KeychainRings(headerBottom)
         androidx.compose.animation.AnimatedVisibility(
             visible = showQr,
             modifier = Modifier.align(Alignment.TopEnd).padding(top = 58.dp, end = 14.dp),
