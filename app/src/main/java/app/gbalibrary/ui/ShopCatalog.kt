@@ -222,6 +222,18 @@ object ShopCatalog {
         ShopKeychain("kc_flame", "Corazón de fuego", 220, Rarity.EPIC, 2, c(0xFFFF7043), c(0xFFB71C1C), fx = 2),
         ShopKeychain("kc_snow", "Gema de hielo", 220, Rarity.EPIC, 3, c(0xFFB3E5FC), c(0xFF0277BD), fx = 3),
         ShopKeychain("kc_love", "Amor flotante", 200, Rarity.EPIC, 2, c(0xFFF48FB1), c(0xFFAD1457), fx = 4),
+        ShopKeychain("kc_coin", "Moneda Pawb", 90, Rarity.COMMON, 5, c(0xFFFFD54F), c(0xFF8D6E00)),
+        ShopKeychain("kc_cat", "Gatito", 120, Rarity.COMMON, 8, c(0xFF455A64), c(0xFF111B21)),
+        ShopKeychain("kc_orb", "Orbe", 110, Rarity.COMMON, 9, c(0xFFE53935), c(0xFF212121)),
+        ShopKeychain("kc_key", "Llave dorada", 100, Rarity.COMMON, 11, c(0xFFFFCA28), c(0xFF8D6E00)),
+        ShopKeychain("kc_bolt", "Rayo", 140, Rarity.RARE, 6, c(0xFFFFEE58), c(0xFFF57F17), fx = 1),
+        ShopKeychain("kc_moon", "Luna", 160, Rarity.RARE, 7, c(0xFFE1BEE7), c(0xFF6A1B9A), fx = 1),
+        ShopKeychain("kc_flower", "Flor", 130, Rarity.RARE, 12, c(0xFFF8BBD0), c(0xFFC2185B), fx = 4),
+        ShopKeychain("kc_sun", "Estrella solar", 190, Rarity.EPIC, 1, c(0xFFFFB74D), c(0xFFE65100), fx = 2),
+        ShopKeychain("kc_fcat", "Gato de fuego", 240, Rarity.EPIC, 8, c(0xFFFF7043), c(0xFF4E0D00), fx = 2),
+        ShopKeychain("kc_crown", "Corona", 300, Rarity.LEGENDARY, 10, c(0xFFFFD54F), c(0xFF8D6E00), fx = 1),
+        ShopKeychain("kc_icecrown", "Corona de hielo", 340, Rarity.LEGENDARY, 10, c(0xFF81D4FA), c(0xFF01579B), fx = 3),
+        ShopKeychain("kc_galaxy", "Orbe galaxia", 320, Rarity.LEGENDARY, 9, c(0xFF7E57C2), c(0xFF1A0B3B), fx = 1),
         ShopKeychain("kc_bubble", "Cartucho burbuja", 260, Rarity.LEGENDARY, 4, c(0xFF80DEEA), c(0xFF006064), fx = 5),
     )
     val assetKeychains = androidx.compose.runtime.mutableStateListOf<ShopKeychain>()

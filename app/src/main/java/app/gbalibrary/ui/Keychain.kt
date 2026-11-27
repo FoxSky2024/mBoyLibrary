@@ -35,7 +35,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.PathOperation
+import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
+import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -64,7 +72,7 @@ import kotlin.math.sin
  */
 @Composable
 fun KeychainView(
-    id: String, modifier: Modifier = Modifier, scale: Float = 1f, replay: Int = 0, swing: Boolean = true,
+    id: String, modifier: Modifier = Modifier, scale: Float = 1f, replay: Int = 0, swing: Boolean = true, yaw: Float = 0f,
     onMove: ((Float, Float) -> Unit)? = null, onEnd: (() -> Unit)? = null, onInspect: (() -> Unit)? = null,
 ) {
     val k = ShopCatalog.keychain(id) ?: return
@@ -77,6 +85,11 @@ fun KeychainView(
             angle.snapTo(if (taps == 0) 30f else 20f)
             angle.animateTo(0f, spring(dampingRatio = 0.2f, stiffness = 20f))
         }
+    }
+    // al tocarlo da una vuelta completa (se ven las capas del llavero 3D)
+    val spin = remember(id) { Animatable(0f) }
+    LaunchedEffect(id, taps) {
+        if (taps > 0) { spin.snapTo(0f); spin.animateTo(360f, tween(800, easing = FastOutSlowInEasing)); spin.snapTo(0f) }
     }
     // animacion de particulas: siempre si el llavero tiene efecto; solo ~0.9 s tras tocarlo si no
     LaunchedEffect(id, burstStart) {
@@ -108,13 +121,45 @@ fun KeychainView(
     ) {
         Canvas(Modifier.size(20.dp * scale, 64.dp * scale)) { drawChain(Color(0xFFCFD8DC)) }
         Box(Modifier.size((if (k.img.isNotEmpty()) 78.dp else 58.dp) * scale)) {
-            if (k.img.isNotEmpty()) {
-                val b = rememberAssetImage(k.img)
-                if (b != null) Image(b, null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
-            } else {
-                Canvas(Modifier.fillMaxSize()) { drawCharm(k) }
-            }
+            StackedCharm(k, angle.value * 1.3f + spin.value + yaw)
             if (k.fx != 0 || burstP >= 0f) Canvas(Modifier.fillMaxSize()) { drawFx(k.fx, now / 1e9f, burstP) }
+        }
+    }
+}
+
+/**
+ * Sprite stacking: el dibujo del llavero se repite en capas con profundidad; al girar (yaw) las capas se
+ * desplazan y se ve el grosor, como un objeto 3D hecho de rebanadas. Las capas del fondo van mas oscuras.
+ */
+@Composable
+private fun StackedCharm(k: ShopKeychain, yaw: Float) {
+    val dens = LocalDensity.current
+    val bmp: ImageBitmap? = if (k.img.isNotEmpty()) rememberAssetImage(k.img) else remember(k.id) {
+        val px = 160
+        ImageBitmap(px, px).also { b ->
+            CanvasDrawScope().draw(dens, LayoutDirection.Ltr, androidx.compose.ui.graphics.Canvas(b), Size(px.toFloat(), px.toFloat())) { drawCharm(k) }
+        }
+    }
+    Canvas(Modifier.fillMaxSize()) {
+        val b = bmp ?: return@Canvas
+        val rad = Math.toRadians(yaw.toDouble()).toFloat()
+        val c = cos(rad); val sn = sin(rad)
+        val n = 10
+        val thick = size.width * 0.2f
+        val facing = c >= 0f
+        val dst = IntSize(size.width.roundToInt(), size.height.roundToInt())
+        for (i in 0 until n) {
+            val u = i / (n - 1f) // orden de dibujo: 1 = capa mas cercana al que mira
+            val z = (u - 0.5f) * thick * (if (facing) 1f else -1f)
+            withTransform({
+                translate(z * sn, 0f)
+                scale(c, 1f, Offset(size.width / 2f, size.height / 2f))
+            }) {
+                drawImage(
+                    b, dstSize = dst,
+                    colorFilter = if (u < 0.999f) ColorFilter.tint(Color.Black.copy(alpha = (1f - (0.4f + 0.6f * u)).coerceIn(0f, 0.8f)), BlendMode.SrcAtop) else null,
+                )
+            }
         }
     }
 }
@@ -179,9 +224,7 @@ fun KeychainInspect(id: String, onClose: () -> Unit) {
             contentAlignment = Alignment.Center,
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Box(Modifier.graphicsLayer { rotationY = ry + spin.value; cameraDistance = 14f * density }) {
-                    KeychainView(id, scale = 1.9f, swing = false)
-                }
+                KeychainView(id, scale = 1.9f, swing = false, yaw = ry + spin.value)
                 Text(k.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                 Text(k.rarity.label, color = k.rarity.color, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                 Text("Arrastra para girar · toca para cerrar", color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp)
@@ -299,6 +342,54 @@ private fun DrawScope.drawCharm(k: ShopKeychain) {
             drawLine(k.c2, Offset(w * 0.06f, w * 0.4f), Offset(w * 0.94f, w * 0.4f), w * 0.04f)
             drawLine(k.c2, Offset(w * 0.28f, w * 0.12f), Offset(w * 0.38f, w * 0.4f), w * 0.04f); drawLine(k.c2, Offset(w * 0.72f, w * 0.12f), Offset(w * 0.62f, w * 0.4f), w * 0.04f)
             drawLine(k.c2, Offset(w * 0.38f, w * 0.4f), Offset(w * 0.5f, w * 0.94f), w * 0.04f); drawLine(k.c2, Offset(w * 0.62f, w * 0.4f), Offset(w * 0.5f, w * 0.94f), w * 0.04f)
+        }
+        5 -> { // moneda
+            val ce = Offset(w / 2f, w * 0.52f)
+            drawCircle(k.c2, w * 0.46f, ce); drawCircle(k.c1, w * 0.4f, ce); drawCircle(k.c2, w * 0.28f, ce, style = line)
+            drawCircle(k.c2, w * 0.09f, ce); for (q in listOf(Offset(-0.15f, -0.11f), Offset(0.15f, -0.11f), Offset(-0.07f, -0.2f), Offset(0.07f, -0.2f))) drawCircle(k.c2, w * 0.04f, Offset(ce.x + q.x * w, ce.y + q.y * w * 0.4f - w * 0.02f))
+        }
+        6 -> { // rayo
+            val pth = Path().apply { moveTo(w * 0.6f, w * 0.04f); lineTo(w * 0.2f, w * 0.56f); lineTo(w * 0.46f, w * 0.56f); lineTo(w * 0.34f, w * 0.96f); lineTo(w * 0.82f, w * 0.38f); lineTo(w * 0.54f, w * 0.38f); lineTo(w * 0.72f, w * 0.04f); close() }
+            drawPath(pth, k.c1); drawPath(pth, k.c2, style = line)
+        }
+        7 -> { // luna
+            val a = Path().apply { addOval(androidx.compose.ui.geometry.Rect(Offset(w * 0.1f, w * 0.1f), Size(w * 0.8f, w * 0.8f))) }
+            val b = Path().apply { addOval(androidx.compose.ui.geometry.Rect(Offset(w * 0.34f, w * 0.0f), Size(w * 0.7f, w * 0.7f))) }
+            val m = Path.combine(PathOperation.Difference, a, b)
+            drawPath(m, k.c1); drawPath(m, k.c2, style = line)
+            drawSpark(w * 0.72f, w * 0.62f, w * 0.1f, k.c1)
+        }
+        8 -> { // cabeza de gato
+            val ear1 = Path().apply { moveTo(w * 0.14f, w * 0.5f); lineTo(w * 0.16f, w * 0.08f); lineTo(w * 0.44f, w * 0.3f); close() }
+            val ear2 = Path().apply { moveTo(w * 0.86f, w * 0.5f); lineTo(w * 0.84f, w * 0.08f); lineTo(w * 0.56f, w * 0.3f); close() }
+            drawPath(ear1, k.c1); drawPath(ear2, k.c1); drawPath(ear1, k.c2, style = line); drawPath(ear2, k.c2, style = line)
+            drawCircle(k.c1, w * 0.36f, Offset(w / 2f, w * 0.6f)); drawCircle(k.c2, w * 0.36f, Offset(w / 2f, w * 0.6f), style = line)
+            drawCircle(k.c2, w * 0.05f, Offset(w * 0.37f, w * 0.55f)); drawCircle(k.c2, w * 0.05f, Offset(w * 0.63f, w * 0.55f))
+            drawCircle(k.c2, w * 0.035f, Offset(w / 2f, w * 0.66f))
+        }
+        9 -> { // orbe
+            val tl = Offset(w * 0.06f, w * 0.1f); val sz = Size(w * 0.88f, w * 0.88f)
+            drawArc(k.c1, 180f, 180f, true, tl, sz); drawArc(Color.White, 0f, 180f, true, tl, sz)
+            drawCircle(k.c2, w * 0.44f, Offset(w / 2f, w * 0.54f), style = line); drawLine(k.c2, Offset(w * 0.06f, w * 0.54f), Offset(w * 0.94f, w * 0.54f), w * 0.06f)
+            drawCircle(Color.White, w * 0.12f, Offset(w / 2f, w * 0.54f)); drawCircle(k.c2, w * 0.12f, Offset(w / 2f, w * 0.54f), style = line)
+        }
+        10 -> { // corona
+            val pth = Path().apply { moveTo(w * 0.08f, w * 0.84f); lineTo(w * 0.08f, w * 0.3f); lineTo(w * 0.3f, w * 0.56f); lineTo(w * 0.5f, w * 0.16f); lineTo(w * 0.7f, w * 0.56f); lineTo(w * 0.92f, w * 0.3f); lineTo(w * 0.92f, w * 0.84f); close() }
+            drawPath(pth, k.c1); drawPath(pth, k.c2, style = line)
+            for (x in listOf(0.26f, 0.5f, 0.74f)) drawCircle(k.c2, w * 0.05f, Offset(w * x, w * 0.72f))
+        }
+        11 -> { // llave
+            drawCircle(k.c1, w * 0.22f, Offset(w * 0.3f, w * 0.3f), style = Stroke(w * 0.12f)); drawCircle(k.c2, w * 0.3f, Offset(w * 0.3f, w * 0.3f), style = Stroke(w * 0.02f))
+            drawLine(k.c1, Offset(w * 0.44f, w * 0.44f), Offset(w * 0.86f, w * 0.88f), w * 0.11f)
+            drawLine(k.c1, Offset(w * 0.68f, w * 0.7f), Offset(w * 0.82f, w * 0.58f), w * 0.09f); drawLine(k.c1, Offset(w * 0.78f, w * 0.8f), Offset(w * 0.92f, w * 0.68f), w * 0.09f)
+        }
+        12 -> { // flor
+            for (i in 0 until 5) {
+                val a = Math.toRadians((-90 + i * 72).toDouble())
+                val ce = Offset(w / 2f + (w * 0.24f * Math.cos(a)).toFloat(), w * 0.52f + (w * 0.24f * Math.sin(a)).toFloat())
+                drawCircle(k.c1, w * 0.2f, ce); drawCircle(k.c2, w * 0.2f, ce, style = Stroke(w * 0.03f))
+            }
+            drawCircle(k.c2, w * 0.14f, Offset(w / 2f, w * 0.52f)); drawCircle(Color(0xFFFFF176), w * 0.09f, Offset(w / 2f, w * 0.52f))
         }
         else -> { // cartucho
             val body = Path().apply { moveTo(w * 0.14f, w * 0.08f); lineTo(w * 0.86f, w * 0.08f); lineTo(w * 0.86f, w * 0.78f); lineTo(w * 0.7f, w * 0.94f); lineTo(w * 0.3f, w * 0.94f); lineTo(w * 0.14f, w * 0.78f); close() }

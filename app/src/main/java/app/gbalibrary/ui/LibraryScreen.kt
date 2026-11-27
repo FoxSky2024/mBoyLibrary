@@ -673,13 +673,13 @@ private fun CoverMenu(g: Game, vm: LibraryViewModel, actions: LibraryActions, on
 }
 
 @Composable
-fun Avatar(sizeDp: Int, ring: Color? = null, shape: androidx.compose.ui.graphics.Shape = CircleShape) {
+fun Avatar(sizeDp: Int, ring: Color? = null, shape: androidx.compose.ui.graphics.Shape = CircleShape, frameId: String? = null) {
     val p = LocalPalette.current
     val ctx = LocalContext.current
     val bmp by produceState<ImageBitmap?>(null, Settings.avatarStamp.intValue) {
         value = withContext(Dispatchers.IO) { Covers.load(Covers.avatarFile(ctx)) }
     }
-    val aFrame = app.gbalibrary.data.Pawb.aFrame.value.takeIf { it.isNotEmpty() }?.let { ShopCatalog.frame(it) }
+    val aFrame = (frameId ?: app.gbalibrary.data.Pawb.aFrame.value).takeIf { it.isNotEmpty() }?.let { ShopCatalog.frame(it) }
     val inner: @Composable (Modifier, androidx.compose.ui.graphics.Shape, Boolean) -> Unit = { mod, sh, bordered ->
         Box(
             mod.clip(sh).background(p.card).then(if (bordered) Modifier.border(2.dp, ring ?: p.accent, sh) else Modifier),
@@ -722,6 +722,18 @@ private fun SidePanel(
         if (collections.isNotEmpty()) {
             Text("COLECCIONES", color = p.dim, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 6.dp))
             collections.forEach { c -> SideItem(c, all.count { c in it.collections }, selected == c, focusIndex >= 0 && sideKeys.getOrNull(focusIndex) == c) { onSelect(c) } }
+        }
+        // acceso al minijuego de cofres (3 al dia)
+        val mctx = LocalContext.current
+        Row(
+            Modifier.fillMaxWidth().padding(top = 16.dp).clickable { Sfx.click(); MiniNav.show.value = true }.padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            androidx.compose.foundation.Image(androidx.compose.ui.res.painterResource(app.gbalibrary.R.drawable.load_a), null, Modifier.size(30.dp, 18.dp))
+            Column {
+                Text("Minijuego", color = p.text, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                Text("Cofres hoy: ${MiniStore.found(mctx)}/${MiniStore.PER_DAY}", color = p.dim, fontSize = 11.sp)
+            }
         }
     }
 }

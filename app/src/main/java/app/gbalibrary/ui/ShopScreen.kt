@@ -170,12 +170,7 @@ fun ShopScreen(onBack: () -> Unit) {
                                 Modifier.width(150.dp).fillMaxHeight().clip(RoundedCornerShape(14.dp)).background(p.panel).padding(10.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp),
                             ) {
-                                Box(
-                                    Modifier.weight(1f, fill = false).aspectRatio(0.72f).clip(RoundedCornerShape(10.dp))
-                                        .background(Brush.verticalGradient(listOf(pk.color, pk.color.copy(alpha = 0.5f), Color(0xFF14101F))))
-                                        .border(1.5.dp, Color.White.copy(alpha = 0.6f), RoundedCornerShape(10.dp)),
-                                    contentAlignment = Alignment.Center,
-                                ) { PawIcon(30.dp, Color.White) }
+                                PackArt(pk.name, pk.color, pk.count, Modifier.weight(1f, fill = false).aspectRatio(0.72f), titleSp = 12f)
                                 Text(pk.name, color = p.text, fontWeight = FontWeight.Bold, fontSize = 13.sp, maxLines = 1)
                                 Text(pk.desc, color = p.dim, fontSize = 10.sp, maxLines = 2)
                                 PriceButton("${pk.price}", Pawb.canAfford(pk.price), paw = true) {
@@ -367,19 +362,11 @@ private fun ItemPreviewDialog(
                 }
                 Text("✕", color = p.dim, fontSize = 18.sp, modifier = Modifier.clickable { onClose() }.padding(8.dp))
             }
-            val fr = ShopCatalog.frame(id)
-            val bn = ShopCatalog.banner(id)
-            when {
-                fr != null -> Row(Modifier.fillMaxWidth().height(120.dp), horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                    // sobre un banner y sobre la foto de perfil
-                    FramedBox(fr, Modifier.weight(1f).fillMaxHeight()) { Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(Color(0xFF3B5B8A), Color(0xFF1A2438))))) }
-                    FramedBox(fr, Modifier.size(100.dp)) { Box(Modifier.fillMaxSize().background(Color(0xFF243247)), contentAlignment = Alignment.Center) { PawIcon(44.dp) } }
-                }
-                bn != null -> Box(Modifier.fillMaxWidth().aspectRatio(3.55f).clip(RoundedCornerShape(8.dp))) {
-                    BannerArt(bn.title, bn.subtitle, bn.colors, bn.style, Modifier.fillMaxSize(), asset = bn.img)
-                    Text("Jugador", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp, modifier = Modifier.align(Alignment.TopStart).padding(10.dp))
-                }
-                else -> Box(Modifier.fillMaxWidth().height(150.dp).clip(RoundedCornerShape(10.dp))) { preview() }
+            // frames, banners y llaveros se ven puestos en tu perfil; lo demas, grande
+            if (ShopCatalog.frame(id) != null || ShopCatalog.banner(id) != null || ShopCatalog.keychain(id) != null) {
+                ProfileMock(id, Modifier.fillMaxWidth().height(170.dp))
+            } else {
+                Box(Modifier.fillMaxWidth().height(150.dp).clip(RoundedCornerShape(10.dp))) { preview() }
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Box(Modifier.weight(1f))

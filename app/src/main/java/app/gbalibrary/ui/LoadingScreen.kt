@@ -27,6 +27,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.gestures.detectTapGestures
 import app.gbalibrary.R
 import kotlinx.coroutines.Dispatchers
@@ -42,7 +43,7 @@ object Boot { var shown = false }
  * [durationMs] = duracion; [preload] se ejecuta en segundo plano mientras tanto (precarga de objetos).
  */
 @Composable
-fun LoadingScreen(durationMs: Int, onDone: () -> Unit, onCancel: (() -> Unit)? = null, preload: (suspend () -> Unit)? = null) {
+fun LoadingScreen(durationMs: Int, onDone: () -> Unit, onCancel: (() -> Unit)? = null, preload: (suspend () -> Unit)? = null, message: String? = null) {
     val progress = remember { Animatable(0f) }
     val done by rememberUpdatedState(onDone)
     var pose by remember { mutableStateOf(false) }
@@ -57,6 +58,7 @@ fun LoadingScreen(durationMs: Int, onDone: () -> Unit, onCancel: (() -> Unit)? =
     val barW = 280.dp
     val spriteW = 30.dp
     Box(Modifier.fillMaxSize().background(Color.Black).pointerInput(Unit) { detectTapGestures { } }) {
+        if (message != null) androidx.compose.material3.Text(message, color = Color.White.copy(alpha = 0.85f), fontSize = 15.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.align(Alignment.Center))
         Box(Modifier.align(Alignment.BottomStart).padding(start = 32.dp, bottom = 30.dp).width(barW)) {
             // pista y relleno
             Box(Modifier.align(Alignment.BottomStart).width(barW).height(1.dp).background(Color.White.copy(alpha = 0.3f)))
