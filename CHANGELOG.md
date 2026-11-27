@@ -1,3 +1,6 @@
+## 1.18.1
+- Corrige compilacion de 1.18.0.
+
 ## 1.18.0
 - Interfaz a pantalla completa (sin el borde del recorte de la camara).
 - Estanteria: zoom out mas suave.
