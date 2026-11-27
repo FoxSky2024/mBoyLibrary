@@ -815,26 +815,26 @@ private fun GameGrid(
     val p = LocalPalette.current
     BoxWithConstraints(Modifier.fillMaxSize()) {
         // Misma cuenta que GridCells.Adaptive(128.dp) con 12.dp de margen y de separacion.
-        val cols = ((maxWidth - 24.dp + 12.dp) / (128.dp + 12.dp)).toInt().coerceAtLeast(1)
+        val cols = ((maxWidth - 28.dp + 14.dp) / (132.dp + 14.dp)).toInt().coerceAtLeast(1)
         SideEffect { nav.cols = cols }
         LazyVerticalGrid(
             state = gridState,
-            columns = GridCells.Adaptive(minSize = 128.dp),
+            columns = GridCells.Adaptive(minSize = 132.dp),
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(14.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             if (showFeatured) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Column {
-                        Text("DESTACADOS", color = p.dim, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
+                        SectionHeader("DESTACADOS", featured.size, Modifier.padding(bottom = 4.dp))
                         LazyRow(state = featState, contentPadding = PaddingValues(vertical = 10.dp, horizontal = 6.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                             itemsIndexed(featured, key = { _, g -> g.id }) { i, g ->
                                 FeatureCard(g, showFocus && nav.zone == Zone.FEATURED && nav.feat == i, onOpen, onPlay, onLong)
                             }
                         }
-                        Text("TODOS LOS JUEGOS", color = p.dim, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 14.dp))
+                        SectionHeader("TODOS LOS JUEGOS", games.size, Modifier.padding(top = 18.dp))
                     }
                 }
             }
@@ -854,6 +854,17 @@ private fun GameGrid(
                 GameCard(g, showFocus && nav.zone == Zone.GRID && nav.grid == i, onOpen, onPlay, onLong)
             }
         }
+    }
+}
+
+/** Cabecera de seccion: titulo, cantidad y una linea fina que ocupa el resto del ancho. */
+@Composable
+private fun SectionHeader(title: String, count: Int, modifier: Modifier = Modifier) {
+    val p = LocalPalette.current
+    Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(title, color = p.text, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+        Text("$count", color = p.dim, fontSize = 11.sp)
+        Box(Modifier.weight(1f).height(1.dp).background(p.dim.copy(alpha = 0.25f)))
     }
 }
 
@@ -896,11 +907,13 @@ private fun GameCard(g: Game, focused: Boolean, onOpen: (Game) -> Unit, onPlay: 
             ) { Ic(Icons.Filled.PlayArrow, size = 18.dp, tint = p.onPlay) }
         }
         FitTitle(g.title, p.text, FontWeight.SemiBold, maxSp = 13f, minSp = 9f, modifier = Modifier.padding(top = 6.dp, start = 6.dp, end = 6.dp).fillMaxWidth())
-        Text(
-            if (g.lastPlayed > 0) "Último: ${formatAgo(g.lastPlayed)}" else "Sin jugar",
-            color = p.dim, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(horizontal = 6.dp),
-        )
+        Row(Modifier.fillMaxWidth().padding(horizontal = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                if (g.lastPlayed > 0) formatAgo(g.lastPlayed) else "Sin jugar",
+                color = p.dim, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f),
+            )
+            if (g.playSeconds > 0) Text(formatPlayTime(g.playSeconds), color = p.accent, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+        }
     }
 }
 

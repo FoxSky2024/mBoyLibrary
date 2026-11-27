@@ -28,6 +28,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -116,12 +118,22 @@ fun VinylOverlay(modifier: Modifier = Modifier) {
             exit = androidx.compose.animation.slideOutHorizontally(tween(260)) { it } + fadeOut(tween(260)),
         ) {
             val art = Music.art.value
-            Box(Modifier.fillMaxHeight().fillMaxWidth(0.46f)) {
+            Box(Modifier.fillMaxHeight().fillMaxWidth(0.6f)) {
                 if (art != null) {
-                    Image(art, null, Modifier.fillMaxSize().alpha(0.55f), contentScale = ContentScale.Crop, filterQuality = androidx.compose.ui.graphics.FilterQuality.High)
-                    Box(Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.55f), Color.Transparent))))
-                } else {
-                    Box(Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.5f), Color(0x33FFFFFF)))))
+                    // la imagen se desvanece hacia la izquierda: transparente a la izquierda, visible a la derecha
+                    Image(
+                        art, null,
+                        Modifier.fillMaxSize()
+                            .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
+                            .drawWithContent {
+                                drawContent()
+                                drawRect(
+                                    androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.55f), Color.Black.copy(alpha = 0.85f))),
+                                    blendMode = androidx.compose.ui.graphics.BlendMode.DstIn,
+                                )
+                            },
+                        contentScale = ContentScale.Crop, filterQuality = androidx.compose.ui.graphics.FilterQuality.High,
+                    )
                 }
             }
         }

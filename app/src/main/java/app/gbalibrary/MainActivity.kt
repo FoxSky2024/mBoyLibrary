@@ -13,6 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import app.gbalibrary.data.DataDir
 import app.gbalibrary.data.Persist
@@ -270,6 +271,13 @@ class MainActivity : ComponentActivity() {
                         onPlay = { game -> play(game, "") },
                         onPlaySlot = { game, slot -> play(game, slot) },
                     )
+                    // arranque de la app: 5 s de pantalla de carga (precarga de objetos), solo una vez por proceso
+                    var starting by remember { mutableStateOf(!app.gbalibrary.ui.Boot.shown) }
+                    if (starting) {
+                        val appCtx = applicationContext
+                        app.gbalibrary.ui.LoadingScreen(5000, onDone = { app.gbalibrary.ui.Boot.shown = true; starting = false },
+                            preload = { app.gbalibrary.ui.ShopCatalog.preloadImages(appCtx) })
+                    }
                     bootGame?.let { g ->
                         app.gbalibrary.ui.BootScreen(
                             game = g,

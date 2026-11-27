@@ -355,6 +355,10 @@ fun ProfileScreen(
     }
     // QR: solo la imagen, en una tarjeta de cristal arriba a la derecha; tocarla (o el icono) la esconde
     Box(Modifier.fillMaxSize()) {
+        // llavero equipado: cuelga arriba y se balancea al entrar al perfil
+        app.gbalibrary.data.Pawb.keychain.value.takeIf { it.isNotEmpty() }?.let { kid ->
+            KeychainView(kid, Modifier.align(Alignment.TopEnd).padding(end = 120.dp, top = 0.dp), scale = 0.7f)
+        }
         androidx.compose.animation.AnimatedVisibility(
             visible = showQr,
             modifier = Modifier.align(Alignment.TopEnd).padding(top = 58.dp, end = 14.dp),

@@ -65,7 +65,7 @@ object AchSound {
     }
 
     fun play(platinum: Boolean) {
-        if (loaded >= 2) pool?.play(if (platinum) idP else idA, 0.8f, 0.8f, 1, 0, 1f)
+        if (loaded >= 2) pool?.play(if (platinum) idP else idA, 0.28f, 0.28f, 1, 0, 1f)
     }
 }
 

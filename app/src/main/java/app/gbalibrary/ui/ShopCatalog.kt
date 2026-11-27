@@ -40,6 +40,7 @@ class ShopSkin(
     val id: String, val name: String, val price: Int, val rarity: Rarity, val idle: Color, val border: Color, val glyph: Color, val active: Color?,
     val shape: Int = 0, val pattern: Int = 0, val idle2: Color? = null, val theme: String = "",
 )
+class ShopKeychain(val id: String, val name: String, val price: Int, val rarity: Rarity, val charm: Int, val c1: Color, val c2: Color, val img: String = "")
 class ShopFrame(val id: String, val name: String, val price: Int, val rarity: Rarity, val kind: Int, val c1: Color, val c2: Color, val img: String = "")
 class ShopSticker(val id: String, val name: String, val price: Int, val rarity: Rarity)
 class ShopPack(val id: String, val name: String, val desc: String, val price: Int, val kinds: Set<String>, val count: Int, val color: Color)
@@ -209,6 +210,19 @@ object ShopCatalog {
     /** Objetos creados desde el modo desarrollador (se guardan en el dispositivo). */
     val devBanners = androidx.compose.runtime.mutableStateListOf<ShopBanner>()
     val devFrames = androidx.compose.runtime.mutableStateListOf<ShopFrame>()
+    /** Llaveros: cuelgan en el perfil y se balancean. charm: 0 huella, 1 estrella, 2 corazon, 3 gema, 4 cartucho. */
+    val keychains = listOf(
+        ShopKeychain("kc_paw", "Huella", 40, Rarity.COMMON, 0, c(0xFFE8892B), c(0xFF7A3D0A)),
+        ShopKeychain("kc_star", "Estrella", 60, Rarity.COMMON, 1, c(0xFFFFD54F), c(0xFFC77800)),
+        ShopKeychain("kc_heart", "Corazón", 80, Rarity.RARE, 2, c(0xFFFF6F9C), c(0xFF9B1B4A)),
+        ShopKeychain("kc_gem", "Gema", 130, Rarity.RARE, 3, c(0xFF7FE9FF), c(0xFF1565C0)),
+        ShopKeychain("kc_cart", "Cartucho", 170, Rarity.EPIC, 4, c(0xFFB0BEC5), c(0xFF37474F)),
+        ShopKeychain("kc_gpaw", "Huella dorada", 280, Rarity.LEGENDARY, 0, c(0xFFFFE082), c(0xFFB8860B)),
+    )
+    val assetKeychains = androidx.compose.runtime.mutableStateListOf<ShopKeychain>()
+    fun keychainsAll(): List<ShopKeychain> = keychains + assetKeychains
+    fun keychain(id: String): ShopKeychain? = keychainsAll().firstOrNull { it.id == id }
+
     /** Objetos hechos con imagenes: assets/shop/banners y assets/shop/frames, con nombre `rareza_precio_nombre.png`. */
     val assetBanners = androidx.compose.runtime.mutableStateListOf<ShopBanner>()
     val assetFrames = androidx.compose.runtime.mutableStateListOf<ShopFrame>()
@@ -233,7 +247,11 @@ object ShopCatalog {
     /** Lee las imagenes de la tienda desde assets (se llama al iniciar la app). */
     fun loadAssets(ctx: android.content.Context) {
         val am = ctx.assets
-        assetBanners.clear(); assetFrames.clear()
+        assetBanners.clear(); assetFrames.clear(); assetKeychains.clear()
+        runCatching { am.list("shop/keychains") }.getOrNull().orEmpty().sorted().forEach { f ->
+            val (r, pr, nm) = parseAsset("keychains", f) ?: return@forEach
+            assetKeychains.add(ShopKeychain("as_k_" + f.substringBeforeLast('.'), nm, pr, r, 0, Color.White, Color.Gray, "shop/keychains/$f"))
+        }
         runCatching { am.list("shop/banners") }.getOrNull().orEmpty().sorted().forEach { f ->
             val (r, pr, nm) = parseAsset("banners", f) ?: return@forEach
             assetBanners.add(ShopBanner("as_b_" + f.substringBeforeLast('.'), nm, pr, r, nm, "", listOf(Color(0xFF1B2430), Color(0xFF0B0F14)), 0, "shop/banners/$f"))
@@ -352,7 +370,7 @@ fun Modifier.equippedBackground(): Modifier = this // los fondos de la tienda se
 
 
 /** Imagen de assets (cacheada) para objetos de la tienda hechos con imagenes. */
-private object AssetImages { val map = HashMap<String, androidx.compose.ui.graphics.ImageBitmap?>() }
+internal object AssetImages { val map = HashMap<String, androidx.compose.ui.graphics.ImageBitmap?>() }
 
 @Composable
 fun rememberAssetImage(path: String): androidx.compose.ui.graphics.ImageBitmap? {
@@ -364,4 +382,13 @@ fun rememberAssetImage(path: String): androidx.compose.ui.graphics.ImageBitmap? 
         }.also { AssetImages.map[path] = it }
     }
     return bmp
+}
+
+
+/** Precarga (durante la pantalla de carga) las imagenes de la tienda hechas con PNG. */
+fun ShopCatalog.preloadImages(ctx: android.content.Context) {
+    val paths = assetBanners.map { it.img } + assetFrames.map { it.img } + keychainsAll().map { it.img }
+    paths.filter { it.isNotEmpty() && !AssetImages.map.containsKey(it) }.forEach { path ->
+        AssetImages.map[path] = runCatching { ctx.assets.open(path).use { android.graphics.BitmapFactory.decodeStream(it)?.asImageBitmap() } }.getOrNull()
+    }
 }
