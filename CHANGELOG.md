@@ -1,3 +1,6 @@
+## 1.19.1
+- Corrige compilacion de 1.19.0.
+
 ## 1.19.0
 - Pantalla de carga negra (5 s al abrir la app, 2 s al abrir juegos) con sprite y barra.
 - Tienda: vista previa grande al tocar un objeto, pestana Llaveros (assets/shop/keychains).

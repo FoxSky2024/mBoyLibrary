@@ -14,6 +14,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import app.gbalibrary.ui.preloadImages
 import androidx.compose.runtime.setValue
 import app.gbalibrary.data.DataDir
 import app.gbalibrary.data.Persist
