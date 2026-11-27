@@ -54,13 +54,13 @@ fun LoadingScreen(durationMs: Int, onDone: () -> Unit, onCancel: (() -> Unit)? =
     LaunchedEffect(Unit) { while (true) { delay(200); pose = !pose } }
     if (onCancel != null) BackHandler(onBack = onCancel)
 
-    val barW = 170.dp
+    val barW = 280.dp
     val spriteW = 30.dp
     Box(Modifier.fillMaxSize().background(Color.Black).pointerInput(Unit) { detectTapGestures { } }) {
         Box(Modifier.align(Alignment.BottomStart).padding(start = 32.dp, bottom = 30.dp).width(barW)) {
             // pista y relleno
-            Box(Modifier.align(Alignment.BottomStart).width(barW).height(2.dp).background(Color.White.copy(alpha = 0.3f)))
-            Box(Modifier.align(Alignment.BottomStart).width(barW * progress.value).height(2.dp).background(Color.White))
+            Box(Modifier.align(Alignment.BottomStart).width(barW).height(1.dp).background(Color.White.copy(alpha = 0.3f)))
+            Box(Modifier.align(Alignment.BottomStart).width(barW * progress.value).height(1.dp).background(Color.White))
             // mascota sobre la barra, avanza con el progreso
             Image(
                 painterResource(if (pose) R.drawable.load_b else R.drawable.load_a), null,

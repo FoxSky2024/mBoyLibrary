@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -357,7 +358,15 @@ fun ProfileScreen(
     Box(Modifier.fillMaxSize()) {
         // llavero equipado: cuelga arriba y se balancea al entrar al perfil
         app.gbalibrary.data.Pawb.keychain.value.takeIf { it.isNotEmpty() }?.let { kid ->
-            KeychainView(kid, Modifier.align(Alignment.TopEnd).padding(end = 120.dp, top = 0.dp), scale = 0.7f)
+            val dens = androidx.compose.ui.platform.LocalDensity.current
+            // mantener presionado y arrastrar para cambiarlo de lugar
+            KeychainView(
+                kid,
+                Modifier.align(Alignment.TopEnd).padding(end = 120.dp, top = 0.dp)
+                    .offset { androidx.compose.ui.unit.IntOffset(with(dens) { app.gbalibrary.data.Pawb.kcDx.value.dp.roundToPx() }, with(dens) { app.gbalibrary.data.Pawb.kcDy.value.dp.roundToPx() }) },
+                scale = 0.9f,
+                onMove = { dx, dy -> app.gbalibrary.data.Pawb.setKeychainPos(app.gbalibrary.data.Pawb.kcDx.value + dx / dens.density, app.gbalibrary.data.Pawb.kcDy.value + dy / dens.density) },
+            )
         }
         androidx.compose.animation.AnimatedVisibility(
             visible = showQr,

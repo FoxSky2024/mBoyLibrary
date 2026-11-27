@@ -3,6 +3,8 @@ package app.gbalibrary.ui
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -33,7 +35,7 @@ import androidx.compose.ui.unit.dp
  * Tocarlo lo vuelve a balancear. [replay] cambia para repetir el balanceo (p. ej. al entrar al perfil).
  */
 @Composable
-fun KeychainView(id: String, modifier: Modifier = Modifier, scale: Float = 1f, replay: Int = 0) {
+fun KeychainView(id: String, modifier: Modifier = Modifier, scale: Float = 1f, replay: Int = 0, onMove: ((Float, Float) -> Unit)? = null) {
     val k = ShopCatalog.keychain(id) ?: return
     val angle = remember(id) { Animatable(0f) }
     var taps by remember(id) { mutableIntStateOf(0) }
@@ -44,6 +46,11 @@ fun KeychainView(id: String, modifier: Modifier = Modifier, scale: Float = 1f, r
     Column(
         modifier
             .graphicsLayer { rotationZ = angle.value; transformOrigin = TransformOrigin(0.5f, 0f) }
+            .then(
+                if (onMove != null) Modifier.pointerInput(id) {
+                    detectDragGesturesAfterLongPress(onDrag = { change, d -> change.consume(); onMove(d.x, d.y) })
+                } else Modifier,
+            )
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { taps++ },
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {

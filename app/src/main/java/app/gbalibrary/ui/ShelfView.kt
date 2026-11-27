@@ -197,7 +197,7 @@ fun ShelfView(
             val wPx = constraints.maxWidth.toFloat()
             val hPx = constraints.maxHeight.toFloat()
             val floorPx = hPx * 0.70f // la "repisa"
-            val cardHpx = floorPx * 0.60f * 0.6f // zoom out 40%
+            val cardHpx = floorPx * 0.60f * 0.6f * 1.6f // zoom out 40% y luego zoom in 60%
             val cardH = with(density) { cardHpx.toDp() }
             val refW = cardHpx * 0.80f // separacion entre cajas
 
