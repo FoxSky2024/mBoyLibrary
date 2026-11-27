@@ -1,3 +1,6 @@
+## 1.17.1
+- Corrige imports de 1.17.0.
+
 ## 1.17.0
 - Barra lateral transparente que se esconde sola; se saca deslizando desde el borde y difumina un poco el resto.
 - Cajas con el tamaño de los archivos de la consola (la caratula no las reescala). Zoom de la estanteria al 60% (-40%).

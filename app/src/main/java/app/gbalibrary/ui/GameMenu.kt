@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.width
@@ -374,9 +376,9 @@ fun PillSlider(value: Float, range: ClosedFloatingPointRange<Float>, onChange: (
 }
 
 private fun Modifier.androidxPointer(onX: (Float, Int) -> Unit): Modifier = this
-    .pointerInput(Unit) { androidx.compose.foundation.gestures.detectTapGestures { onX(it.x, size.width) } }
+    .pointerInput(Unit) { detectTapGestures { onX(it.x, size.width) } }
     .pointerInput(Unit) {
-        androidx.compose.foundation.gestures.detectHorizontalDragGestures(
+        detectHorizontalDragGestures(
             onDragStart = { onX(it.x, size.width) },
         ) { c, _ -> c.consume(); onX(c.position.x, size.width) }
     }
