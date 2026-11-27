@@ -282,7 +282,7 @@ class MainActivity : ComponentActivity() {
                     bootGame?.let { g ->
                         app.gbalibrary.ui.BootScreen(
                             game = g,
-                            onDone = { bootGame = null; launchAny(g, bootSlot) },
+                            onDone = { launchAny(g, bootSlot) }, // la pantalla de carga se queda hasta que el juego abre (onResume la quita)
                             onCancel = { bootGame = null },
                         )
                     }
@@ -347,6 +347,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onResume() {
+        bootGame = null
         super.onResume()
         endExternalSession()
         if (DataDir.refresh(this)) vm.reloadFromDisk()

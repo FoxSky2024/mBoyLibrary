@@ -72,7 +72,7 @@ object Settings {
     // Margenes de la interfaz (dp) y ventana de video PiP
     val uiMargin = mutableIntStateOf(0)
     /** Orientacion del emulador: 0 automatica, 1 horizontal (como siempre), 2 vertical. */
-    val orientation = mutableIntStateOf(1)
+    val orientation = mutableIntStateOf(0)
     val pipCorner = mutableIntStateOf(1) // 0 sup-izq, 1 sup-der, 2 inf-izq, 3 inf-der
     val pipSize = mutableIntStateOf(1) // 0 pequeno, 1 mediano, 2 grande
     val pipOpacity = mutableFloatStateOf(0.95f)
@@ -156,7 +156,7 @@ object Settings {
         frameSkip.value = p.getBoolean("frameSkip", false)
         audioSync.value = p.getBoolean("audioSync", true)
         uiMargin.intValue = p.getInt("uiMargin", 0).coerceIn(0, 48)
-        orientation.intValue = p.getInt("orientation", 1).coerceIn(0, 2)
+        orientation.intValue = p.getInt("orientation", 0).coerceIn(0, 2)
         pipCorner.intValue = p.getInt("pipCorner", 1).coerceIn(0, 3)
         pipSize.intValue = p.getInt("pipSize", 1).coerceIn(0, 2)
         pipOpacity.floatValue = p.getFloat("pipOpacity", 0.95f).coerceIn(0.2f, 1f)

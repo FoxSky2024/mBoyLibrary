@@ -160,8 +160,8 @@ fun ShopScreen(onBack: () -> Unit) {
                     }
                     6 -> FitGrid(ShopCatalog.keychainsAll().filter { keep(it.rarity, it.id) }, 150.dp, 150.dp) { k ->
                         ItemCard(
-                            name = k.name, rarity = k.rarity, price = k.price, id = k.id, equipped = Pawb.keychain.value == k.id,
-                            onEquip = { Pawb.equipKeychain(if (Pawb.keychain.value == k.id) "" else k.id) }, onMsg = { msg = it },
+                            name = k.name, rarity = k.rarity, price = k.price, id = k.id, equipped = Pawb.kcSlots.contains(k.id),
+                            onEquip = { if (!Pawb.toggleKeychain(k.id)) msg = "Las 3 argollas están llenas: quita uno primero" }, onMsg = { msg = it },
                         ) { Box(Modifier.fillMaxSize().background(Color(0xFF1B2430)), contentAlignment = Alignment.TopCenter) { KeychainView(k.id, scale = 0.62f) } }
                     }
                     3 -> Row(Modifier.fillMaxSize().horizontalScroll(androidx.compose.foundation.rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {

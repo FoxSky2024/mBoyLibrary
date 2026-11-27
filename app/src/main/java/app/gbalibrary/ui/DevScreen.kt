@@ -62,21 +62,18 @@ object DevAuth {
         val k = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256").generateSecret(PBEKeySpec(pass.toCharArray(), salt, 120_000, 256))
         return android.util.Base64.encodeToString(k.encoded, android.util.Base64.NO_WRAP)
     }
-    fun isSetup(ctx: Context) = prefs(ctx).contains("hash")
-    fun setup(ctx: Context, user: String, pass: String) {
-        val salt = ByteArray(16).also { SecureRandom().nextBytes(it) }
-        prefs(ctx).edit().putString("user", user.trim().lowercase()).putString("salt", android.util.Base64.encodeToString(salt, android.util.Base64.NO_WRAP))
-            .putString("hash", hash(pass, salt)).apply()
-        loggedIn.value = true
-    }
+    // Credenciales fijas (solo se guardan sus hashes SHA-256).
+    private const val H_USER = "05f514fae7ca5710f9e9289a20a5c9b372af781bfc94dd23d9cb8a044122460f"
+    private const val H_PASS = "f8ff822ab877d91481580599bfd5f4548ac32bac3d58e381c85b2841cb52c7c2"
+    private fun sha(t: String) = MessageDigest.getInstance("SHA-256").digest(t.toByteArray()).joinToString("") { "%02x".format(it) }
+    fun isSetup(ctx: Context) = true
+    fun setup(ctx: Context, user: String, pass: String) {}
     /** null = correcto; texto = motivo del fallo. */
     fun login(ctx: Context, user: String, pass: String): String? {
         val now = System.currentTimeMillis()
         if (now < lockUntil) return "Espera ${(lockUntil - now) / 1000 + 1} s"
-        val p = prefs(ctx)
-        val salt = android.util.Base64.decode(p.getString("salt", "") ?: "", android.util.Base64.NO_WRAP)
-        val ok = user.trim().lowercase() == p.getString("user", "") &&
-            MessageDigest.isEqual(hash(pass, salt).toByteArray(), (p.getString("hash", "") ?: "").toByteArray())
+        val ok = MessageDigest.isEqual(sha(user.trim().lowercase()).toByteArray(), H_USER.toByteArray()) &&
+            MessageDigest.isEqual(sha(pass).toByteArray(), H_PASS.toByteArray())
         if (ok) { fails = 0; loggedIn.value = true; return null }
         fails++
         if (fails >= 5) { lockUntil = now + 30_000; fails = 0 }
