@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,13 +34,13 @@ enum class Rarity(val label: String, val color: Color, val weight: Int) {
 val StyleNames = listOf("Liso", "Diagonal", "Ondas", "Puntos")
 
 class ShopBg(val id: String, val name: String, val price: Int, val rarity: Rarity, val colors: List<Color>, val style: Int)
-class ShopBanner(val id: String, val name: String, val price: Int, val rarity: Rarity, val title: String, val subtitle: String, val colors: List<Color>, val style: Int)
+class ShopBanner(val id: String, val name: String, val price: Int, val rarity: Rarity, val title: String, val subtitle: String, val colors: List<Color>, val style: Int, val img: String = "")
 /** shape: 0 original, 1 redondeado, 2 cuadrado, 3 diamante, 4 hexagono. pattern: 0 liso, 1 rayas, 2 puntos, 3 brillo. */
 class ShopSkin(
     val id: String, val name: String, val price: Int, val rarity: Rarity, val idle: Color, val border: Color, val glyph: Color, val active: Color?,
     val shape: Int = 0, val pattern: Int = 0, val idle2: Color? = null, val theme: String = "",
 )
-class ShopFrame(val id: String, val name: String, val price: Int, val rarity: Rarity, val kind: Int, val c1: Color, val c2: Color)
+class ShopFrame(val id: String, val name: String, val price: Int, val rarity: Rarity, val kind: Int, val c1: Color, val c2: Color, val img: String = "")
 class ShopSticker(val id: String, val name: String, val price: Int, val rarity: Rarity)
 class ShopPack(val id: String, val name: String, val desc: String, val price: Int, val kinds: Set<String>, val count: Int, val color: Color)
 
@@ -164,6 +165,24 @@ object ShopCatalog {
         ShopFrame("fr_circuit3", "Circuito cian", 185, Rarity.EPIC, 15, c(0xFF18FFFF), c(0xFF06202A)),
         ShopFrame("fr_holo2", "Holográfico oscuro", 280, Rarity.LEGENDARY, 4, c(0xFFB388FF), c(0xFF000000)),
         ShopFrame("fr_rainbow2", "Píxel arcoíris oscuro", 170, Rarity.RARE, 12, c(0xFFFFFFFF), c(0xFF000000)),
+        ShopFrame("fr_flame", "Llamas", 220, Rarity.EPIC, 16, c(0xFFFFD54F), c(0xFFD84315)),
+        ShopFrame("fr_flameb", "Llamas azules", 230, Rarity.EPIC, 16, c(0xFF80D8FF), c(0xFF0D47A1)),
+        ShopFrame("fr_inferno", "Infierno", 330, Rarity.LEGENDARY, 16, c(0xFFFF5252), c(0xFF1A0000)),
+        ShopFrame("fr_snow", "Nevada", 150, Rarity.RARE, 17, c(0xFFFFFFFF), c(0xFF4FC3F7)),
+        ShopFrame("fr_blizz", "Ventisca", 300, Rarity.LEGENDARY, 17, c(0xFFE1F5FE), c(0xFF0D47A1)),
+        ShopFrame("fr_stars", "Lluvia de estrellas", 190, Rarity.EPIC, 18, c(0xFFFFF59D), c(0xFF7C4DFF)),
+        ShopFrame("fr_stars2", "Estrellas rosa", 190, Rarity.EPIC, 18, c(0xFFFF80AB), c(0xFF4A148C)),
+        ShopFrame("fr_cosmic", "Cósmico", 320, Rarity.LEGENDARY, 18, c(0xFF18FFFF), c(0xFF1A0B4A)),
+        ShopFrame("fr_hearts", "Corazones", 150, Rarity.RARE, 19, c(0xFFFF80AB), c(0xFF880E4F)),
+        ShopFrame("fr_hearts2", "Corazones morados", 160, Rarity.RARE, 19, c(0xFFEA80FC), c(0xFF311B92)),
+        ShopFrame("fr_bubbles", "Burbujas", 120, Rarity.RARE, 20, c(0xFFB3E5FC), c(0xFF0277BD)),
+        ShopFrame("fr_bubbles2", "Burbujas menta", 120, Rarity.RARE, 20, c(0xFFB9F6CA), c(0xFF00695C)),
+        ShopFrame("fr_elec", "Voltaje", 230, Rarity.EPIC, 21, c(0xFFFFEA00), c(0xFF0D0D2B)),
+        ShopFrame("fr_elec2", "Rayo violeta", 310, Rarity.LEGENDARY, 21, c(0xFFE040FB), c(0xFF1A0033)),
+        ShopFrame("fr_ember", "Cenizas", 160, Rarity.RARE, 22, c(0xFFFF7043), c(0xFF212121)),
+        ShopFrame("fr_smoke", "Humo", 140, Rarity.RARE, 22, c(0xFFCFD8DC), c(0xFF37474F)),
+        ShopFrame("fr_petal", "Pétalos", 140, Rarity.RARE, 23, c(0xFFFFC1D9), c(0xFFD81B60)),
+        ShopFrame("fr_petal2", "Pétalos dorados", 190, Rarity.EPIC, 23, c(0xFFFFE082), c(0xFF6D4C41)),
     )
 
     val stickers = listOf(
@@ -190,8 +209,40 @@ object ShopCatalog {
     /** Objetos creados desde el modo desarrollador (se guardan en el dispositivo). */
     val devBanners = androidx.compose.runtime.mutableStateListOf<ShopBanner>()
     val devFrames = androidx.compose.runtime.mutableStateListOf<ShopFrame>()
-    fun allBanners(): List<ShopBanner> = banners + devBanners
-    fun allFrames(): List<ShopFrame> = frames + devFrames
+    /** Objetos hechos con imagenes: assets/shop/banners y assets/shop/frames, con nombre `rareza_precio_nombre.png`. */
+    val assetBanners = androidx.compose.runtime.mutableStateListOf<ShopBanner>()
+    val assetFrames = androidx.compose.runtime.mutableStateListOf<ShopFrame>()
+    fun allBanners(): List<ShopBanner> = banners + assetBanners + devBanners
+    fun allFrames(): List<ShopFrame> = frames + assetFrames + devFrames
+
+    private fun parseAsset(dir: String, file: String): Triple<Rarity, Int, String>? {
+        val base = file.substringBeforeLast('.')
+        val parts = base.split("_", limit = 3)
+        if (parts.size < 3) return null
+        val r = when (parts[0].lowercase()) {
+            "comun", "común", "common" -> Rarity.COMMON
+            "raro", "rare" -> Rarity.RARE
+            "epico", "épico", "epic" -> Rarity.EPIC
+            "legendario", "legendary" -> Rarity.LEGENDARY
+            else -> return null
+        }
+        val price = parts[1].toIntOrNull() ?: return null
+        return Triple(r, price, parts[2].replace('-', ' ').trim())
+    }
+
+    /** Lee las imagenes de la tienda desde assets (se llama al iniciar la app). */
+    fun loadAssets(ctx: android.content.Context) {
+        val am = ctx.assets
+        assetBanners.clear(); assetFrames.clear()
+        runCatching { am.list("shop/banners") }.getOrNull().orEmpty().sorted().forEach { f ->
+            val (r, pr, nm) = parseAsset("banners", f) ?: return@forEach
+            assetBanners.add(ShopBanner("as_b_" + f.substringBeforeLast('.'), nm, pr, r, nm, "", listOf(Color(0xFF1B2430), Color(0xFF0B0F14)), 0, "shop/banners/$f"))
+        }
+        runCatching { am.list("shop/frames") }.getOrNull().orEmpty().sorted().forEach { f ->
+            val (r, pr, nm) = parseAsset("frames", f) ?: return@forEach
+            assetFrames.add(ShopFrame("as_f_" + f.substringBeforeLast('.'), nm, pr, r, 0, Color.White, Color.Black, "shop/frames/$f"))
+        }
+    }
 
     fun frame(id: String) = allFrames().firstOrNull { it.id == id }
     fun sticker(id: String) = stickers.firstOrNull { it.id == id }
@@ -256,7 +307,14 @@ fun androidx.compose.ui.graphics.drawscope.DrawScope.drawStyled(colors: List<Col
 
 /** Banner (catalogo o propio) con titulo y subtitulo. */
 @Composable
-fun BannerArt(title: String, subtitle: String, colors: List<Color>, style: Int, modifier: Modifier = Modifier, img: String = "") {
+fun BannerArt(title: String, subtitle: String, colors: List<Color>, style: Int, modifier: Modifier = Modifier, img: String = "", asset: String = "") {
+    if (asset.isNotEmpty()) {
+        val ab = rememberAssetImage(asset)
+        Box(modifier.clip(androidx.compose.foundation.shape.RoundedCornerShape(6.dp)).background(Color(0xFF14181F))) {
+            if (ab != null) androidx.compose.foundation.Image(ab, null, Modifier.fillMaxSize(), contentScale = androidx.compose.ui.layout.ContentScale.Crop, filterQuality = androidx.compose.ui.graphics.FilterQuality.High)
+        }
+        return
+    }
     val bmp = androidx.compose.runtime.remember(img) {
         if (img.isEmpty()) null else try {
             val b = android.util.Base64.decode(img, android.util.Base64.DEFAULT)
@@ -283,7 +341,7 @@ fun CustomBanner.art(): Pair<List<Color>, Int> = colors.map { Color(it) } to sty
 fun EquippedBannerArt(modifier: Modifier = Modifier): Boolean {
     val id = Pawb.banner.value
     if (id.isEmpty()) return false
-    ShopCatalog.banner(id)?.let { BannerArt(it.title, it.subtitle, it.colors, it.style, modifier); return true }
+    ShopCatalog.banner(id)?.let { BannerArt(it.title, it.subtitle, it.colors, it.style, modifier, asset = it.img); return true }
     ShopCatalog.custom(id)?.let { BannerArt(it.title, it.subtitle, it.colors.map { c -> Color(c) }, it.style, modifier, it.img); return true }
     return false
 }
@@ -291,3 +349,19 @@ fun EquippedBannerArt(modifier: Modifier = Modifier): Boolean {
 /** Fondo de pantalla equipado (si hay), sobre el color base. */
 @Composable
 fun Modifier.equippedBackground(): Modifier = this // los fondos de la tienda se retiraron
+
+
+/** Imagen de assets (cacheada) para objetos de la tienda hechos con imagenes. */
+private object AssetImages { val map = HashMap<String, androidx.compose.ui.graphics.ImageBitmap?>() }
+
+@Composable
+fun rememberAssetImage(path: String): androidx.compose.ui.graphics.ImageBitmap? {
+    val ctx = androidx.compose.ui.platform.LocalContext.current.applicationContext
+    val bmp by androidx.compose.runtime.produceState<androidx.compose.ui.graphics.ImageBitmap?>(AssetImages.map[path], path) {
+        if (AssetImages.map.containsKey(path)) { value = AssetImages.map[path]; return@produceState }
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            runCatching { ctx.assets.open(path).use { android.graphics.BitmapFactory.decodeStream(it)?.asImageBitmap() } }.getOrNull()
+        }.also { AssetImages.map[path] = it }
+    }
+    return bmp
+}

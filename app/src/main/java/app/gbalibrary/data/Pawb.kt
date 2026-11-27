@@ -74,7 +74,7 @@ object Pawb {
         bg.value = p.getString("bg", "").orEmpty()
         banner.value = p.getString("banner", "").orEmpty()
         skin.value = p.getString("skin", "").orEmpty()
-        vFrame.value = p.getString("vframe", "").orEmpty(); vTitle.value = p.getString("vtitle", "").orEmpty()
+        aFrame.value = p.getString("aframe", "").orEmpty(); vFrame.value = p.getString("vframe", "").orEmpty(); vTitle.value = p.getString("vtitle", "").orEmpty()
         vSub.value = p.getString("vsub", "").orEmpty(); vImg.value = p.getString("vimg", "").orEmpty()
         vFx.value = p.getString("vfx", "").orEmpty(); vW.floatValue = p.getFloat("vw", 1f); vH.intValue = p.getInt("vh", 0); vAlign.intValue = p.getInt("valign", 0); vDy.intValue = p.getInt("vdy", 0); vVideo.value = p.getString("vvid", "").orEmpty()
         placed.value = try {
@@ -159,6 +159,9 @@ object Pawb {
     fun setVitrinaFx(fx: String) { vFx.value = fx; p.edit().putString("vfx", fx).apply() }
     fun setVitrinaVideo(path: String) { vVideo.value = path; p.edit().putString("vvid", path).apply() }
     fun bannerDir(ctx: Context) = java.io.File(DataDir.root(ctx), "Banners").apply { mkdirs() }
+    /** Marco equipado en la foto de perfil (avatar). */
+    val aFrame = mutableStateOf("")
+    fun equipAvatarFrame(id: String) { aFrame.value = id; p.edit().putString("aframe", id).apply() }
     fun equipFrame(id: String) { vFrame.value = id; p.edit().putString("vframe", id).apply() }
     fun setVitrina(title: String, sub: String, img: String) {
         vTitle.value = title; vSub.value = sub; vImg.value = img

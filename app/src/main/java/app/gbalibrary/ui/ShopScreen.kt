@@ -68,6 +68,10 @@ private val Swatches = listOf(
 fun ShopScreen(onBack: () -> Unit) {
     val p = LocalPalette.current
     var tab by remember { mutableIntStateOf(0) }
+    var rar by remember { mutableStateOf<Rarity?>(null) }
+    var own by remember { mutableIntStateOf(0) }          // 0 todo, 1 sin tener, 2 mios
+    var frameTarget by remember { mutableIntStateOf(0) }  // 0 banner (vitrina), 1 avatar
+    fun keep(r: Rarity, id: String): Boolean = (rar == null || r == rar) && when (own) { 1 -> !Pawb.has(id); 2 -> Pawb.has(id); else -> true }
     var msg by remember { mutableStateOf<String?>(null) }
     var packOpen by remember { mutableStateOf<Triple<String, Color, List<String>>?>(null) }
     BackHandler { onBack() }
@@ -90,25 +94,52 @@ fun ShopScreen(onBack: () -> Unit) {
                 Box(Modifier.weight(1f))
                 Text("Gana Pawb jugando (1 por 5 min) y con el bonus diario.", color = p.dim, fontSize = 10.sp)
             }
-            Box(Modifier.weight(1f).fillMaxHeight()) {
+            Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            if (tab in 0..2) {
+                // filtros: calidad, tenencia y (marcos) donde se aplica
+                Row(Modifier.fillMaxWidth().horizontalScroll(androidx.compose.foundation.rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    listOf<Pair<String, Rarity?>>("Todas" to null, "Común" to Rarity.COMMON, "Raro" to Rarity.RARE, "Épico" to Rarity.EPIC, "Legendario" to Rarity.LEGENDARY).forEach { (n, r) ->
+                        val on = rar == r
+                        Text(n, color = if (on) p.onPlay else (r?.color ?: p.text), fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.clip(RoundedCornerShape(50)).background(if (on) (r?.color ?: p.accent) else p.card).clickable { Sfx.click(); rar = r }.padding(horizontal = 10.dp, vertical = 5.dp))
+                    }
+                    Box(Modifier.width(1.dp).height(16.dp).background(p.dim.copy(alpha = 0.4f)))
+                    listOf("Todo", "Sin tener", "Míos").forEachIndexed { i, n ->
+                        Text(n, color = if (own == i) p.onPlay else p.text, fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.clip(RoundedCornerShape(50)).background(if (own == i) p.accent else p.card).clickable { Sfx.click(); own = i }.padding(horizontal = 10.dp, vertical = 5.dp))
+                    }
+                    if (tab == 0) {
+                        Box(Modifier.width(1.dp).height(16.dp).background(p.dim.copy(alpha = 0.4f)))
+                        listOf("Aplicar a: Banner", "Aplicar a: Avatar").forEachIndexed { i, n ->
+                            Text(n, color = if (frameTarget == i) p.onPlay else p.text, fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.clip(RoundedCornerShape(50)).background(if (frameTarget == i) p.accent else p.card).clickable { Sfx.click(); frameTarget = i }.padding(horizontal = 10.dp, vertical = 5.dp))
+                        }
+                    }
+                }
+            }
+            Box(Modifier.weight(1f).fillMaxWidth()) {
                 when (tab) {
-                    0 -> FitGrid(ShopCatalog.allFrames(), 150.dp, 118.dp) { f ->
+                    0 -> FitGrid(ShopCatalog.allFrames().filter { keep(it.rarity, it.id) }, 150.dp, 118.dp) { f ->
+                        val cur = if (frameTarget == 0) Pawb.vFrame.value else Pawb.aFrame.value
                         ItemCard(
-                            name = f.name, rarity = f.rarity, price = f.price, id = f.id, equipped = Pawb.vFrame.value == f.id,
-                            onEquip = { Pawb.equipFrame(if (Pawb.vFrame.value == f.id) "" else f.id) }, onMsg = { msg = it },
+                            name = f.name, rarity = f.rarity, price = f.price, id = f.id, equipped = cur == f.id,
+                            onEquip = {
+                                val nid = if (cur == f.id) "" else f.id
+                                if (frameTarget == 0) Pawb.equipFrame(nid) else Pawb.equipAvatarFrame(nid)
+                            }, onMsg = { msg = it },
                         ) { ItemPreview(f.id) }
                     }
-                    1 -> FitGrid(ShopCatalog.allBanners().map { it as Any } + Pawb.custom.value.map { it as Any }, 170.dp, 118.dp) { any ->
+                    1 -> FitGrid(ShopCatalog.allBanners().filter { keep(it.rarity, it.id) }.map { it as Any } + (if (rar == null && own != 1) Pawb.custom.value.map { it as Any } else emptyList()), 170.dp, 118.dp) { any ->
                         if (any is ShopBanner) ItemCard(
                             name = any.name, rarity = any.rarity, price = any.price, id = any.id, equipped = Pawb.banner.value == any.id,
                             onEquip = { Pawb.equipBanner(if (Pawb.banner.value == any.id) "" else any.id) }, onMsg = { msg = it },
-                        ) { BannerArt(any.title, any.subtitle, any.colors, any.style, Modifier.fillMaxSize()) }
+                        ) { BannerArt(any.title, any.subtitle, any.colors, any.style, Modifier.fillMaxSize(), asset = any.img) }
                         else if (any is CustomBanner) ItemCard(
                             name = any.name, rarity = Rarity.COMMON, price = 0, id = any.id, equipped = Pawb.banner.value == any.id,
                             onEquip = { Pawb.equipBanner(if (Pawb.banner.value == any.id) "" else any.id) }, onMsg = { msg = it },
                         ) { BannerArt(any.title, any.subtitle, any.colors.map { Color(it) }, any.style, Modifier.fillMaxSize(), any.img) }
                     }
-                    2 -> FitGrid(ShopCatalog.skins, 170.dp, 118.dp) { k ->
+                    2 -> FitGrid(ShopCatalog.skins.filter { keep(it.rarity, it.id) }, 170.dp, 118.dp) { k ->
                         ItemCard(
                             name = k.name, rarity = k.rarity, price = k.price, id = k.id, equipped = Pawb.skin.value == k.id, sub = k.theme,
                             onEquip = { Pawb.equipSkin(if (Pawb.skin.value == k.id) "" else k.id) }, onMsg = { msg = it },
@@ -162,6 +193,7 @@ fun ShopScreen(onBack: () -> Unit) {
                     }
                     else -> VitrinaEditor(onMsg = { msg = it })
                 }
+            }
             }
         }
     }

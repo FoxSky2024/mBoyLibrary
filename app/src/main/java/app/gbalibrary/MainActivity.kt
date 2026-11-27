@@ -96,6 +96,19 @@ class MainActivity : ComponentActivity() {
     private fun launchImage(l: androidx.activity.result.ActivityResultLauncher<androidx.activity.result.PickVisualMediaRequest>) =
         l.launch(androidx.activity.result.PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
 
+    private var pendingSongKey = ""
+    private val pickSongImageFile =
+        registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+            val key = pendingSongKey
+            if (uri != null && key.isNotEmpty()) {
+                val c = applicationContext
+                Thread {
+                    val ok = app.gbalibrary.data.Covers.import(c, uri, app.gbalibrary.ui.SongArt.file(c, key), 1536)
+                    runOnUiThread { if (ok) Music.reloadMeta(c) else Toast.makeText(c, "No se pudo usar esa imagen", Toast.LENGTH_SHORT).show() }
+                }.start()
+            }
+        }
+
     private val pickPipVideoFile =
         registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
             if (uri != null) Pip.showVideo(uri.toString())
@@ -197,6 +210,13 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
+        // la interfaz ocupa toda la pantalla, tambien tras el recorte de la camara
+        window.attributes = window.attributes.also {
+            it.layoutInDisplayCutoutMode =
+                if (android.os.Build.VERSION.SDK_INT >= 30) android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
+                else android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+        }
         Settings.init(this) // GbaApp ya lo hizo; es idempotente
         Pawb.init(this)
         Pawb.dailyBonus().let { if (it > 0) Toast.makeText(this, "+$it Pawb de bonus diario", Toast.LENGTH_SHORT).show() }
@@ -219,6 +239,7 @@ class MainActivity : ComponentActivity() {
             pickMusic = { pickMusicFile.launch(arrayOf("audio/*")) },
             pickPipVideo = { pickPipVideoFile.launch(androidx.activity.result.PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly)) },
             pickMusicFolder = { pickMusicFolder.launch(null) },
+            pickSongImage = { pendingSongKey = Music.trackKey(); if (pendingSongKey.isNotEmpty()) launchImage(pickSongImageFile) },
             openDataFolder = { openDataFolder() },
             requestStorage = { requestStorage() },
             exportBackup = { withRoms ->

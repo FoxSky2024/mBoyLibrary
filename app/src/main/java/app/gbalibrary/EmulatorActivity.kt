@@ -621,7 +621,7 @@ class EmulatorActivity : ComponentActivity() {
             }
             if (Settings.pipOnTop.value) PipOverlay()
 
-            if (Settings.musicInGame.value && !editing.value) app.gbalibrary.ui.VinylOverlay(Modifier.align(Alignment.TopStart).padding(top = 56.dp))
+            if (Settings.musicInGame.value && !editing.value) app.gbalibrary.ui.VinylOverlay(Modifier.fillMaxSize())
             // Boton flotante de musica (solo si "Seguir escuchando musica dentro del juego" esta ON).
             if (Settings.musicInGame.value && Music.hasSource() && !editing.value) {
                 Box(
