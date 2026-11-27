@@ -16,6 +16,9 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -88,12 +91,12 @@ fun GameMenu(title: String, speed: Int, layout: ControlLayout, padConnected: Boo
             Modifier.align(Alignment.TopStart).padding(top = 14.dp).fillMaxWidth().clickable(enabled = false, onClick = {}),
         ) {
             Text(
-                title, color = Color.White.copy(alpha = 0.75f), fontWeight = FontWeight.Bold, maxLines = 1, fontSize = 12.sp,
+                title, color = Color.White.copy(alpha = 0.75f), fontWeight = FontWeight.Bold, maxLines = 1, fontSize = 11.sp, fontFamily = AppFonts.Body,
                 modifier = Modifier.padding(start = 22.dp, bottom = 4.dp),
             )
             entries.forEachIndexed { i, name ->
                 val sel = i > 0 && i - 1 == tab
-                Box(Modifier.fillMaxWidth().height(40.dp), contentAlignment = Alignment.CenterStart) {
+                Box(Modifier.fillMaxWidth().height(34.dp), contentAlignment = Alignment.CenterStart) {
                     if (sel) Box(Modifier.fillMaxWidth().height(1.5.dp).background(p.accent))
                     Box(
                         Modifier
@@ -108,35 +111,38 @@ fun GameMenu(title: String, speed: Int, layout: ControlLayout, padConnected: Boo
                         Text(
                             name + if (sel) "  \u270E" else "",
                             color = if (sel) p.accent else Color.White,
-                            fontWeight = FontWeight.Bold, fontSize = 17.sp, letterSpacing = 1.sp, maxLines = 1,
+                            fontWeight = FontWeight.Bold, fontSize = 14.sp, letterSpacing = 1.sp, maxLines = 1, fontFamily = AppFonts.Body,
                         )
                     }
                 }
             }
         }
 
-        // ---- ajustes (abajo, centrado, sin tapar el juego) ----
+        // ---- ajustes: en el centro, con fondo translucido (se ve el juego detras, pero se nota la pantalla delante) ----
         if (tab >= 0) {
             Column(
                 Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(start = if (portrait) 10.dp else 12.dp, end = if (portrait) 10.dp else 0.dp, bottom = 10.dp)
-                    .fillMaxWidth(if (portrait) 1f else 0.7f)
-                    .fillMaxHeight(if (portrait) 0.42f else 0.46f)
-                    .background(glass, RoundedCornerShape(16.dp))
+                    .align(if (portrait) Alignment.BottomCenter else Alignment.Center)
+                    .padding(start = if (portrait) 10.dp else 190.dp, end = 10.dp, bottom = 10.dp)
+                    .fillMaxWidth(if (portrait) 1f else 0.62f)
+                    .fillMaxHeight(if (portrait) 0.5f else 0.66f)
+                    .background(p.panel.copy(alpha = 0.58f), RoundedCornerShape(16.dp))
+                    .border(1.dp, Color.White.copy(alpha = 0.18f), RoundedCornerShape(16.dp))
                     .clickable(enabled = false, onClick = {})
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 18.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Text(TABS[tab], color = p.accent, fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = 1.sp)
-                when (tab) {
-                    0 -> VideoTab(actions)
-                    1 -> AudioTab()
-                    2 -> ControlsTab(layout, padConnected, forceTouch, actions)
-                    3 -> GameTab(speed, actions)
-                    4 -> WindowTab(actions)
-                    else -> ExitTab(actions)
+                androidx.compose.material3.ProvideTextStyle(androidx.compose.ui.text.TextStyle(fontFamily = AppFonts.Body, fontSize = 12.sp)) {
+                    Text(TABS[tab], color = p.accent, fontWeight = FontWeight.Bold, fontSize = 10.sp, letterSpacing = 1.sp)
+                    when (tab) {
+                        0 -> VideoTab(actions)
+                        1 -> AudioTab()
+                        2 -> ControlsTab(layout, padConnected, forceTouch, actions)
+                        3 -> GameTab(speed, actions)
+                        4 -> WindowTab(actions)
+                        else -> ExitTab(actions)
+                    }
                 }
             }
         }
@@ -145,7 +151,7 @@ fun GameMenu(title: String, speed: Int, layout: ControlLayout, padConnected: Boo
 
 @Composable
 private fun GmLabel(text: String) {
-    Text(text.uppercase(), color = LocalPalette.current.accent, fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = 1.sp)
+    Text(text.uppercase(), color = LocalPalette.current.accent, fontWeight = FontWeight.Bold, fontSize = 10.sp, letterSpacing = 1.sp)
 }
 
 /** Boton con el mismo estilo que las categorias de arriba: caja con borde; resaltado = borde y texto del color de acento. */
@@ -158,12 +164,12 @@ fun GmButton(highlight: Boolean, onClick: () -> Unit, content: @Composable andro
             .then(if (highlight) Modifier.background(Color(0xCC000000)) else Modifier)
             .border(1.5.dp, if (highlight) p.accent else Color.White.copy(alpha = 0.3f))
             .clickable { Sfx.click(); onClick() }
-            .padding(horizontal = 14.dp, vertical = 8.dp),
+            .padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         androidx.compose.runtime.CompositionLocalProvider(androidx.compose.material3.LocalContentColor provides c) {
-            androidx.compose.material3.ProvideTextStyle(androidx.compose.ui.text.TextStyle(fontWeight = FontWeight.Bold, fontSize = 14.sp, letterSpacing = 0.8.sp)) { content() }
+            androidx.compose.material3.ProvideTextStyle(androidx.compose.ui.text.TextStyle(fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = 0.8.sp, fontFamily = AppFonts.Body)) { content() }
         }
     }
 }
@@ -184,7 +190,7 @@ private fun GmSlider(label: String, value: Float, range: ClosedFloatingPointRang
             GmLabel(label)
             Text(shown, color = LocalPalette.current.text)
         }
-        Slider(value = value, onValueChange = onChange, valueRange = range)
+        PillSlider(value, range, onChange)
     }
 }
 
@@ -287,7 +293,7 @@ private fun GameTab(speed: Int, a: MenuActions) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.width(110.dp)) {
                 Text("Ranura $slot", color = LocalPalette.current.text)
-                Text(when_("slot$slot"), color = LocalPalette.current.dim, fontSize = 11.sp)
+                Text(when_("slot$slot"), color = LocalPalette.current.dim, fontSize = 10.sp)
             }
             GmButton(true, onClick = { a.save("slot$slot"); tick++ }) { Text("Guardar") }
             GmButton(false, onClick = { a.load("slot$slot") }) { Text("Cargar") }
@@ -334,3 +340,43 @@ private fun ExitTab(a: MenuActions) {
         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828)),
     ) { Text("Salir al menu", color = Color.White) }
 }
+
+
+/**
+ * Barra deslizable estilo "pastilla": pista blanca con contorno fino y relleno negro con sombra suave.
+ * El relleno nunca baja de una pastilla redonda (como en la referencia con el valor al minimo).
+ */
+@Composable
+fun PillSlider(value: Float, range: ClosedFloatingPointRange<Float>, onChange: (Float) -> Unit, modifier: Modifier = Modifier) {
+    val frac = ((value - range.start) / (range.endInclusive - range.start)).coerceIn(0f, 1f)
+    val onC by androidx.compose.runtime.rememberUpdatedState(onChange)
+    val r by androidx.compose.runtime.rememberUpdatedState(range)
+    fun setFrom(x: Float, w: Int) {
+        val f = (x / w.coerceAtLeast(1)).coerceIn(0f, 1f)
+        onC(r.start + f * (r.endInclusive - r.start))
+    }
+    val h = 20.dp
+    val inset = 3.dp
+    androidx.compose.foundation.layout.BoxWithConstraints(
+        modifier
+            .fillMaxWidth()
+            .height(h + 8.dp)
+            .androidxPointer { x, w -> setFrom(x, w) },
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        val inner = maxWidth - inset * 2
+        val fillW = maxOf(h - inset * 2, inner * frac)
+        Box(Modifier.fillMaxWidth().height(h).clip(androidx.compose.foundation.shape.CircleShape).background(Color.White.copy(alpha = 0.95f)).border(1.dp, Color(0xFF111111), androidx.compose.foundation.shape.CircleShape))
+        // sombra suave hacia abajo-izquierda
+        Box(Modifier.padding(start = inset).offset((-3).dp, 4.dp).width(fillW).height(h - inset * 2).clip(androidx.compose.foundation.shape.CircleShape).background(Color.Black.copy(alpha = 0.22f)))
+        Box(Modifier.padding(start = inset).width(fillW).height(h - inset * 2).clip(androidx.compose.foundation.shape.CircleShape).background(Color(0xFF111111)))
+    }
+}
+
+private fun Modifier.androidxPointer(onX: (Float, Int) -> Unit): Modifier = this
+    .pointerInput(Unit) { androidx.compose.foundation.gestures.detectTapGestures { onX(it.x, size.width) } }
+    .pointerInput(Unit) {
+        androidx.compose.foundation.gestures.detectHorizontalDragGestures(
+            onDragStart = { onX(it.x, size.width) },
+        ) { c, _ -> c.consume(); onX(c.position.x, size.width) }
+    }

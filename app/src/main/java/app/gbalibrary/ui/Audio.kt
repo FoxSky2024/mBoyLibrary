@@ -81,7 +81,7 @@ object Music {
 
     private fun currentKey(): String {
         val src = Settings.musicFolder.value.ifEmpty { Settings.musicUri.value }
-        return src + "|" + Settings.musicShuffle.value
+        return src
     }
 
     private fun volume() = if (Settings.musicMuted.value) 0f else Settings.musicVolume.floatValue
@@ -230,6 +230,15 @@ object Music {
                 ""
             }
         }
+    }
+
+    /** Activa / desactiva el modo aleatorio sin cortar la cancion actual. */
+    fun setShuffle(v: Boolean) {
+        Settings.setMusicShuffle(v)
+        if (tracks.isEmpty()) return
+        val cur = order.getOrNull(pos) ?: 0
+        if (v) { order = listOf(cur) + tracks.indices.filter { it != cur }.shuffled(); pos = 0 }
+        else { order = tracks.indices.toList(); pos = cur }
     }
 
     /** Siguiente cancion (con sonido de cambio de cassette). */

@@ -59,6 +59,11 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.draw.blur
+import kotlinx.coroutines.delay
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -292,15 +297,53 @@ fun LibraryApp(vm: LibraryViewModel, actions: LibraryActions, onPlay: (Game) -> 
     
                 }
             }
-            if (wide) {
-                Row(Modifier.fillMaxSize()) {
-                    AppRail(true, current, select, railMod)
-                    content(Modifier.weight(1f).fillMaxHeight())
+            // Barra lateral que se esconde sola: sale deslizando desde el borde (o tocando la pestaña) y el resto se difumina un poco.
+            var railShown by remember { mutableStateOf(false) }
+            var railStamp by remember { mutableIntStateOf(0) }
+            LaunchedEffect(railShown, railStamp) { if (railShown) { delay(4000); railShown = false } }
+            val selectAndKeep: (String) -> Unit = { id -> railStamp++; select(id) }
+            Box(Modifier.fillMaxSize()) {
+                content(Modifier.fillMaxSize().then(if (railShown) Modifier.blur(3.dp) else Modifier))
+                if (railShown) {
+                    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.18f)).clickable(indication = null, interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }) { railShown = false })
                 }
-            } else {
-                Column(Modifier.fillMaxSize()) {
-                    content(Modifier.weight(1f).fillMaxWidth())
-                    AppRail(false, current, select, railMod)
+                // zona de borde: deslizar hacia la derecha (o hacia arriba en vertical) saca la barra
+                if (!railShown) {
+                    var acc by remember { mutableFloatStateOf(0f) }
+                    if (wide) {
+                        Box(
+                            Modifier.align(Alignment.CenterStart).fillMaxHeight(0.6f).width(22.dp)
+                                .pointerInput(Unit) {
+                                    detectHorizontalDragGestures(onDragStart = { acc = 0f }, onHorizontalDrag = { c, dx -> c.consume(); acc += dx; if (acc > 24f) { railShown = true; railStamp++; acc = 0f } })
+                                }
+                                .clickable(indication = null, interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }) { railShown = true; railStamp++ },
+                        ) {
+                            Box(Modifier.align(Alignment.CenterStart).padding(start = 3.dp).width(4.dp).height(46.dp).clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = 0.35f)))
+                        }
+                    } else {
+                        Box(
+                            Modifier.align(Alignment.BottomCenter).fillMaxWidth(0.6f).height(22.dp)
+                                .pointerInput(Unit) {
+                                    detectVerticalDragGestures(onDragStart = { acc = 0f }, onVerticalDrag = { c, dy -> c.consume(); acc += dy; if (acc < -24f) { railShown = true; railStamp++; acc = 0f } })
+                                }
+                                .clickable(indication = null, interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }) { railShown = true; railStamp++ },
+                        ) {
+                            Box(Modifier.align(Alignment.BottomCenter).padding(bottom = 3.dp).height(4.dp).width(46.dp).clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = 0.35f)))
+                        }
+                    }
+                }
+                if (wide) {
+                    androidx.compose.animation.AnimatedVisibility(
+                        railShown, Modifier.align(Alignment.CenterStart),
+                        enter = androidx.compose.animation.slideInHorizontally { -it } + androidx.compose.animation.fadeIn(),
+                        exit = androidx.compose.animation.slideOutHorizontally { -it } + androidx.compose.animation.fadeOut(),
+                    ) { AppRail(true, current, selectAndKeep, railMod) }
+                } else {
+                    androidx.compose.animation.AnimatedVisibility(
+                        railShown, Modifier.align(Alignment.BottomCenter),
+                        enter = androidx.compose.animation.slideInVertically { it } + androidx.compose.animation.fadeIn(),
+                        exit = androidx.compose.animation.slideOutVertically { it } + androidx.compose.animation.fadeOut(),
+                    ) { AppRail(false, current, selectAndKeep, railMod) }
                 }
             }
         }
@@ -308,8 +351,8 @@ fun LibraryApp(vm: LibraryViewModel, actions: LibraryActions, onPlay: (Game) -> 
         AchievementToastHost()
         // Vinilo abajo a la derecha (biblioteca y ajustes; nunca dentro del juego)
         if (UiEditNav.show.value) UiEditorOverlay(Modifier.align(Alignment.BottomCenter).padding(8.dp))
+        if (!MusicNav.show.value) VinylOverlay(Modifier.align(Alignment.CenterStart))
         if (MusicNav.mini.value && !MusicNav.show.value) MiniMusicPlayer(Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp))
-        if (!MusicNav.show.value) VinylOverlay(Modifier.align(Alignment.BottomEnd))
     }
 }
 
@@ -887,7 +930,7 @@ fun FitTitle(
 private fun AppRail(vertical: Boolean, current: String, onSelect: (String) -> Unit, modifier: Modifier = Modifier) {
     val p = LocalPalette.current
     val items = listOf("home", "shop", "music", "gallery", "news", "profile", "settings")
-    val bg = androidx.compose.ui.graphics.lerp(p.bg, Color.Black, 0.4f)
+    val bg = Color.Transparent // barra transparente
     @Composable
     fun item(id: String) {
         val on = current == id

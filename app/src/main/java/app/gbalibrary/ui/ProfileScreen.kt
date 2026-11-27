@@ -111,9 +111,10 @@ fun ProfileScreen(
                     Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         Avatar(116, ring, RoundedCornerShape(4.dp))
                         Column(Modifier.weight(1f).padding(end = 44.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(Settings.profileName.value.ifBlank { "Jugador" }, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            // la vitrina (banner con marco) va justo debajo del nombre
-                            if (app.gbalibrary.data.Pawb.banner.value.isNotEmpty() || app.gbalibrary.data.Pawb.vFrame.value.isNotEmpty() || app.gbalibrary.data.Pawb.vTitle.value.isNotEmpty() || app.gbalibrary.data.Pawb.vImg.value.isNotEmpty()) Vitrina()
+                            val pName = Settings.profileName.value.ifBlank { "Jugador" }
+                            // con vitrina, el nombre va dentro del banner (arriba a la izquierda); sin vitrina, arriba como siempre
+                            if (app.gbalibrary.data.Pawb.banner.value.isNotEmpty() || app.gbalibrary.data.Pawb.vFrame.value.isNotEmpty() || app.gbalibrary.data.Pawb.vTitle.value.isNotEmpty() || app.gbalibrary.data.Pawb.vImg.value.isNotEmpty()) Vitrina(overlayName = pName)
+                            else Text(pName, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             if (Profile.location.value.isNotBlank()) Text(Profile.location.value, color = p.dim, fontSize = 12.sp)
                             if (Profile.headline.value.isNotBlank()) Text(Profile.headline.value, color = p.text, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 2)
                             if (Profile.bio.value.isNotBlank()) Text(Profile.bio.value, color = p.dim, fontSize = 12.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
@@ -122,7 +123,7 @@ fun ProfileScreen(
                     // Icono QR monocromo, arriba a la derecha del perfil.
                     Ic(
                         Icons.Filled.QrCode2, size = 28.dp, tint = p.text,
-                        modifier = Modifier.align(Alignment.TopEnd).clip(RoundedCornerShape(8.dp)).clickable { Sfx.click(); showQr = true }.padding(6.dp),
+                        modifier = Modifier.align(Alignment.TopEnd).clip(RoundedCornerShape(8.dp)).clickable { Sfx.click(); showQr = !showQr }.padding(6.dp),
                     )
                 }
             }
@@ -352,14 +353,27 @@ fun ProfileScreen(
         }
     }
     }
-    if (showQr) {
-        val link = remember(all, st, showQr, Profile.status.intValue, Profile.headline.value, Profile.bio.value, Profile.location.value, Profile.frame.intValue, Profile.banner.intValue, Profile.showcase.value, Profile.showGames.value, Profile.showTime.value, Profile.acceptNotes.value, Settings.profileName.value) {
-            ProfileShare.profileLink(profileSnapshot(all, st))
+    // QR: solo la imagen, en una tarjeta de cristal arriba a la derecha; tocarla (o el icono) la esconde
+    Box(Modifier.fillMaxSize()) {
+        androidx.compose.animation.AnimatedVisibility(
+            visible = showQr,
+            modifier = Modifier.align(Alignment.TopEnd).padding(top = 58.dp, end = 14.dp),
+            enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.scaleIn(initialScale = 0.85f, transformOrigin = androidx.compose.ui.graphics.TransformOrigin(1f, 0f)),
+            exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.scaleOut(targetScale = 0.85f, transformOrigin = androidx.compose.ui.graphics.TransformOrigin(1f, 0f)),
+        ) {
+            val link = remember(all, st, Profile.status.intValue, Profile.headline.value, Profile.bio.value, Profile.location.value, Profile.frame.intValue, Profile.banner.intValue, Profile.showcase.value, Profile.showGames.value, Profile.showTime.value, Profile.acceptNotes.value, Settings.profileName.value) {
+                ProfileShare.profileLink(profileSnapshot(all, st))
+            }
+            val shape = RoundedCornerShape(18.dp)
+            Box(
+                Modifier
+                    .clip(shape)
+                    .background(Brush.verticalGradient(listOf(p.accent.copy(alpha = 0.30f), p.panel.copy(alpha = 0.92f))))
+                    .border(1.5.dp, p.accent.copy(alpha = 0.7f), shape)
+                    .clickable { Sfx.click(); showQr = false }
+                    .padding(10.dp),
+            ) { QrImage(link, 150.dp, Modifier.clip(RoundedCornerShape(10.dp))) }
         }
-        QrDialog(
-            "Mi perfil", "Quien lo escanee (con la app instalada) verá tu perfil y podrá dejarte una nota. Tu foto no se comparte.",
-            link,
-        ) { showQr = false }
     }
 }
 
