@@ -357,34 +357,20 @@ fun ItemPreview(id: String, modifier: Modifier = Modifier.fillMaxSize()) {
 // ------------------------------------------------------------------------------------------ apertura de sobres
 
 @Composable
-private fun SealedPack(name: String, color: Color, onOpen: () -> Unit) {
+private fun SealedPack(name: String, color: Color, count: Int, onOpen: () -> Unit) {
     val scope = rememberCoroutineScope()
     val burst = remember { Animatable(0f) }
     val tr = rememberInfiniteTransition(label = "pack")
     val wob by tr.animateFloat(-3f, 3f, infiniteRepeatable(tween(900), RepeatMode.Reverse), label = "wob")
     val shine by tr.animateFloat(0f, 1f, infiniteRepeatable(tween(2200, easing = LinearEasing), RepeatMode.Restart), label = "shine")
     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(18.dp)) {
-        Box(
+        PackArt(
+            name, color, count,
             Modifier.size(170.dp, 240.dp)
                 .graphicsLayer { rotationZ = wob * (1f - burst.value); val s = 1f + 0.9f * burst.value; scaleX = s; scaleY = s; alpha = 1f - burst.value }
-                .clip(RoundedCornerShape(14.dp))
-                .background(Brush.verticalGradient(listOf(color, color.copy(alpha = 0.55f), Color(0xFF14101F))))
-                .border(2.dp, Color.White.copy(alpha = 0.7f), RoundedCornerShape(14.dp))
                 .clickable { scope.launch { burst.animateTo(1f, tween(420)); onOpen() } },
-            contentAlignment = Alignment.Center,
-        ) {
-            // zigzag de apertura y destello de foil
-            Canvas(Modifier.fillMaxSize()) {
-                val z = 12f; var x = 0f; var up = true
-                while (x < size.width) { drawLine(Color.White.copy(alpha = 0.55f), Offset(x, if (up) 0f else z), Offset(x + z, if (up) z else 0f), 3f); x += z; up = !up }
-                val sx = size.width * (shine * 1.6f - 0.3f)
-                drawRect(Brush.linearGradient(listOf(Color.Transparent, Color.White.copy(alpha = 0.35f), Color.Transparent), Offset(sx - 50f, 0f), Offset(sx + 50f, size.height)))
-            }
-            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                PawIcon(64.dp, Color.White)
-                Text(name, color = Color.White, fontWeight = FontWeight.Black, fontSize = 17.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 12.dp))
-            }
-        }
+            titleSp = 17f,
+        )
         Text("Toca el sobre para abrirlo", color = Color(0xFFB0BAC5), fontSize = 13.sp)
     }
 }
@@ -439,7 +425,7 @@ fun PackOpening(packName: String, packColor: Color, ids: List<String>, onClose: 
     var stage by remember { mutableIntStateOf(0) }
     val flipped = remember { mutableStateListOf<Boolean>().apply { repeat(ids.size) { add(false) } } }
     Box(Modifier.fillMaxSize().background(Color(0xF2080A12)).clickable(enabled = false) {}, contentAlignment = Alignment.Center) {
-        if (stage == 0) SealedPack(packName, packColor) { stage = 1 }
+        if (stage == 0) SealedPack(packName, packColor, ids.size) { stage = 1 }
         else androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize().padding(12.dp), contentAlignment = Alignment.Center) {
           val cw = minOf(124.dp, (maxWidth - 12.dp * (ids.size - 1)) / ids.size, (maxHeight - 120.dp) / 1.42f).coerceAtLeast(40.dp)
           Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {

@@ -272,6 +272,7 @@ class MainActivity : ComponentActivity() {
                         onPlay = { game -> play(game, "") },
                         onPlaySlot = { game, slot -> play(game, slot) },
                     )
+                    if (app.gbalibrary.ui.MiniNav.show.value) app.gbalibrary.ui.MiniGameScreen(onExit = { app.gbalibrary.ui.MiniNav.show.value = false })
                     // arranque de la app: 5 s de pantalla de carga (precarga de objetos), solo una vez por proceso
                     var starting by remember { mutableStateOf(!app.gbalibrary.ui.Boot.shown) }
                     if (starting) {

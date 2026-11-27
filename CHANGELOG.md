@@ -1,3 +1,10 @@
+## 1.22.0
+- Llaveros en 3D (sprite stacking: capas con grosor que giran al tocarlos o inspeccionarlos) y 12 llaveros nuevos (23 en total).
+- Vista previa de la tienda: marcos, banners y llaveros se ven puestos en tu perfil (foto, banner, argollas).
+- Sobres con diseno de foil profesional (relieve, destello holografico, medallon, cinta con nombre).
+- Minijuego de cofres estilo PS1/terror con niebla: acceso en la barra lateral. 3 cofres al dia en lugares aleatorios, 100-200 Pawb cada uno y 0.001% de ganar 1000. Al terminar sale con la pantalla de carga y te dice cuanto encontraste.
+- Nuevo icono de la app (personaje de la pantalla de carga).
+
 ## 1.21.0
 - Perfil: 3 argollas semitransparentes; hasta 3 llaveros a la vez. Mantener presionado y arrastrar para cambiarlos de argolla (solo se sueltan en una argolla). Quedan anclados al contenido del perfil.
 - Llaveros: efecto al tocar, doble toque para inspeccionarlo (giro), y llaveros con particulas (brillo, fuego, hielo, amor, burbujas). Nombres de assets con brillo/fuego/nieve/amor/burbuja activan el efecto.
