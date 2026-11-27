@@ -28,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Repeat
@@ -266,6 +267,8 @@ fun MusicScreen(actions: LibraryActions, onBack: () -> Unit) {
                         // botones redondos: elegir carpeta / elegir un archivo
                         Box(Modifier.size(52.dp).clip(CircleShape).background(t.soft).clickable { Sfx.click(); actions.pickMusicFolder() }, contentAlignment = Alignment.Center) { Ic(Icons.Filled.Folder, 24.dp, t.bg) }
                         Box(Modifier.size(52.dp).clip(CircleShape).background(t.soft).clickable { Sfx.click(); actions.pickMusic() }, contentAlignment = Alignment.Center) { Ic(Icons.Filled.MusicNote, 24.dp, t.bg) }
+                        // imagen propia para la cancion que suena
+                        Box(Modifier.size(52.dp).clip(CircleShape).background(t.accent).clickable { Sfx.click(); actions.pickSongImage() }, contentAlignment = Alignment.Center) { Ic(Icons.Filled.PhotoLibrary, 24.dp, t.onAccent) }
                     }
                     Box(Modifier.height(8.dp))
                 }
@@ -281,7 +284,7 @@ fun MusicScreen(actions: LibraryActions, onBack: () -> Unit) {
                     Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         when (panel) {
                             0 -> {
-                                Box(Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(18.dp)).background(t.card), contentAlignment = Alignment.Center) {
+                                Box(Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(18.dp)).background(t.card).clickable { Sfx.click(); actions.pickSongImage() }, contentAlignment = Alignment.Center) {
                                     art?.let { Image(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop, filterQuality = androidx.compose.ui.graphics.FilterQuality.High) } ?: PawIcon(48.dp, t.soft)
                                 }
                                 Text("Información", color = t.soft, fontWeight = FontWeight.Black, fontSize = 14.sp)

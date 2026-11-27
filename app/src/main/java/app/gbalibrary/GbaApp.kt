@@ -15,5 +15,6 @@ class GbaApp : Application() {
         Settings.init(this)
         app.gbalibrary.data.Pawb.init(this)
         app.gbalibrary.ui.DevStore.load(this)
+        app.gbalibrary.ui.ShopCatalog.loadAssets(this)
     }
 }

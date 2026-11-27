@@ -1,3 +1,11 @@
+## 1.18.0
+- Interfaz a pantalla completa (sin el borde del recorte de la camara).
+- Estanteria: zoom out mas suave.
+- Disco de musica al centro del borde derecho, mas grande; al tocarlo aparece la imagen de la cancion y se oscurece/difumina el fondo.
+- Imagen propia para cada cancion.
+- Tienda: filtros por calidad y tenencia, marcos con particulas (fuego, nieve, estrellas, corazones, burbujas, rayos, ceniza, petalos), marcos para la foto de perfil.
+- Objetos de tienda con imagenes (assets/shop/banners y frames, nombre rareza_precio_nombre.png).
+
 ## 1.17.1
 - Corrige imports de 1.17.0.
 

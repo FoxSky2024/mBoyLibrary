@@ -257,6 +257,15 @@ object Music {
         play(ctx, order[pos], cassette)
     }
 
+    /** Clave de la cancion actual (para asociarle una imagen propia). */
+    fun trackKey(): String = tracks.getOrNull(order.getOrNull(pos) ?: -1)?.toString() ?: ""
+
+    /** Vuelve a leer titulo / imagen de la cancion actual (tras ponerle una imagen). */
+    fun reloadMeta(ctx: Context) {
+        val uri = tracks.getOrNull(order.getOrNull(pos) ?: -1) ?: return
+        readMetadata(ctx.applicationContext, uri)
+    }
+
     private fun readMetadata(ctx: Context, uri: Uri) {
         val fallback = try { DocumentFile.fromSingleUri(ctx, uri)?.name?.substringBeforeLast('.') } catch (e: Exception) { null }
         io.execute {
@@ -283,6 +292,8 @@ object Music {
             } finally {
                 try { r.release() } catch (e: Exception) { /* ignorado */ }
             }
+            val own = SongArt.load(ctx, uri.toString())
+            if (own != null) bmp = own // la imagen que elegiste manda sobre la incrustada
             main.post {
                 title.value = t?.takeIf { it.isNotBlank() } ?: fallback ?: "Música"
                 artist.value = a ?: ""
@@ -413,4 +424,22 @@ object DiscClick {
     fun play() {
         if (ready) pool?.play(id, 0.3f, 0.3f, 1, 0, 1f)
     }
+}
+
+
+/** Imagenes propias de las canciones (carpeta songart, una por cancion). */
+object SongArt {
+    fun file(ctx: Context, key: String): java.io.File {
+        val d = java.io.File(ctx.filesDir, "songart")
+        d.mkdirs()
+        return java.io.File(d, "${key.hashCode().toUInt()}.jpg")
+    }
+
+    fun load(ctx: Context, key: String): ImageBitmap? {
+        val f = file(ctx, key)
+        if (!f.exists()) return null
+        return try { BitmapFactory.decodeFile(f.path)?.asImageBitmap() } catch (e: Exception) { null }
+    }
+
+    fun clear(ctx: Context, key: String) { file(ctx, key).delete() }
 }

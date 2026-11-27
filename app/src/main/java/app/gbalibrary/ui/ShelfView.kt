@@ -197,7 +197,7 @@ fun ShelfView(
             val wPx = constraints.maxWidth.toFloat()
             val hPx = constraints.maxHeight.toFloat()
             val floorPx = hPx * 0.70f // la "repisa"
-            val cardHpx = floorPx * 0.60f * 0.6f // zoom out 40%
+            val cardHpx = floorPx * 0.60f * 0.74f // zoom out suave
             val cardH = with(density) { cardHpx.toDp() }
             val refW = cardHpx * 0.80f // separacion entre cajas
 
@@ -372,7 +372,7 @@ fun ShelfView(
                 modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 10.dp),
             )
         }
-        ShelfStatusPill(Modifier.align(Alignment.TopCenter).safeDrawingPadding().padding(top = 8.dp))
+        ShelfStatusPill(Modifier.align(Alignment.TopCenter).safeNoCutout().padding(top = 8.dp))
 
         inspect?.let { g -> InspectOverlay(g, onClose = { inspect = null }, onPlay = { inspect = null; onPlay(g) }) }
 
@@ -415,7 +415,7 @@ private fun ShelfTopIcons(
     }
 
     Row(
-        modifier.safeDrawingPadding().padding(8.dp),
+        modifier.safeNoCutout().padding(8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {

@@ -119,6 +119,7 @@ class LibraryActions(
     val pickLibraryBackground: () -> Unit,
     val pickMusic: () -> Unit,
     val pickMusicFolder: () -> Unit,
+    val pickSongImage: () -> Unit = {},
     val pickPipVideo: () -> Unit = {},
     val openDataFolder: () -> Unit = {},
     val requestStorage: () -> Unit = {},
@@ -232,7 +233,7 @@ fun LibraryApp(vm: LibraryViewModel, actions: LibraryActions, onPlay: (Game) -> 
         // El contenido respeta barra de estado, notch y barra de navegacion (el fondo ocupa todo).
         // Estilo "Discord + Steam": barra de iconos redondos a la izquierda (o abajo en vertical) con indicador de seccion activa.
         androidx.compose.foundation.layout.BoxWithConstraints(
-            if (shelfFull) Modifier.fillMaxSize() else Modifier.fillMaxSize().safeDrawingPadding().padding(Settings.uiMargin.intValue.dp),
+            if (shelfFull) Modifier.fillMaxSize() else Modifier.fillMaxSize().safeNoCutout().padding(Settings.uiMargin.intValue.dp),
         ) {
             val wide = maxWidth > maxHeight
             val current = when {
@@ -258,7 +259,7 @@ fun LibraryApp(vm: LibraryViewModel, actions: LibraryActions, onPlay: (Game) -> 
                     "profile" -> showProfile = true
                 }
             }
-            val railMod = if (shelfFull) Modifier.safeDrawingPadding() else Modifier
+            val railMod = if (shelfFull) Modifier.safeNoCutout() else Modifier
             val content: @Composable (Modifier) -> Unit = { m ->
                 Box(m) {
             when {
@@ -303,7 +304,7 @@ fun LibraryApp(vm: LibraryViewModel, actions: LibraryActions, onPlay: (Game) -> 
             LaunchedEffect(railShown, railStamp) { if (railShown) { delay(4000); railShown = false } }
             val selectAndKeep: (String) -> Unit = { id -> railStamp++; select(id) }
             Box(Modifier.fillMaxSize()) {
-                content(Modifier.fillMaxSize().then(if (railShown) Modifier.blur(3.dp) else Modifier))
+                content(Modifier.fillMaxSize().then(if (railShown || DiscNav.open.value) Modifier.blur(4.dp) else Modifier))
                 if (railShown) {
                     Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.18f)).clickable(indication = null, interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }) { railShown = false })
                 }
@@ -351,7 +352,7 @@ fun LibraryApp(vm: LibraryViewModel, actions: LibraryActions, onPlay: (Game) -> 
         AchievementToastHost()
         // Vinilo abajo a la derecha (biblioteca y ajustes; nunca dentro del juego)
         if (UiEditNav.show.value) UiEditorOverlay(Modifier.align(Alignment.BottomCenter).padding(8.dp))
-        if (!MusicNav.show.value) VinylOverlay(Modifier.align(Alignment.CenterStart))
+        if (!MusicNav.show.value) VinylOverlay(Modifier.fillMaxSize())
         if (MusicNav.mini.value && !MusicNav.show.value) MiniMusicPlayer(Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp))
     }
 }
@@ -678,16 +679,25 @@ fun Avatar(sizeDp: Int, ring: Color? = null, shape: androidx.compose.ui.graphics
     val bmp by produceState<ImageBitmap?>(null, Settings.avatarStamp.intValue) {
         value = withContext(Dispatchers.IO) { Covers.load(Covers.avatarFile(ctx)) }
     }
-    Box(
-        Modifier.size(sizeDp.dp).clip(shape).background(p.card).border(2.dp, ring ?: p.accent, shape),
-        contentAlignment = Alignment.Center,
-    ) {
-        val b = bmp
-        if (b != null) {
-            Image(b, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-        } else {
-            Text(Settings.profileName.value.take(1).uppercase(), color = p.text, fontWeight = FontWeight.Bold)
+    val aFrame = app.gbalibrary.data.Pawb.aFrame.value.takeIf { it.isNotEmpty() }?.let { ShopCatalog.frame(it) }
+    val inner: @Composable (Modifier, androidx.compose.ui.graphics.Shape, Boolean) -> Unit = { mod, sh, bordered ->
+        Box(
+            mod.clip(sh).background(p.card).then(if (bordered) Modifier.border(2.dp, ring ?: p.accent, sh) else Modifier),
+            contentAlignment = Alignment.Center,
+        ) {
+            val b = bmp
+            if (b != null) {
+                Image(b, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+            } else {
+                Text(Settings.profileName.value.take(1).uppercase(), color = p.text, fontWeight = FontWeight.Bold)
+            }
         }
+    }
+    if (aFrame != null) {
+        // marco de la tienda (con efectos) alrededor de la foto
+        FramedBox(aFrame, Modifier.size(sizeDp.dp)) { inner(Modifier.fillMaxSize(), RoundedCornerShape(3.dp), false) }
+    } else {
+        inner(Modifier.size(sizeDp.dp), shape, true)
     }
 }
 

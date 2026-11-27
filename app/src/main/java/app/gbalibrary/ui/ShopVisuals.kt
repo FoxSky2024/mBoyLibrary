@@ -128,6 +128,10 @@ private fun DrawScope.frameBack(f: ShopFrame, ph: Float, th: Float) {
                 drawCircle(f.c1, th * 0.3f, pt); drawCircle(f.c1.copy(alpha = 0.3f), th * 0.7f, pt)
             }
         }
+        in 16..23 -> {
+            drawRoundRect(Brush.linearGradient(listOf(f.c1, f.c2, f.c1), Offset.Zero, Offset(size.width, size.height)), size = full, cornerRadius = r)
+            if (f.kind == 21) drawRoundRect(f.c1.copy(alpha = 0.55f), Offset(th * 0.4f, th * 0.4f), Size(size.width - th * 0.8f, size.height - th * 0.8f), r, style = Stroke(2.5f))
+        }
         7 -> {
             drawRoundRect(f.c1, size = full, cornerRadius = r)
             drawRoundRect(f.c2, Offset(th * 0.45f, th * 0.45f), Size(size.width - th * 0.9f, size.height - th * 0.9f), r, style = Stroke(2.5f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(14f, 9f))))
@@ -173,16 +177,103 @@ private fun DrawScope.frameFront(f: ShopFrame, ph: Float, th: Float) {
     }
 }
 
+
+/** Particulas que salen de los bordes y se pierden fuera del marco (fuego, nieve, estrellas, corazones, burbujas...). */
+private fun DrawScope.frameParticles(f: ShopFrame, ph: Float, th: Float) {
+    val w = size.width
+    val h = size.height
+    val per = 2f * (w + h)
+    val reach = th * 8f
+    val n = if (f.kind == 21) 26 else 42
+    val tau = 6.2832f
+    for (i in 0 until n) {
+        val d = ((i * 0.6180339f) % 1f) * per
+        val cyc = if (i % 3 == 0) 2 else 1
+        val life = (ph * cyc + (i * 0.37f) % 1f) % 1f
+        // punto del borde y su normal hacia fuera
+        val base: Offset; val nx: Float; val ny: Float
+        when {
+            d < w -> { base = Offset(d, 0f); nx = 0f; ny = -1f }
+            d < w + h -> { base = Offset(w, d - w); nx = 1f; ny = 0f }
+            d < 2 * w + h -> { base = Offset(w - (d - w - h), h); nx = 0f; ny = 1f }
+            else -> { base = Offset(0f, h - (d - 2 * w - h)); nx = -1f; ny = 0f }
+        }
+        val wob = kotlin.math.sin(life * tau + i)
+        var dx: Float; var dy: Float
+        when (f.kind) {
+            16, 22 -> { dx = nx * 0.35f + wob * 0.15f; dy = -1f }              // sube como llama / ceniza
+            17 -> { dx = nx * 0.3f + wob * 0.35f; dy = 0.9f }                  // cae
+            19 -> { dx = wob * 0.3f + nx * 0.2f; dy = -0.9f }                  // corazones suben
+            20 -> { dx = wob * 0.35f + nx * 0.3f; dy = -0.8f }                 // burbujas
+            23 -> { dx = 0.5f + wob * 0.4f; dy = 0.7f }                        // petalos caen de lado
+            else -> { dx = nx + wob * 0.2f; dy = ny + wob * 0.2f }             // estrellas / chispas: hacia fuera
+        }
+        val pos = base + Offset(dx, dy) * (reach * life)
+        val a = kotlin.math.sin(life * 3.1416f).coerceIn(0f, 1f)
+        val rad = th * (0.28f + (i % 4) * 0.12f) * (1f - 0.45f * life)
+        val col = when (f.kind) {
+            16, 22 -> androidx.compose.ui.graphics.lerp(f.c1, f.c2, life)
+            18 -> if (i % 2 == 0) f.c1 else Color.White
+            else -> f.c1
+        }
+        when (f.kind) {
+            18 -> { // destello de 4 puntas
+                val s = rad * 1.8f
+                drawLine(col.copy(alpha = a), pos - Offset(s, 0f), pos + Offset(s, 0f), 2f)
+                drawLine(col.copy(alpha = a), pos - Offset(0f, s), pos + Offset(0f, s), 2f)
+                drawCircle(Color.White.copy(alpha = a), rad * 0.4f, pos)
+            }
+            19 -> { // corazon
+                val s = rad * 1.5f
+                drawCircle(col.copy(alpha = a), s * 0.55f, pos + Offset(-s * 0.5f, -s * 0.3f))
+                drawCircle(col.copy(alpha = a), s * 0.55f, pos + Offset(s * 0.5f, -s * 0.3f))
+                drawPath(androidx.compose.ui.graphics.Path().apply { moveTo(pos.x - s * 1.02f, pos.y - s * 0.05f); lineTo(pos.x + s * 1.02f, pos.y - s * 0.05f); lineTo(pos.x, pos.y + s * 1.2f); close() }, col.copy(alpha = a))
+            }
+            20 -> { // burbuja
+                drawCircle(col.copy(alpha = a * 0.25f), rad * 1.6f, pos)
+                drawCircle(col.copy(alpha = a), rad * 1.6f, pos, style = Stroke(1.5f))
+            }
+            21 -> { // chispa electrica: zigzag corto hacia fuera
+                val p1 = base + Offset(nx, ny) * (th * 1.2f)
+                val p2 = p1 + Offset(nx * th * 1.5f + wob * th, ny * th * 1.5f - wob * th)
+                val p3 = p2 + Offset(nx * th * 1.5f - wob * th, ny * th * 1.5f + wob * th)
+                val ea = (0.5f + 0.5f * kotlin.math.sin((ph * 6f + i) * tau)).coerceIn(0f, 1f)
+                drawLine(col.copy(alpha = ea), base, p1, 2.5f); drawLine(col.copy(alpha = ea), p1, p2, 2.5f); drawLine(Color.White.copy(alpha = ea), p2, p3, 2f)
+            }
+            23 -> { // petalo
+                drawOval(col.copy(alpha = a), pos - Offset(rad * 1.3f, rad * 0.7f), Size(rad * 2.6f, rad * 1.4f))
+            }
+            else -> {
+                drawCircle(col.copy(alpha = a * 0.35f), rad * 2f, pos)
+                drawCircle(col.copy(alpha = a), rad, pos)
+            }
+        }
+    }
+}
+
 /** Contenido dentro de un marco (null = sin marco). */
 @Composable
 fun FramedBox(frame: ShopFrame?, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     if (frame == null) { Box(modifier) { content() }; return }
+    if (frame.img.isNotEmpty()) {
+        // marco hecho con una imagen PNG (centro transparente): se dibuja encima del contenido
+        val fb = rememberAssetImage(frame.img)
+        Box(modifier) {
+            Box(Modifier.matchParentSize().padding(2.dp)) { content() }
+            if (fb != null) androidx.compose.foundation.Image(fb, null, Modifier.matchParentSize(), contentScale = androidx.compose.ui.layout.ContentScale.FillBounds, filterQuality = androidx.compose.ui.graphics.FilterQuality.High)
+        }
+        return
+    }
     val th = 4.dp
     val thPx = with(LocalDensity.current) { th.toPx() }
     val ph by rememberInfiniteTransition(label = "frame").animateFloat(0f, 1f, infiniteRepeatable(tween(3200, easing = LinearEasing), RepeatMode.Restart), label = "ph")
-    Box(modifier.clip(RoundedCornerShape(6.dp)).drawBehind { frameBack(frame, ph, thPx) }.padding(th)) {
-        Box(Modifier.matchParentSize()) { content() }
-        Canvas(Modifier.matchParentSize()) { frameFront(frame, ph, thPx) }
+    Box(modifier) {
+        Box(Modifier.fillMaxSize().clip(RoundedCornerShape(6.dp)).drawBehind { frameBack(frame, ph, thPx) }.padding(th)) {
+            Box(Modifier.matchParentSize()) { content() }
+            Canvas(Modifier.matchParentSize()) { frameFront(frame, ph, thPx) }
+        }
+        // particulas que salen del borde (dibujan por fuera del marco)
+        if (frame.kind >= 16) Canvas(Modifier.fillMaxSize()) { frameParticles(frame, ph, thPx) }
     }
 }
 
@@ -202,7 +293,7 @@ fun VitrinaContent(modifier: Modifier = Modifier) {
     val img = Pawb.vImg.value.ifEmpty { cus?.img ?: "" }
     val vid = Pawb.vVideo.value
     Box(modifier) {
-        BannerArt(Pawb.vTitle.value.ifEmpty { baseTitle }, Pawb.vSub.value.ifEmpty { baseSub }, colors, style, Modifier.fillMaxSize(), img)
+        BannerArt(Pawb.vTitle.value.ifEmpty { baseTitle }, Pawb.vSub.value.ifEmpty { baseSub }, colors, style, Modifier.fillMaxSize(), img, asset = if (img.isEmpty() && Pawb.vTitle.value.isEmpty()) (cat?.img ?: "") else "")
         if (vid.isNotEmpty() && java.io.File(vid).exists()) {
             VideoBanner(vid, Modifier.fillMaxSize())
             Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.45f), Color.Transparent))))
@@ -252,7 +343,7 @@ fun Vitrina(modifier: Modifier = Modifier, overlayName: String? = null) {
 @Composable
 fun ItemPreview(id: String, modifier: Modifier = Modifier.fillMaxSize()) {
     ShopCatalog.bg(id)?.let { b -> Canvas(modifier) { drawStyled(b.colors, b.style) }; return }
-    ShopCatalog.banner(id)?.let { b -> BannerArt(b.title, b.subtitle, b.colors, b.style, modifier); return }
+    ShopCatalog.banner(id)?.let { b -> BannerArt(b.title, b.subtitle, b.colors, b.style, modifier, asset = b.img); return }
     ShopCatalog.frame(id)?.let { f ->
         Box(modifier.padding(6.dp), contentAlignment = Alignment.Center) {
             FramedBox(f, Modifier.fillMaxSize()) { Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(Color(0xFF243247), Color(0xFF0E1420))))) }

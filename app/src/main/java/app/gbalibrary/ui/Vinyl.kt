@@ -28,6 +28,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -69,20 +71,26 @@ import kotlinx.coroutines.delay
 
 private const val ROW_DP = 40
 
+/** Estado compartido: el disco esta ampliado (la biblioteca se difumina mientras tanto). */
+object DiscNav { val open = mutableStateOf(false) }
+
 /**
- * Disco flotante de la musica (biblioteca y juegos). Estado 1: disco pequeno asomando por el borde izquierdo, girando
- * mientras suena. Estado 2 (al tocarlo): sale un poco mas, sigue girando y muestra anterior / pausa / siguiente,
- * modo aleatorio y la lista para saltar a otra cancion. Se encoge solo a los 7 s sin tocarlo.
+ * Disco flotante de la musica (biblioteca y juegos), al centro del borde derecho. Estado 1: disco asomando, girando
+ * mientras suena. Estado 2 (al tocarlo): sale mas grande, sigue girando, aparece la imagen de la cancion de fondo
+ * entrando desde la derecha (opaca) y el resto se oscurece / difumina; anterior, pausa, siguiente, aleatorio y la lista.
+ * Se encoge solo a los 8 s sin tocarlo. Llena el contenedor: llamarlo dentro de un Box a pantalla completa.
  */
 @Composable
 fun VinylOverlay(modifier: Modifier = Modifier) {
     val ctx = LocalContext.current
     val has = Music.hasSource() && (Music.title.value.isNotEmpty() || Music.playing.value)
-    if (!has) return
-    val playing = Music.playing.value
     var open by remember { mutableStateOf(false) }
     var stamp by remember { mutableIntStateOf(0) }
-    LaunchedEffect(open, stamp) { if (open) { delay(7000); open = false } }
+    androidx.compose.runtime.SideEffect { DiscNav.open.value = open && has }
+    androidx.compose.runtime.DisposableEffect(Unit) { onDispose { DiscNav.open.value = false } }
+    LaunchedEffect(open, stamp) { if (open) { delay(8000); open = false } }
+    if (!has) return
+    val playing = Music.playing.value
 
     var ang by remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
     LaunchedEffect(playing) {
@@ -94,45 +102,66 @@ fun VinylOverlay(modifier: Modifier = Modifier) {
             }
         }
     }
-    val discSize by androidx.compose.animation.core.animateDpAsState(if (open) 96.dp else 44.dp, tween(260), label = "discSize")
-    val peek by androidx.compose.animation.core.animateDpAsState(if (open) (-26).dp else (-14).dp, tween(260), label = "discPeek")
+    val discSize by androidx.compose.animation.core.animateDpAsState(if (open) 170.dp else 78.dp, tween(280), label = "discSize")
+    val peek by androidx.compose.animation.core.animateDpAsState(if (open) 46.dp else 30.dp, tween(280), label = "discPeek")
 
-    Column(modifier) {
-        Box(
-            Modifier
-                .offset(x = peek)
-                .size(discSize)
-                .alpha(if (playing) 1f else 0.65f)
-                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { open = !open; stamp++ },
-            contentAlignment = Alignment.Center,
-        ) { Disc(size = discSize.value.toInt(), angle = ang) }
-        AnimatedVisibility(open, enter = fadeIn(tween(200)), exit = fadeOut(tween(200))) {
-            val queue by androidx.compose.runtime.produceState(emptyList<String>(), Music.title.value, Settings.musicShuffle.value) {
-                value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { Music.queueTitles(14) }
-            }
-            val accent = LocalPalette.current.accent
-            Column(
-                Modifier.padding(start = 8.dp).background(Color(0xD9101418), RoundedCornerShape(16.dp)).padding(10.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                Text(Music.title.value, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 180.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Ic(androidx.compose.material.icons.Icons.Filled.Shuffle, 20.dp, if (Settings.musicShuffle.value) accent else Color.White.copy(alpha = 0.6f),
-                        Modifier.clip(androidx.compose.foundation.shape.CircleShape).clickable { Sfx.click(); stamp++; Music.setShuffle(!Settings.musicShuffle.value) }.padding(6.dp))
-                    Ic(androidx.compose.material.icons.Icons.Filled.SkipPrevious, 22.dp, Color.White,
-                        Modifier.clip(androidx.compose.foundation.shape.CircleShape).clickable { Sfx.click(); stamp++; Music.change(-1) }.padding(6.dp))
-                    Ic(if (playing) androidx.compose.material.icons.Icons.Filled.Pause else androidx.compose.material.icons.Icons.Filled.PlayArrow, 24.dp, Color.Black,
-                        Modifier.clip(androidx.compose.foundation.shape.CircleShape).background(Color.White).clickable { Sfx.click(); stamp++; Music.toggle(ctx) }.padding(6.dp))
-                    Ic(androidx.compose.material.icons.Icons.Filled.SkipNext, 22.dp, Color.White,
-                        Modifier.clip(androidx.compose.foundation.shape.CircleShape).clickable { Sfx.click(); stamp++; Music.change(1) }.padding(6.dp))
+    Box(modifier) {
+        // fondo: oscurece y deja entrar la imagen de la cancion desde la derecha
+        AnimatedVisibility(open, enter = fadeIn(tween(250)), exit = fadeOut(tween(250))) {
+            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.45f)).clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { open = false })
+        }
+        AnimatedVisibility(
+            open, Modifier.align(Alignment.CenterEnd),
+            enter = androidx.compose.animation.slideInHorizontally(tween(320)) { it } + fadeIn(tween(320)),
+            exit = androidx.compose.animation.slideOutHorizontally(tween(260)) { it } + fadeOut(tween(260)),
+        ) {
+            val art = Music.art.value
+            Box(Modifier.fillMaxHeight().fillMaxWidth(0.46f)) {
+                if (art != null) {
+                    Image(art, null, Modifier.fillMaxSize().alpha(0.55f), contentScale = ContentScale.Crop, filterQuality = androidx.compose.ui.graphics.FilterQuality.High)
+                    Box(Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.55f), Color.Transparent))))
+                } else {
+                    Box(Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.5f), Color(0x33FFFFFF)))))
                 }
-                if (queue.size > 1) {
-                    Column(Modifier.heightIn(max = 110.dp).widthIn(max = 180.dp).verticalScroll(rememberScrollState())) {
-                        queue.drop(1).forEachIndexed { i, q ->
-                            Text(
-                                q.ifEmpty { "—" }, color = Color.White.copy(alpha = 0.85f), fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).clickable { Sfx.click(); stamp++; Music.change(i + 1) }.padding(horizontal = 4.dp, vertical = 4.dp),
-                            )
+            }
+        }
+        Column(Modifier.align(Alignment.CenterEnd), horizontalAlignment = Alignment.End) {
+            Box(
+                Modifier
+                    .offset(x = peek)
+                    .size(discSize)
+                    .alpha(if (playing) 1f else 0.65f)
+                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { open = !open; stamp++ },
+                contentAlignment = Alignment.Center,
+            ) { Disc(size = discSize.value.toInt(), angle = ang) }
+            AnimatedVisibility(open, enter = fadeIn(tween(200)), exit = fadeOut(tween(200))) {
+                val queue by androidx.compose.runtime.produceState(emptyList<String>(), Music.title.value, Settings.musicShuffle.value) {
+                    value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { Music.queueTitles(14) }
+                }
+                val accent = LocalPalette.current.accent
+                Column(
+                    Modifier.padding(end = 14.dp).widthIn(max = 200.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Text(Music.title.value, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Ic(androidx.compose.material.icons.Icons.Filled.Shuffle, 22.dp, if (Settings.musicShuffle.value) accent else Color.White.copy(alpha = 0.7f),
+                            Modifier.clip(androidx.compose.foundation.shape.CircleShape).clickable { Sfx.click(); stamp++; Music.setShuffle(!Settings.musicShuffle.value) }.padding(6.dp))
+                        Ic(androidx.compose.material.icons.Icons.Filled.SkipPrevious, 26.dp, Color.White,
+                            Modifier.clip(androidx.compose.foundation.shape.CircleShape).clickable { Sfx.click(); stamp++; Music.change(-1) }.padding(6.dp))
+                        Ic(if (playing) androidx.compose.material.icons.Icons.Filled.Pause else androidx.compose.material.icons.Icons.Filled.PlayArrow, 28.dp, Color.Black,
+                            Modifier.clip(androidx.compose.foundation.shape.CircleShape).background(Color.White).clickable { Sfx.click(); stamp++; Music.toggle(ctx) }.padding(7.dp))
+                        Ic(androidx.compose.material.icons.Icons.Filled.SkipNext, 26.dp, Color.White,
+                            Modifier.clip(androidx.compose.foundation.shape.CircleShape).clickable { Sfx.click(); stamp++; Music.change(1) }.padding(6.dp))
+                    }
+                    if (queue.size > 1) {
+                        Column(Modifier.heightIn(max = 90.dp).fillMaxWidth().background(Color(0x66000000), RoundedCornerShape(12.dp)).verticalScroll(rememberScrollState()).padding(4.dp)) {
+                            queue.drop(1).forEachIndexed { i, q ->
+                                Text(
+                                    q.ifEmpty { "—" }, color = Color.White.copy(alpha = 0.9f), fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).clickable { Sfx.click(); stamp++; Music.change(i + 1) }.padding(horizontal = 6.dp, vertical = 4.dp),
+                                )
+                            }
                         }
                     }
                 }

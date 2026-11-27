@@ -211,7 +211,7 @@ fun InspectOverlay(game: Game, onClose: () -> Unit, onPlay: () -> Unit) {
                 }
             },
     ) {
-        BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding().padding(bottom = 110.dp, top = 24.dp)) {
+        BoxWithConstraints(Modifier.fillMaxSize().safeNoCutout().padding(bottom = 110.dp, top = 24.dp)) {
             if (phase == Phase.BOX) {
                 val boxH = maxHeight * 0.92f
                 val boxW = (boxH * console.boxRatio).coerceAtMost(maxWidth * 0.85f)

@@ -104,7 +104,7 @@ fun AchievementToastHost() {
             if (Achievements.queue.isNotEmpty()) Achievements.queue.removeAt(0)
         }
     }
-    Box(Modifier.fillMaxSize().safeDrawingPadding().padding(12.dp), contentAlignment = Alignment.TopEnd) {
+    Box(Modifier.fillMaxSize().safeNoCutout().padding(12.dp), contentAlignment = Alignment.TopEnd) {
         AnimatedVisibility(
             visible = visible && cur != null,
             enter = slideInHorizontally(androidx.compose.animation.core.tween(380, easing = androidx.compose.animation.core.FastOutSlowInEasing)) { it } + fadeIn() +
