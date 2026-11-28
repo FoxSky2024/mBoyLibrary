@@ -287,7 +287,7 @@ private fun DevPanel(ctx: Context) {
                                 ctx.assets.open("templates/$file").use { i -> out.outputStream().use { o -> i.copyTo(o) } }
                                 val uri = androidx.core.content.FileProvider.getUriForFile(ctx, ctx.packageName + ".files", out)
                                 val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-                                    type = "image/png"; putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                                    this.type = "image/png"; putExtra(android.content.Intent.EXTRA_STREAM, uri)
                                     addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                 }
                                 ctx.startActivity(android.content.Intent.createChooser(send, file).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
