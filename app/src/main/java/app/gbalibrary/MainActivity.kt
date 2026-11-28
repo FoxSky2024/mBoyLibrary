@@ -268,9 +268,9 @@ class MainActivity : ComponentActivity() {
                 }
                 androidx.compose.foundation.layout.Box {
                     androidx.compose.foundation.layout.Box(
-                        if (app.gbalibrary.ui.MiniNav.glitchOn.value) Modifier.graphicsLayer {
+                        if (app.gbalibrary.ui.MiniNav.glitchOn.value) androidx.compose.ui.Modifier.graphicsLayer {
                             translationX = app.gbalibrary.ui.MiniNav.shakeX.floatValue; translationY = app.gbalibrary.ui.MiniNav.shakeY.floatValue
-                        } else Modifier,
+                        } else androidx.compose.ui.Modifier,
                     ) {
                     LibraryApp(
                         vm = vm,
