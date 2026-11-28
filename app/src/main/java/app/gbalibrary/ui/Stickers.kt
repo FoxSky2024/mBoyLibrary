@@ -79,6 +79,15 @@ fun StickerArt(id: String, size: Dp = 64.dp) {
             "st_new" -> Badge("NEW!", Color(0xFFE53935), size, fs)
             "st_100" -> Badge("100%", Color(0xFF8A4CD6), size, fs)
             "st_pow" -> Badge("¡POW!", Color(0xFFFF8F00), size, fs)
+            "st_ok" -> Badge("OK", Color(0xFF43A047), size, fs * 1.2f)
+            "st_wow" -> Badge("WOW", Color(0xFFFFB300), size, fs * 1.1f)
+            "st_lol" -> Badge("LOL", Color(0xFF00ACC1), size, fs * 1.1f)
+            "st_fire" -> Badge("FUEGO", Color(0xFFE64A19), size, fs * 0.85f)
+            "st_gm" -> Badge("GAME OVER", Color(0xFF37474F), size, fs * 0.55f)
+            "st_1up" -> Badge("1UP", Color(0xFF2E7D32), size, fs * 1.2f)
+            "st_pro" -> Badge("PRO", Color(0xFF1565C0), size, fs * 1.2f)
+            "st_mvp" -> Badge("MVP", Color(0xFFAD1457), size, fs * 1.2f)
+            "st_king" -> Badge("REY", Color(0xFFB8860B), size, fs * 1.2f)
             else -> PawIcon(size)
         }
     }

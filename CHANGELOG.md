@@ -1,3 +1,6 @@
+## 1.25.0
+- Mas cosmeticos en la tienda (+71): 14 fondos, 14 banners, 7 skins de botones, 18 marcos, 9 stickers y 16 llaveros (con particulas y sprite stacking 3D).
+
 ## 1.24.0
 - Llaveros en 3D real con sprite stacking: el dibujo se convierte en un volumen redondeado y se corta en 25 rebanadas distintas (cara, pared interior y trasera), con inclinacion para ver el grosor al girar.
 - Nuevos sistemas: PC Engine (.pce, Beetle PCE Fast) y PlayStation 1 (.chd, .pbp, .iso, PCSX ReARMed). Los discos se abren por ruta (no caben en memoria). Sin soporte de .cue/.bin multiarchivo. Los nucleos se descargan en el workflow.
