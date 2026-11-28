@@ -49,6 +49,12 @@ object Systems {
         ConsoleDef("nds", "DS", "Nintendo DS", "Nintendo", setOf("nds"),
             Color(0xFFAB47BC), Color(0xFF3B1A47), Color(0xFF0D0610), emptyList(), 0.72f, emptyList(),
             "Nintendo - Nintendo DS", true, "melonDS"),
+        ConsoleDef("nes", "NES", "Nintendo Entertainment System", "Nintendo", setOf("nes"),
+            Color(0xFFE53935), Color(0xFF4A1414), Color(0xFF100505), emptyList(), 0.72f, emptyList(),
+            "Nintendo - Nintendo Entertainment System", true, "FCEUmm"),
+        ConsoleDef("snes", "SNES", "Super Nintendo", "Nintendo", setOf("sfc", "smc"),
+            Color(0xFF7E57C2), Color(0xFF2A1F4D), Color(0xFF0A0714), emptyList(), 0.72f, emptyList(),
+            "Nintendo - Super Nintendo Entertainment System", true, "Snes9x"),
     )
 
     /** Sistemas que se lanzan con un emulador externo. */

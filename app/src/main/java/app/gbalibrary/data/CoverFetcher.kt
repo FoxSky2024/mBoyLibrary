@@ -44,6 +44,8 @@ object CoverFetcher {
             "gbc" -> "Nintendo - Game Boy Color"
             "gb" -> "Nintendo - Game Boy"
             "nds" -> "Nintendo - Nintendo DS"
+            "nes" -> "Nintendo - Nintendo Entertainment System"
+            "sfc", "smc" -> "Nintendo - Super Nintendo Entertainment System"
             else -> "Nintendo - Game Boy Advance"
         }
     }
@@ -56,6 +58,8 @@ object CoverFetcher {
             "gbc" -> "Game Boy Color"
             "gb" -> "Game Boy"
             "nds" -> "Nintendo DS"
+            "nes" -> "Nintendo Entertainment System"
+            "sfc", "smc" -> "Super Nintendo"
             else -> "Game Boy Advance"
         }
     }

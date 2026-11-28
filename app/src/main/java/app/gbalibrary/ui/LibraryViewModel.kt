@@ -159,7 +159,7 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
             when {
                 queue.isNotEmpty() -> message.value = if (found.isEmpty()) "Elige cual ROM abrir" else "$added juego(s) nuevo(s). Elige cual ROM abrir"
                 found.isEmpty() -> message.value =
-                    if (emptyArchives > 0) "El archivo comprimido no trae ninguna ROM (.gba .gbc .gb .nds)" else "Ninguno de los archivos parece una ROM de GBA/GBC/DS"
+                    if (emptyArchives > 0) "El archivo comprimido no trae ninguna ROM (.gba .gbc .gb .nds)" else "Ninguno de los archivos parece una ROM de GBA/GBC/DS/NES/SNES"
                 else -> message.value = "$added juego(s) nuevo(s)"
             }
             // Un solo .zip/.7z con un solo .gba: se abre directamente.

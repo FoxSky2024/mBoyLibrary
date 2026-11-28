@@ -446,7 +446,7 @@ private fun ShelfTopIcons(
             Btn(Icons.Filled.FilterList, "Filtrar por consola", tint = if (systemFilter.isEmpty()) Color.White else Color(0xFFFFD54F)) { filterMenu = true }
             DropdownMenu(expanded = filterMenu, onDismissRequest = { filterMenu = false }) {
                 // Todos / GBA / GBC / GB / DS siempre; el resto de consolas solo si hay juegos. Los contadores se recalculan solos.
-                val keys = listOf("" to "Todos", "GBA" to "GBA", "GBC" to "GBC", "GB" to "GB", "DS" to "DS") +
+                val keys = listOf("" to "Todos", "GBA" to "GBA", "GBC" to "GBC", "GB" to "GB", "DS" to "DS", "NES" to "NES", "SNES" to "SNES") +
                     Systems.external.map { it.short to it.short }
                 keys.forEach { (key, name) ->
                     val n = if (key.isEmpty()) all.size else all.count { systemOf(it) == key }
@@ -464,7 +464,7 @@ private fun ShelfTopIcons(
             Btn(Icons.Filled.Add, "Agregar juegos") { addMenu = true }
             DropdownMenu(expanded = addMenu, onDismissRequest = { addMenu = false }) {
                 DropdownMenuItem(text = { Text("Agregar carpeta de ROMs") }, onClick = { addMenu = false; onAddFolder() })
-                DropdownMenuItem(text = { Text("Agregar archivos (.gba .gbc .gb .nds .zip .7z)") }, onClick = { addMenu = false; onAddFiles() })
+                DropdownMenuItem(text = { Text("Agregar archivos (.gba .gbc .gb .nds .nes .sfc .smc .zip .7z)") }, onClick = { addMenu = false; onAddFiles() })
                 DropdownMenuItem(text = { Text("Volver a escanear carpetas") }, onClick = { addMenu = false; onRescan() })
             }
         }

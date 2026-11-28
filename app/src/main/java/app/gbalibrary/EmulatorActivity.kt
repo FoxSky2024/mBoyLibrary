@@ -445,7 +445,7 @@ class EmulatorActivity : ComponentActivity() {
     /** Boton de mando segun el perfil Mando 1 / Mando 2 (acciones, turbo, menu, guardado rapido). */
     private fun applyPadKey(deviceId: Int, code: Int, down: Boolean, first: Boolean) {
         // Nintendo DS: X arriba y Y a la izquierda (posiciones del mando tipo Xbox).
-        val dsAction = if (app.gbalibrary.emu.Native.isDs) when (code) {
+        val dsAction = if (app.gbalibrary.emu.Native.hasXY) when (code) {
             KeyEvent.KEYCODE_BUTTON_Y -> GbaKey.X
             KeyEvent.KEYCODE_BUTTON_X -> GbaKey.Y
             else -> 0

@@ -4,6 +4,12 @@ package app.gbalibrary.data
 object RomHeader {
     class Info(val title: String, val code: String, val maker: String, val valid: Boolean)
 
+    /** Como [parse], pero NES y SNES no tienen cabecera de este tipo: el titulo sale del nombre de archivo. */
+    fun parseFor(fileName: String, head: ByteArray, length: Int): Info? {
+        val e = fileName.substringAfterLast('.', "").lowercase()
+        return if (e == "nes" || e == "sfc" || e == "smc") null else parse(head, length)
+    }
+
     fun parse(head: ByteArray, length: Int): Info? {
         // Nintendo DS: CRC del logo (0xCF56) en 0x15C; titulo en 0x00, codigo en 0x0C, fabricante en 0x10.
         if (length >= 0x160 && (head[0x15C].toInt() and 0xFF) == 0x56 && (head[0x15D].toInt() and 0xFF) == 0xCF) {
