@@ -41,7 +41,8 @@ object BoxArtFetcher {
         "gbc" -> 0.07f
         "gb" -> 0.07f
         "nds", "dsi" -> 0.05f
-        "nes", "sfc", "smc" -> 0.06f
+        "nes", "sfc", "smc", "pce", "sgx" -> 0.06f
+        "chd", "pbp", "iso" -> 0.05f
         else -> 0.07f
     }
 
@@ -50,6 +51,8 @@ object BoxArtFetcher {
         "gbc" -> 10
         "gb" -> 9
         "nds", "dsi" -> 15
+        "pce", "sgx" -> 31
+        "chd", "pbp", "iso" -> 57
         "nes" -> 3
         "sfc", "smc" -> 4
         else -> 0

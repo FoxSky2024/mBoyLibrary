@@ -1,3 +1,7 @@
+## 1.24.0
+- Llaveros en 3D real con sprite stacking: el dibujo se convierte en un volumen redondeado y se corta en 25 rebanadas distintas (cara, pared interior y trasera), con inclinacion para ver el grosor al girar.
+- Nuevos sistemas: PC Engine (.pce, Beetle PCE Fast) y PlayStation 1 (.chd, .pbp, .iso, PCSX ReARMed). Los discos se abren por ruta (no caben en memoria). Sin soporte de .cue/.bin multiarchivo. Los nucleos se descargan en el workflow.
+
 ## 1.23.0
 - Emulacion de NES (FCEUmm) y SNES (Snes9x) dentro de la misma APK: .nes, .sfc y .smc (tambien dentro de zip/7z). Aspecto 4:3, guardado .srm, estados, y botones X/Y en SNES. Los nucleos se descargan en el workflow de compilacion.
 - Minijuego rehecho: tercera persona con el gato de la linterna, mucha mas niebla, pasos, cofres sin limite (aparece otro al tomar uno), monstruo que te persigue con screamer, 2 mapas (backrooms y poolrooms con refraccion en el agua). Si te atrapa sales con lo ganado y no puedes volver hasta el dia siguiente (la pantalla de inicio se glitchea 1 s). Acceso en la barra lateral junto a Musica.

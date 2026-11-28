@@ -199,7 +199,16 @@ class EmulatorActivity : ComponentActivity() {
         layout.load(layoutScope)
 
         val romUri = Uri.parse(game.uri)
+        val gameExt = game.entry.ifEmpty { game.fileName }.substringAfterLast('.', "").lowercase()
+        app.gbalibrary.emu.Native.hintExt = gameExt
+        val isDisc = gameExt in setOf("chd", "pbp", "iso")
         val eng = Engine(
+            discPath = if (!isDisc) null else ({
+                try {
+                    RomImport.storedFile(this, game)?.path
+                        ?: if (game.entry.isNotEmpty()) Archive.extractToCache(this, romUri, game.entry)?.path else null
+                } catch (e: Exception) { null }
+            }),
             romProvider = {
                 try {
                     val copy = RomImport.storedFile(this, game)

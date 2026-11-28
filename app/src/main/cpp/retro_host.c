@@ -376,7 +376,10 @@ Java_app_gbalibrary_emu_Retro_load(JNIEnv* env, jobject thiz, jstring coreLib, j
     struct retro_game_info gi;
     memset(&gi, 0, sizeof(gi));
     gi.path = rpath;
-    if (si.need_fullpath) {
+    if (len == 0) {
+        // Disco grande (PS1): el nucleo lee el archivo por su ruta real.
+        gi.data = NULL; gi.size = 0;
+    } else if (si.need_fullpath) {
         // El nucleo lee el archivo por ruta: se escribe la ROM en la cache.
         jbyte* b = (*env)->GetByteArrayElements(env, rom, NULL);
         bool w = b && writeFileAtomic(rpath, b, (size_t) len);
