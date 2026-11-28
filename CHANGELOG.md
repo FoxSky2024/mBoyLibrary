@@ -1,3 +1,9 @@
+## 1.23.0
+- Emulacion de NES (FCEUmm) y SNES (Snes9x) dentro de la misma APK: .nes, .sfc y .smc (tambien dentro de zip/7z). Aspecto 4:3, guardado .srm, estados, y botones X/Y en SNES. Los nucleos se descargan en el workflow de compilacion.
+- Minijuego rehecho: tercera persona con el gato de la linterna, mucha mas niebla, pasos, cofres sin limite (aparece otro al tomar uno), monstruo que te persigue con screamer, 2 mapas (backrooms y poolrooms con refraccion en el agua). Si te atrapa sales con lo ganado y no puedes volver hasta el dia siguiente (la pantalla de inicio se glitchea 1 s). Acceso en la barra lateral junto a Musica.
+- Recompensa: 100-200 Pawb por cofre y 0.001% de ganar 1000.
+- Modo desarrollador: plantillas para crear objetos con explicacion y boton para compartirlas.
+
 ## 1.22.0
 - Llaveros en 3D (sprite stacking: capas con grosor que giran al tocarlos o inspeccionarlos) y 12 llaveros nuevos (23 en total).
 - Vista previa de la tienda: marcos, banners y llaveros se ven puestos en tu perfil (foto, banner, argollas).

@@ -26,6 +26,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -252,6 +253,48 @@ private fun DevPanel(ctx: Context) {
                         msg = "«$nm» añadido a la tienda (pestaña ${if (type == 0) "Banners" else "Marcos"})"; name = ""
                     }
                 })
+            }
+            DevCard("Plantillas para crear objetos") {
+                Text(
+                    "Cómo hacer un objeto:\n" +
+                        "1. Descarga la plantilla (botón Compartir) y ábrela en tu editor (Photoshop, Krita, Photopea...).\n" +
+                        "2. Dibuja encima y exporta PNG con fondo transparente.\n" +
+                        "3. Medidas: banner 1280×360 · marco de banner 800×500 (borde de 60 px) · marco de avatar 512×512 (borde de 48 px) · llavero 512×640.\n" +
+                        "4. Nombre del archivo: rareza_precio_nombre.png. Rareza: comun, raro, epico o legendario. Ej.: epico_300_dragon.png\n" +
+                        "5. Colócalo en app/src/main/assets/shop/banners, frames o keychains y haz push.\n" +
+                        "6. Llaveros: si el nombre contiene brillo, fuego, nieve, amor o burbuja, tendrá partículas.\n" +
+                        "Las guías marcan la zona segura; lo que quede fuera se recorta.",
+                    color = p.dim, fontSize = 12.sp, lineHeight = 17.sp,
+                )
+                listOf(
+                    "plantilla_tienda.png" to "Hoja completa (todas las plantillas)",
+                    "guia_banner_1280x360.png" to "Banner 1280×360",
+                    "guia_marco_800x500.png" to "Marco de banner 800×500",
+                    "guia_marco_avatar_512.png" to "Marco de avatar 512×512",
+                    "plantilla_llavero_512x640.png" to "Llavero 512×640",
+                ).forEach { (file, label) ->
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        val bmp = remember(file) {
+                            runCatching {
+                                ctx.assets.open("templates/$file").use { android.graphics.BitmapFactory.decodeStream(it, null, android.graphics.BitmapFactory.Options().apply { inSampleSize = 4 }) }
+                            }.getOrNull()?.asImageBitmap()
+                        }
+                        if (bmp != null) androidx.compose.foundation.Image(bmp, null, Modifier.size(56.dp).clip(RoundedCornerShape(6.dp)).background(Color(0xFF2A2A2E)), contentScale = androidx.compose.ui.layout.ContentScale.Fit)
+                        Text(label, color = p.text, fontSize = 13.sp, modifier = Modifier.weight(1f))
+                        AppButton("Compartir", {
+                            runCatching {
+                                val out = java.io.File(ctx.cacheDir, file)
+                                ctx.assets.open("templates/$file").use { i -> out.outputStream().use { o -> i.copyTo(o) } }
+                                val uri = androidx.core.content.FileProvider.getUriForFile(ctx, ctx.packageName + ".files", out)
+                                val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                    type = "image/png"; putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                                    addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                }
+                                ctx.startActivity(android.content.Intent.createChooser(send, file).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+                            }.onFailure { msg = "No se pudo compartir" }
+                        })
+                    }
+                }
             }
             DevCard("Objetos añadidos (${ShopCatalog.devBanners.size + ShopCatalog.devFrames.size})") {
                 (ShopCatalog.devBanners.map { Triple(it.id, it.name, "Banner") } + ShopCatalog.devFrames.map { Triple(it.id, it.name, "Marco") }).forEach { (id, n, t) ->

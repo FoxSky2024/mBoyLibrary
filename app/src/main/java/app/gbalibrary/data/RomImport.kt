@@ -13,7 +13,7 @@ import java.io.File
 object RomImport {
     private const val TAG = "RomImport"
     private val BAD = Regex("""[\\/:*?"<>|\u0000-\u001F]""")
-    private val ROM_EXT = setOf("gba", "agb", "gbc", "gb", "nds")
+    private val ROM_EXT = setOf("gba", "agb", "gbc", "gb", "nds", "nes", "sfc", "smc")
 
     fun safeName(raw: String): String {
         var s = raw.replace(BAD, "_").replace(Regex("""\s+"""), " ").trim().trim('.').trim()

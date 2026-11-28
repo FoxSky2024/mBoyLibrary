@@ -11,7 +11,7 @@ import java.io.InputStream
 import java.security.MessageDigest
 
 object RomScanner {
-    private val EXTENSIONS = setOf("gba", "agb", "gbc", "gb", "nds")
+    private val EXTENSIONS = setOf("gba", "agb", "gbc", "gb", "nds", "nes", "sfc", "smc")
 
     /** Unicas extensiones que se miran; todo lo demas (imagenes, videos, musica, txt, pdf...) se ignora sin abrirlo. */
     private val WANTED = EXTENSIONS + setOf("zip", "7z")
@@ -131,7 +131,7 @@ object RomScanner {
             md.update(head, 0, read)
             md.update(size.toString().toByteArray())
             val id = md.digest().joinToString("") { "%02x".format(it) }
-            val info = RomHeader.parse(head, read)
+            val info = RomHeader.parseFor(entry, head, read)
             val shown = entry.substringAfterLast('/').substringAfterLast('\\')
             val game = Game(
                 id = id,
@@ -170,7 +170,7 @@ object RomScanner {
         md.update(size.toString().toByteArray())
         val id = md.digest().joinToString("") { "%02x".format(it) }
 
-        val info = RomHeader.parse(head, read)
+        val info = RomHeader.parseFor(fileName, head, read)
         val game = Game(
             id = id,
             title = RomHeader.cleanTitle(fileName).ifBlank { info?.title ?: fileName },

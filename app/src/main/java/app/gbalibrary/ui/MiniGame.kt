@@ -2,12 +2,16 @@ package app.gbalibrary.ui
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.media.AudioAttributes
+import android.media.SoundPool
+import android.os.SystemClock
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -17,6 +21,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableIntState
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -27,22 +33,30 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.gbalibrary.data.Pawb
+import java.io.File
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.exp
@@ -51,160 +65,324 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.sin
+import kotlin.math.sqrt
 import kotlin.random.Random
 
-/** Visibilidad del minijuego (pantalla completa por encima de todo). */
-object MiniNav { val show = mutableStateOf(false) }
-
-/** Estado diario guardado en el dispositivo: 3 cofres por dia, aleatorios cada dia. */
-object MiniStore {
-    const val PER_DAY = 3
-    private fun prefs(ctx: Context) = ctx.getSharedPreferences("minigame", Context.MODE_PRIVATE)
-    fun today(): String = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
-    private fun ensureDay(ctx: Context) {
-        val p = prefs(ctx)
-        if (p.getString("day", "") != today()) p.edit().putString("day", today()).putInt("mask", 0).putInt("total", 0).apply()
-    }
-    fun mask(ctx: Context): Int { ensureDay(ctx); return prefs(ctx).getInt("mask", 0) }
-    fun total(ctx: Context): Int { ensureDay(ctx); return prefs(ctx).getInt("total", 0) }
-    fun found(ctx: Context) = Integer.bitCount(mask(ctx))
-    fun left(ctx: Context) = PER_DAY - found(ctx)
-    /** Recompensa de un cofre: 100 a 200 Pawb y un 0.001 % de ganar 1000. */
-    fun roll(rnd: Random = Random.Default): Int = if (rnd.nextDouble() < 0.00001) 1000 else rnd.nextInt(100, 201)
-    fun collect(ctx: Context, idx: Int): Int {
-        ensureDay(ctx)
-        val p = prefs(ctx)
-        val m = p.getInt("mask", 0)
-        if (m and (1 shl idx) != 0) return 0
-        val r = roll()
-        p.edit().putInt("mask", m or (1 shl idx)).putInt("total", p.getInt("total", 0) + r).apply()
-        Pawb.earn(r)
-        return r
+/** Estado compartido del minijuego: visibilidad y el glitch de la pantalla de inicio cuando esta bloqueado. */
+object MiniNav {
+    val show = mutableStateOf(false)
+    val glitchAt = mutableLongStateOf(0L)
+    val glitchOn = mutableStateOf(false)
+    val shakeX = mutableFloatStateOf(0f)
+    val shakeY = mutableFloatStateOf(0f)
+    /** Entrar: si el monstruo te atrapo hoy, la pantalla se glitchea 1 s y no te deja. */
+    fun tryEnter(ctx: Context) {
+        if (MiniStore.locked(ctx)) { if (glitchAt.longValue == 0L) glitchAt.longValue = SystemClock.uptimeMillis() }
+        else show.value = true
     }
 }
 
-// ------------------------------------------------------------------------------------------ mundo y motor (raycaster estilo PS1)
+/** Guardado en el dispositivo: Pawb ganados hoy y bloqueo diario si el monstruo te atrapa. */
+object MiniStore {
+    private fun prefs(ctx: Context) = ctx.getSharedPreferences("minigame", Context.MODE_PRIVATE)
+    fun today(): String = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
+    fun locked(ctx: Context) = prefs(ctx).getString("lock", "") == today()
+    fun lock(ctx: Context) { prefs(ctx).edit().putString("lock", today()).apply() }
+    /** Recompensa de un cofre: 100 a 200 Pawb y un 0.001 % de ganar 1000. */
+    fun roll(rnd: Random = Random.Default): Int = if (rnd.nextDouble() < 0.00001) 1000 else rnd.nextInt(100, 201)
+    fun collect(): Int { val r = roll(); Pawb.earn(r); return r }
+}
+
+// ------------------------------------------------------------------------------------------ sonido (sintetizado, sin archivos)
+
+private class MgAudio(ctx: Context) {
+    private val pool = SoundPool.Builder().setMaxStreams(6).setAudioAttributes(
+        AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_GAME).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build(),
+    ).build()
+    private val ids = IntArray(7)
+    companion object { const val STEP1 = 0; const val STEP2 = 1; const val SPLASH = 2; const val CHIME = 3; const val HEART = 4; const val SCREAM = 5; const val GROWL = 6 }
+
+    private fun wav(pcm: ShortArray, rate: Int = 22050): ByteArray {
+        val bb = ByteBuffer.allocate(44 + pcm.size * 2).order(ByteOrder.LITTLE_ENDIAN)
+        bb.put("RIFF".toByteArray()); bb.putInt(36 + pcm.size * 2); bb.put("WAVE".toByteArray()); bb.put("fmt ".toByteArray())
+        bb.putInt(16); bb.putShort(1); bb.putShort(1); bb.putInt(rate); bb.putInt(rate * 2); bb.putShort(2); bb.putShort(16)
+        bb.put("data".toByteArray()); bb.putInt(pcm.size * 2)
+        for (s in pcm) bb.putShort(s)
+        return bb.array()
+    }
+    private fun synth(sec: Float, f: (Float, Int) -> Float): ShortArray {
+        val n = (22050 * sec).toInt()
+        return ShortArray(n) { i -> (f(i / 22050f, i).coerceIn(-1f, 1f) * 32000f).toInt().toShort() }
+    }
+    private fun load(dir: File, name: String, pcm: ShortArray, slot: Int) {
+        runCatching { val f = File(dir, name); f.writeBytes(wav(pcm)); ids[slot] = pool.load(f.absolutePath, 1) }
+    }
+
+    init {
+        val d = ctx.cacheDir
+        val r = Random(7)
+        var lp = 0f
+        load(d, "mg_s1.wav", synth(0.16f) { t, _ -> lp = lp * 0.82f + (r.nextFloat() - 0.5f) * 0.18f; (lp * 5f + sin(2f * PI.toFloat() * (75f - t * 110f) * t) * 0.9f) * exp(-t * 24f) * 0.6f }, STEP1)
+        load(d, "mg_s2.wav", synth(0.15f) { t, _ -> lp = lp * 0.8f + (r.nextFloat() - 0.5f) * 0.2f; (lp * 5f + sin(2f * PI.toFloat() * (88f - t * 120f) * t) * 0.9f) * exp(-t * 26f) * 0.55f }, STEP2)
+        load(d, "mg_sp.wav", synth(0.3f) { t, _ -> lp = lp * 0.55f + (r.nextFloat() - 0.5f) * 0.45f; (lp * 1.6f + sin(2f * PI.toFloat() * (420f + 300f * sin(t * 40f)) * t) * 0.12f) * exp(-t * 11f) * 0.55f }, SPLASH)
+        load(d, "mg_ch.wav", synth(0.8f) { t, _ -> (sin(2f * PI.toFloat() * 880f * t) * exp(-t * 5f) + 0.6f * sin(2f * PI.toFloat() * 1320f * t) * exp(-t * 6f) + 0.3f * sin(2f * PI.toFloat() * 1760f * t) * exp(-t * 8f)) * 0.5f }, CHIME)
+        load(d, "mg_hb.wav", synth(0.5f) { t, _ -> val a = sin(2f * PI.toFloat() * 52f * t) * exp(-t * 20f); val t2 = max(0f, t - 0.19f); val b = sin(2f * PI.toFloat() * 46f * t2) * exp(-t2 * 22f) * (if (t > 0.19f) 1f else 0f); (a + 0.8f * b) * 0.9f }, HEART)
+        var ph = 0f
+        load(d, "mg_sc.wav", synth(1.5f) { t, _ ->
+            val fr = 650f + 500f * sin(2f * PI.toFloat() * 8f * t) + 350f * t
+            ph += fr / 22050f
+            val saw = (ph - floor(ph)) * 2f - 1f
+            val env = min(1f, t * 40f) * exp(-max(0f, t - 0.9f) * 5f)
+            kotlin.math.tanh((saw * 1.4f + (r.nextFloat() - 0.5f) * 1.2f) * 2.5f) * env * 0.95f
+        }, SCREAM)
+        var gp = 0f
+        load(d, "mg_gr.wav", synth(1.0f) { t, _ -> gp += (60f + 25f * sin(t * 9f)) / 22050f; val s = if ((gp - floor(gp)) < 0.5f) 1f else -1f; (s * 0.5f + (r.nextFloat() - 0.5f) * 0.4f) * exp(-t * 2.5f) * 0.6f }, GROWL)
+    }
+    fun play(slot: Int, vol: Float = 1f) { if (ids[slot] != 0) pool.play(ids[slot], vol, vol, 1, 0, 1f) }
+    fun release() { runCatching { pool.release() } }
+}
+
+// ------------------------------------------------------------------------------------------ texturas y variantes
 
 private const val TEX = 32
-private const val CHEST = 16
 private val BAYER = intArrayOf(0, 4, 1, 5, 6, 2, 7, 3, 1, 5, 0, 4, 7, 3, 6, 2)
 
 private fun rgb(r: Int, g: Int, b: Int) = (0xFF shl 24) or (r.coerceIn(0, 255) shl 16) or (g.coerceIn(0, 255) shl 8) or b.coerceIn(0, 255)
+/** Color que no recibe luz ni niebla (linterna, ojos). */
+private fun emi(r: Int, g: Int, b: Int) = (0xFE shl 24) or (r.coerceIn(0, 255) shl 16) or (g.coerceIn(0, 255) shl 8) or b.coerceIn(0, 255)
 
-private fun makeTex(kind: Int, seed: Int): IntArray {
-    val t = IntArray(TEX * TEX)
+private class Variant(
+    val name: String, val backrooms: Boolean, val ambient: Float, val fogR: Int, val fogG: Int, val fogB: Int, val fogK: Float, val r2: Float,
+    val walls: Array<IntArray>, val floor: IntArray, val ceil: IntArray, val lamp: IntArray, val water: IntArray,
+)
+
+private fun tex(seed: Int, f: (x: Int, y: Int, n: Int) -> Int): IntArray {
     val r = Random(seed)
-    for (y in 0 until TEX) for (x in 0 until TEX) {
-        val n = r.nextInt(-14, 15)
-        t[y * TEX + x] = when (kind) {
-            0 -> { val v = 118 + n - (if ((x * 7 + y * 13) % 17 == 0) 25 else 0); rgb(v, v - 2, v - 7) }                 // concreto manchado
-            1 -> {                                                                                                          // ladrillo
-                val row = y / 8; val bx = (x + (if (row % 2 == 0) 0 else 8)) % 16
-                if (y % 8 == 0 || bx == 0) rgb(78, 76, 72) else { val v = 120 + n; rgb(v + 22, v - 30, v - 42) }
+    return IntArray(TEX * TEX) { i -> f(i % TEX, i / TEX, r.nextInt(-12, 13)) }
+}
+
+private fun makeVariant(backrooms: Boolean): Variant =
+    if (backrooms) Variant(
+        "BACKROOMS", true, 0.5f, 92, 84, 46, 0.3f, 30f,
+        arrayOf(
+            tex(1) { x, y, n -> val v = 175 + n - (if (x % 8 < 2) 16 else 0) - (if ((x * 5 + y * 3) % 23 == 0) 22 else 0); rgb(v + 12, v - 4, v - 80) },
+            tex(2) { x, y, n -> val v = 168 + n - (if (x % 10 < 2) 18 else 0); rgb(v + 10, v - 6, v - 84) },
+            tex(3) { x, y, n -> val v = 150 + n - (if (y > 20 && (x * 7 + y) % 5 == 0) 20 else 0) - (if (x % 8 < 2) 12 else 0); rgb(v + 14, v - 6, v - 76) },
+        ),
+        tex(4) { x, y, n -> val v = 118 + n + (if ((x + y) % 4 == 0) 8 else 0); rgb(v + 8, v - 6, v - 58) },
+        tex(5) { x, y, n -> if (x % 16 == 0 || y % 16 == 0) rgb(90, 88, 70) else { val v = 150 + n / 2; rgb(v, v - 2, v - 26) } },
+        tex(6) { x, y, n -> if (x < 3 || y < 3 || x > 28 || y > 28) rgb(110, 108, 90) else rgb(255, 252, 215 + n / 3) },
+        tex(7) { _, _, n -> rgb(100 + n, 90 + n, 40) },
+    ) else Variant(
+        "POOLROOMS", false, 0.42f, 58, 98, 110, 0.28f, 30f,
+        arrayOf(
+            tex(11) { x, y, n -> if (x % 8 == 0 || y % 8 == 0) rgb(110, 150, 155) else { val v = 205 + n / 2; rgb(v - 10, v + 8, v + 8) } },
+            tex(12) { x, y, n -> if (x % 8 == 0 || y % 8 == 0) rgb(105, 140, 160) else { val v = 200 + n / 2; rgb(v - 20, v, v + 14) } },
+            tex(13) { x, y, n -> if (x % 8 == 0 || y % 8 == 0) rgb(100, 150, 140) else { val v = 196 + n / 2; rgb(v - 14, v + 10, v - 4) } },
+        ),
+        tex(14) { x, y, n -> if (x % 16 == 0 || y % 16 == 0) rgb(120, 160, 165) else { val v = 195 + n / 2; rgb(v - 8, v + 6, v + 6) } },
+        tex(15) { x, y, n -> if (x % 16 == 0 || y % 16 == 0) rgb(120, 140, 145) else { val v = 200 + n / 2; rgb(v, v + 4, v + 4) } },
+        tex(16) { x, y, n -> if (x < 3 || y < 3 || x > 28 || y > 28) rgb(130, 140, 140) else rgb(245, 255, 255 + n / 3) },
+        tex(17) { x, y, n -> val v = n + (if ((x * 3 + y) % 9 < 2) 14 else 0); rgb(36 + v / 2, 150 + v, 178 + v) },
+    )
+
+// ------------------------------------------------------------------------------------------ sprites
+
+private fun inTri(x: Float, y: Float, ax: Float, ay: Float, bx: Float, by: Float, cx: Float, cy: Float): Boolean {
+    val d1 = (x - bx) * (ay - by) - (ax - bx) * (y - by)
+    val d2 = (x - cx) * (by - cy) - (bx - cx) * (y - cy)
+    val d3 = (x - ax) * (cy - ay) - (cx - ax) * (y - ay)
+    val neg = d1 < 0 || d2 < 0 || d3 < 0; val pos = d1 > 0 || d2 > 0 || d3 > 0
+    return !(neg && pos)
+}
+
+/** El personaje (gato negro con linterna), visto de espaldas. 16x24. */
+private fun makePlayer(): IntArray {
+    val tw = 16; val th = 24
+    val t = IntArray(tw * th)
+    fun body(x: Int, y: Int): Boolean {
+        val fx = x + 0.5f; val fy = y + 0.5f
+        val head = (fx - 7.5f) * (fx - 7.5f) + (fy - 8.5f) * (fy - 8.5f) <= 4.6f * 4.6f
+        val earL = inTri(fx, fy, 3.2f, 6.5f, 3.4f, 0.6f, 7f, 4.6f)
+        val earR = inTri(fx, fy, 11.8f, 6.5f, 11.6f, 0.6f, 8f, 4.6f)
+        val torso = ((fx - 7.5f) / 4.4f) * ((fx - 7.5f) / 4.4f) + ((fy - 17f) / 6.4f) * ((fy - 17f) / 6.4f) <= 1f
+        return head || earL || earR || torso
+    }
+    for (y in 0 until th) for (x in 0 until tw) {
+        if (body(x, y)) t[y * tw + x] = if (!body(x + 1, y) && x > 8) rgb(46, 44, 56) else rgb(10, 10, 14)
+    }
+    for (y in 7..22) t[y * tw + 13] = rgb(70, 56, 40)                                  // baston
+    for (a in 0 until 24) {                                                           // aro de la linterna
+        val ang = a * 2.0 * PI / 24
+        val x = (13.0 + 2.2 * cos(ang)).roundToInt(); val y = (6.0 + 2.2 * sin(ang)).roundToInt()
+        if (x in 0 until tw && y in 0 until th) t[y * tw + x] = emi(255, 205, 110)
+    }
+    t[6 * tw + 13] = emi(255, 240, 190)
+    return t
+}
+
+/** Monstruo alto y delgado de cara palida. 20x44. */
+private fun makeMonster(): IntArray {
+    val tw = 20; val th = 44
+    val t = IntArray(tw * th)
+    for (y in 0 until th) for (x in 0 until tw) {
+        val fx = x + 0.5f; val fy = y + 0.5f
+        val head = ((fx - 10f) / 5f) * ((fx - 10f) / 5f) + ((fy - 7f) / 6.5f) * ((fy - 7f) / 6.5f) <= 1f
+        val neck = abs(fx - 10f) < 1.6f && fy in 12f..16f
+        val robeW = 3f + (fy - 14f) * 0.16f
+        val robe = fy in 14f..42f && abs(fx - 10f) < robeW + 1.5f
+        val armL = fy in 15f..41f && abs(fx - (3.5f - (fy - 15f) * 0.05f)) < 0.9f
+        val armR = fy in 15f..41f && abs(fx - (16.5f + (fy - 15f) * 0.05f)) < 0.9f
+        t[y * tw + x] = when {
+            head -> {
+                val eyeL = ((fx - 7.6f) / 1.6f) * ((fx - 7.6f) / 1.6f) + ((fy - 6.5f) / 2.1f) * ((fy - 6.5f) / 2.1f) <= 1f
+                val eyeR = ((fx - 12.4f) / 1.6f) * ((fx - 12.4f) / 1.6f) + ((fy - 6.5f) / 2.1f) * ((fy - 6.5f) / 2.1f) <= 1f
+                val mouth = fy in 10f..12.5f && abs(fx - 10f) < 2.4f
+                if ((abs(fx - 7.6f) < 0.6f || abs(fx - 12.4f) < 0.6f) && abs(fy - 6.8f) < 0.7f) emi(255, 40, 30)
+                else if (eyeL || eyeR || mouth) rgb(4, 2, 4) else rgb(205, 200, 192)
             }
-            2 -> {                                                                                                          // azulejo sucio
-                if (x % 16 == 0 || y % 16 == 0) rgb(55, 60, 58) else { val v = 100 + n - (if (x % 9 == 3 && y > 6) 26 else 0); rgb(v - 12, v + 8, v + 2) }
-            }
-            3 -> { val v = (if (((x / 16) + (y / 16)) % 2 == 0) 78 else 58) + n / 2; rgb(v, v - 3, v - 8) }              // suelo
-            else -> { val v = 42 + n / 2; rgb(v, v, v + 2) }                                                                // techo
+            neck -> rgb(150, 146, 140)
+            robe -> if ((x + y / 3) % 5 == 0) rgb(34, 30, 36) else rgb(16, 14, 18)
+            armL || armR -> rgb(150, 146, 140)
+            else -> 0
         }
     }
     return t
 }
 
-/** Cofre de 16x16 (0 = transparente). */
 private fun makeChest(): IntArray {
-    val t = IntArray(CHEST * CHEST)
+    val tw = 16
+    val t = IntArray(tw * tw)
     val outline = rgb(30, 16, 8)
-    for (y in 0 until CHEST) for (x in 0 until CHEST) {
+    for (y in 0 until tw) for (x in 0 until tw) {
         if (x < 1 || x > 14 || y < 3 || y > 14) continue
-        var c = when {
-            y <= 7 -> rgb(150, 88, 40)                       // tapa
-            else -> rgb(112, 62, 28)                         // cuerpo
-        }
-        if (y == 10 || y == 12) c = rgb(88, 48, 22)          // vetas
+        var c = if (y <= 7) rgb(150, 88, 40) else rgb(112, 62, 28)
+        if (y == 10 || y == 12) c = rgb(88, 48, 22)
         if (x == 1 || x == 14 || y == 3 || y == 14 || y == 8) c = outline
-        if (y <= 4 && (x <= 2 || x >= 13)) c = 0              // esquinas redondeadas de la tapa
-        if (c != 0 && (x == 7 || x == 8)) c = rgb(236, 190, 60) // banda dorada
-        if (x in 6..9 && y in 7..10) c = rgb(255, 224, 110)    // cerradura
-        t[y * CHEST + x] = c
+        if (y <= 4 && (x <= 2 || x >= 13)) c = 0
+        if (c != 0 && (x == 7 || x == 8)) c = rgb(236, 190, 60)
+        if (x in 6..9 && y in 7..10) c = emi(255, 224, 110)
+        t[y * tw + x] = c
     }
     return t
 }
 
-private class MgEngine(val ctx: Context, val w: Int, val h: Int) {
-    val mw = 36; val mh = 36
+// ------------------------------------------------------------------------------------------ mundo y motor (raycaster estilo PS1, tercera persona)
+
+private class MgEngine(val ctx: Context, val w: Int, val h: Int, val v: Variant, val audio: MgAudio) {
+    val mw = 44; val mh = 44
     val cells = IntArray(mw * mh) { 1 }
+    private val water = BooleanArray(mw * mh)
+    private val corr = BooleanArray(mw * mh)
     private val rooms = ArrayList<IntArray>()
+    private var floors = IntArray(0)
     val chests = ArrayList<IntArray>()
     var px = 2f; var py = 2f; var ang = 0f
     var time = 0f
-    var found by mutableIntStateOf(0)
-    var mask = 0
+    var session by mutableIntStateOf(0)
+    var got = 0
+    var caught by mutableStateOf(false)
+    var mActive = false; var mX = 0f; var mY = 0f
+    var monsterDist = 99f
+    private val dist = IntArray(mw * mh)
+    private val queue = IntArray(mw * mh)
+    private var bfsT = 0f; private var stepT = 0f; private var stepAlt = false; private var hbT = 0f; private var growlT = 6f
+    private val rnd = Random(SystemClock.elapsedRealtime())
 
-    private val wallTex = arrayOf(makeTex(0, 1), makeTex(1, 2), makeTex(2, 3))
-    private val floorTex = makeTex(3, 4)
-    private val ceilTex = makeTex(4, 5)
-    private val chestTex = makeChest()
-    private val zbuf = FloatArray(w)
-    private val flash = FloatArray(w)
-    private val vig = IntArray(w * h)
+    private val playerTex = makePlayer(); private val monsterTex = makeMonster(); private val chestTex = makeChest()
+    private val zbuf = FloatArray(w); private val vig = IntArray(w * h)
     val pix = IntArray(w * h)
     private var rs = 0x2545F491
+    private var camX = 0f; private var camY = 0f; private var dirX = 1f; private var dirY = 0f; private var planeX = 0f; private var planeY = 0.66f; private var invDet = 1f
+    private var flick = 1f
 
     init {
-        val r = Random(20240229)
+        val bk = v.backrooms
+        val rMin = if (bk) 5 else 7; val rMax = if (bk) 10 else 12; val nRooms = if (bk) 11 else 8
         var tries = 0
-        while (rooms.size < 9 && tries < 400) {
+        while (rooms.size < nRooms && tries < 600) {
             tries++
-            val rw = r.nextInt(4, 8); val rh = r.nextInt(4, 8)
-            val rx = r.nextInt(1, mw - rw - 1); val ry = r.nextInt(1, mh - rh - 1)
-            val ok = rooms.none { q -> rx < q[0] + q[2] + 1 && rx + rw + 1 > q[0] && ry < q[1] + q[3] + 1 && ry + rh + 1 > q[1] }
-            if (ok) rooms.add(intArrayOf(rx, ry, rw, rh))
+            val rw = rnd.nextInt(rMin, rMax + 1); val rh = rnd.nextInt(rMin, rMax + 1)
+            val rx = rnd.nextInt(1, mw - rw - 1); val ry = rnd.nextInt(1, mh - rh - 1)
+            if (rooms.none { q -> rx < q[0] + q[2] + 1 && rx + rw + 1 > q[0] && ry < q[1] + q[3] + 1 && ry + rh + 1 > q[1] }) rooms.add(intArrayOf(rx, ry, rw, rh))
         }
         for (q in rooms) for (y in q[1] until q[1] + q[3]) for (x in q[0] until q[0] + q[2]) cells[y * mw + x] = 0
         for (i in 1 until rooms.size) link(rooms[i - 1], rooms[i])
-        repeat(4) { val a = r.nextInt(rooms.size); val b = r.nextInt(rooms.size); if (a != b) link(rooms[a], rooms[b]) }
-        for (i in 1 until rooms.size) {
-            val q = rooms[i]
-            if (q[2] >= 5 && q[3] >= 5) cells[(q[1] + 2 + r.nextInt(q[3] - 4)) * mw + (q[0] + 2 + r.nextInt(q[2] - 4))] = 1
+        repeat(5) { val a = rnd.nextInt(rooms.size); val b = rnd.nextInt(rooms.size); if (a != b) link(rooms[a], rooms[b]) }
+        for (q in rooms) for (y in q[1] until q[1] + q[3]) for (x in q[0] until q[0] + q[2]) {
+            val i = y * mw + x
+            if (corr[i]) continue
+            if (bk) { if (x % 3 == 1 && y % 3 == 1) cells[i] = 1 }
+            else {
+                if (x % 4 == 2 && y % 4 == 2) cells[i] = 1
+                else if (x > q[0] && y > q[1] && x < q[0] + q[2] - 1 && y < q[1] + q[3] - 1) water[i] = true
+            }
         }
         for (i in cells.indices) if (cells[i] != 0) cells[i] = 1 + ((i % mw) / 5 + (i / mw) / 7) % 3
+        floors = (0 until mw * mh).filter { cells[it] == 0 }.toIntArray()
         val s = rooms[0]
         px = s[0] + s[2] / 2 + 0.5f; py = s[1] + s[3] / 2 + 0.5f
-        // cofres del dia: 3 lugares al azar, en habitaciones distintas, distintos cada dia
-        val dr = Random(MiniStore.today().hashCode().toLong() * 7919L + 13L)
-        for (q in rooms.drop(1).shuffled(dr)) {
-            if (chests.size >= MiniStore.PER_DAY) break
-            val x = q[0] + dr.nextInt(q[2]); val y = q[1] + dr.nextInt(q[3])
-            if (cells[y * mw + x] == 0) chests.add(intArrayOf(x, y))
-        }
-        var guard = 0
-        while (chests.size < MiniStore.PER_DAY && guard++ < 800) {
-            val x = dr.nextInt(1, mw - 1); val y = dr.nextInt(1, mh - 1)
-            if (cells[y * mw + x] == 0 && abs(x - px) + abs(y - py) > 6 && chests.none { abs(it[0] - x) + abs(it[1] - y) < 5 }) chests.add(intArrayOf(x, y))
-        }
-        mask = MiniStore.mask(ctx); found = Integer.bitCount(mask)
+        repeat(3) { spawnChest()?.let { c -> chests.add(c) } }
         for (i in vig.indices) {
             val nx = ((i % w) - w / 2f) / (w / 2f); val ny = ((i / w) - h / 2f) / (h / 2f)
-            vig[i] = (256 * (1f - 0.62f * (nx * nx + ny * ny) / 2f).coerceIn(0.28f, 1f)).toInt()
+            vig[i] = (256 * (1f - 0.6f * (nx * nx + ny * ny) / 2f).coerceIn(0.3f, 1f)).toInt()
         }
+        bfs()
     }
 
     private fun link(a: IntArray, b: IntArray) {
         val ax = a[0] + a[2] / 2; val ay = a[1] + a[3] / 2; val bx = b[0] + b[2] / 2; val by = b[1] + b[3] / 2
-        for (x in min(ax, bx)..max(ax, bx)) cells[ay * mw + x] = 0
-        for (y in min(ay, by)..max(ay, by)) cells[y * mw + bx] = 0
+        for (x in min(ax, bx)..max(ax, bx)) { cells[ay * mw + x] = 0; corr[ay * mw + x] = true }
+        for (y in min(ay, by)..max(ay, by)) { cells[y * mw + bx] = 0; corr[y * mw + bx] = true }
+    }
+
+    /** Un cofre nuevo en un lugar aleatorio del mapa, lejos de ti y de los demas cofres. */
+    private fun spawnChest(): IntArray? {
+        var best: IntArray? = null
+        for (k in 0 until 300) {
+            val c = floors[rnd.nextInt(floors.size)]
+            val x = c % mw; val y = c / mw
+            val d = sqrt((x + 0.5f - px) * (x + 0.5f - px) + (y + 0.5f - py) * (y + 0.5f - py))
+            if (d < (if (k < 200) 12f else 6f)) continue
+            if (chests.any { abs(it[0] - x) + abs(it[1] - y) < 6 }) continue
+            if (mActive && abs(mX - x) + abs(mY - y) < 6f) continue
+            best = intArrayOf(x, y); break
+        }
+        return best
     }
 
     private fun solid(x: Float, y: Float): Boolean {
         val cx = x.toInt(); val cy = y.toInt()
-        if (cx < 0 || cy < 0 || cx >= mw || cy >= mh) return true
+        if (x < 0f || y < 0f || cx >= mw || cy >= mh) return true
         return cells[cy * mw + cx] != 0
     }
-    private fun blocked(x: Float, y: Float): Boolean {
-        val r = 0.22f
-        return solid(x - r, y - r) || solid(x + r, y - r) || solid(x - r, y + r) || solid(x + r, y + r)
+    private fun blocked(x: Float, y: Float): Boolean { val r = 0.22f; return solid(x - r, y - r) || solid(x + r, y - r) || solid(x - r, y + r) || solid(x + r, y + r) }
+
+    /** Mapa de distancias desde el jugador (para que el monstruo encuentre el camino). */
+    private fun bfs() {
+        java.util.Arrays.fill(dist, -1)
+        var head = 0; var tail = 0
+        val s = py.toInt() * mw + px.toInt()
+        dist[s] = 0; queue[tail++] = s
+        while (head < tail) {
+            val c = queue[head++]; val x = c % mw; val y = c / mw
+            if (x > 0 && dist[c - 1] < 0 && cells[c - 1] == 0) { dist[c - 1] = dist[c] + 1; queue[tail++] = c - 1 }
+            if (x < mw - 1 && dist[c + 1] < 0 && cells[c + 1] == 0) { dist[c + 1] = dist[c] + 1; queue[tail++] = c + 1 }
+            if (y > 0 && dist[c - mw] < 0 && cells[c - mw] == 0) { dist[c - mw] = dist[c] + 1; queue[tail++] = c - mw }
+            if (y < mh - 1 && dist[c + mw] < 0 && cells[c + mw] == 0) { dist[c + mw] = dist[c] + 1; queue[tail++] = c + mw }
+        }
+    }
+
+    private fun spawnMonster() {
+        var bestC = -1; var bestD = -1
+        for (k in 0 until 200) {
+            val c = floors[rnd.nextInt(floors.size)]
+            if (dist[c] > bestD) { bestD = dist[c]; bestC = c }
+            if (bestD >= 20) break
+        }
+        if (bestC < 0) return
+        mX = bestC % mw + 0.5f; mY = bestC / mw + 0.5f; mActive = true
+        audio.play(MgAudio.GROWL, 0.8f)
     }
 
     /** Avanza el juego. Devuelve los Pawb de un cofre recien abierto, o -1. */
@@ -212,75 +390,144 @@ private class MgEngine(val ctx: Context, val w: Int, val h: Int) {
         time += dt
         ang += look * 0.0065f
         val dx = cos(ang); val dy = sin(ang)
-        val fwd = -joyY; val side = joyX
+        val mag = min(1f, sqrt(joyX * joyX + joyY * joyY))
         val sp = 2.3f * dt
-        val mx = (dx * fwd + (-dy) * side) * sp
-        val my = (dy * fwd + dx * side) * sp
-        if (!blocked(px + mx, py)) px += mx
-        if (!blocked(px, py + my)) py += my
+        val mx = (dx * -joyY + (-dy) * joyX) * sp
+        val my = (dy * -joyY + dx * joyX) * sp
+        var moved = false
+        if (!blocked(px + mx, py)) { px += mx; moved = moved || abs(mx) > 1e-4f }
+        if (!blocked(px, py + my)) { py += my; moved = moved || abs(my) > 1e-4f }
+        // pasos
+        if (moved && mag > 0.15f) {
+            stepT += dt * (0.5f + mag)
+            if (stepT >= 0.5f) {
+                stepT = 0f; stepAlt = !stepAlt
+                val inWater = water[py.toInt().coerceIn(0, mh - 1) * mw + px.toInt().coerceIn(0, mw - 1)]
+                audio.play(if (inWater) MgAudio.SPLASH else if (stepAlt) MgAudio.STEP1 else MgAudio.STEP2, 0.8f)
+            }
+        } else stepT = 0.35f
+        // monstruo
+        bfsT -= dt
+        if (bfsT <= 0f) { bfs(); bfsT = 0.2f }
+        if (!mActive && time > 9f) spawnMonster()
+        if (mActive) {
+            val spd = (1.45f + 0.07f * got).coerceAtMost(2.0f)
+            val ddx = px - mX; val ddy = py - mY
+            val dd = sqrt(ddx * ddx + ddy * ddy)
+            monsterDist = dd
+            var tx = px; var ty = py
+            if (dd > 1.6f) {
+                val c = mY.toInt().coerceIn(0, mh - 1) * mw + mX.toInt().coerceIn(0, mw - 1)
+                var bestN = c; var bd = if (dist[c] >= 0) dist[c] else Int.MAX_VALUE
+                for (n in intArrayOf(c - 1, c + 1, c - mw, c + mw)) if (n in 0 until mw * mh && dist[n] in 0 until bd) { bd = dist[n]; bestN = n }
+                if (bestN != c) { tx = bestN % mw + 0.5f; ty = bestN / mw + 0.5f }
+            }
+            val vx = tx - mX; val vy = ty - mY; val vl = sqrt(vx * vx + vy * vy)
+            if (vl > 1e-3f) { val st = min(vl, spd * dt); mX += vx / vl * st; mY += vy / vl * st }
+            if (dd < 0.7f && !caught) { caught = true; audio.play(MgAudio.SCREAM, 1f) }
+            if (dd < 9f) { hbT -= dt; if (hbT <= 0f) { audio.play(MgAudio.HEART, 0.9f); hbT = 0.4f + dd * 0.09f } }
+            growlT -= dt
+            if (growlT <= 0f) { audio.play(MgAudio.GROWL, if (dd < 12f) 0.6f else 0.25f); growlT = 8f + rnd.nextFloat() * 6f }
+        }
+        // cofres
         for (i in chests.indices) {
-            if (mask and (1 shl i) != 0) continue
             val ddx = chests[i][0] + 0.5f - px; val ddy = chests[i][1] + 0.5f - py
             if (ddx * ddx + ddy * ddy < 0.75f) {
-                val got = MiniStore.collect(ctx, i)
-                mask = mask or (1 shl i); found = Integer.bitCount(mask)
-                return got
+                val r = MiniStore.collect()
+                session += r; got++
+                audio.play(MgAudio.CHIME, 1f)
+                val nc = spawnChest()
+                if (nc != null) chests[i] = nc else chests.removeAt(i)
+                if (chests.size < 3) spawnChest()?.let { chests.add(it) }
+                return r
             }
         }
         return -1
     }
 
-    /** Distancia al cofre pendiente mas cercano (para el ruido de "radio"). */
-    private fun nearest(): Float {
-        var best = 99f
-        for (i in chests.indices) {
-            if (mask and (1 shl i) != 0) continue
-            val ddx = chests[i][0] + 0.5f - px; val ddy = chests[i][1] + 0.5f - py
-            best = min(best, kotlin.math.sqrt(ddx * ddx + ddy * ddy))
-        }
-        return best
-    }
-
     private fun shade(c: Int, light: Float, fog: Float): Int {
-        val fr = 22; val fg = 24; val fb = 30
         var r = ((c shr 16) and 255) * light; var g = ((c shr 8) and 255) * light; var b = (c and 255) * light
-        r += (fr - r) * fog; g += (fg - g) * fog; b += (fb - b) * fog
+        r += (v.fogR - r) * fog; g += (v.fogG - g) * fog; b += (v.fogB - b) * fog
         return rgb(r.toInt(), g.toInt(), b.toInt())
+    }
+    private fun lightAt(d2: Float): Float { val t = max(0f, 1f - d2 / v.r2); return v.ambient + 1.55f * t * t * flick }
+
+    /** Dibuja un sprite de cara a la camara, ocultandolo tras las paredes. */
+    private fun billboard(t: IntArray, tw: Int, th: Int, wx: Float, wy: Float, hCells: Float, boost: Float, fogMul: Float, bob: Int) {
+        val sx = wx - camX; val sy = wy - camY
+        val ty = invDet * (-planeY * sx + planeX * sy); val tx = invDet * (dirY * sx - dirX * sy)
+        if (ty < 0.12f) return
+        val half = h / 2
+        val scrX = (w / 2f * (1f + tx / ty)).toInt()
+        val unit = (h / ty).toInt()
+        val sh = max(3, (unit * hCells).toInt()); val sw = max(2, sh * tw / th)
+        val floorY = half + unit / 2 - bob
+        val top = floorY - sh; val left = scrX - sw / 2
+        val d2 = (wx - px) * (wx - px) + (wy - py) * (wy - py)
+        val light = max(0.4f, lightAt(d2)) * boost
+        val fog = (1f - exp(-v.fogK * ty)) * fogMul
+        for (xx in left until left + sw) {
+            if (xx < 0 || xx >= w || ty >= zbuf[xx]) continue
+            val tX = ((xx - left) * tw / sw).coerceIn(0, tw - 1)
+            for (yy in max(0, top) until min(h, floorY)) {
+                val tY = ((yy - top) * th / sh).coerceIn(0, th - 1)
+                val c = t[tY * tw + tX]
+                if (c == 0) continue
+                pix[yy * w + xx] = if ((c ushr 24) == 0xFE) rgb((c shr 16) and 255, (c shr 8) and 255, c and 255) else shade(c, light, fog)
+            }
+        }
     }
 
     fun render() {
-        val dirX = cos(ang); val dirY = sin(ang)
-        val planeX = -dirY * 0.66f; val planeY = dirX * 0.66f
-        val flick = 1f + 0.05f * sin(time * 23f) + (if (sin(time * 7.3f) > 0.985f) -0.3f else 0f)
-        for (x in 0 until w) { val q = 1f - abs(x - w / 2f) / (w * 0.55f); flash[x] = max(0f, q) * max(0f, q) * flick }
+        dirX = cos(ang); dirY = sin(ang)
+        planeX = -dirY * 0.66f; planeY = dirX * 0.66f
+        // camara de tercera persona: detras del jugador, sin atravesar paredes
+        var cd = 0f
+        for (k in 1..9) { val d = 1.35f * k / 9f; if (blocked(px - dirX * d, py - dirY * d)) break; cd = d }
+        camX = px - dirX * cd; camY = py - dirY * cd
+        invDet = 1f / (planeX * dirY - dirX * planeY)
+        flick = 1f + 0.05f * sin(time * 23f) + (if (sin(time * 7.3f) > 0.985f) -0.3f else 0f)
         val half = h / 2
-        // suelo y techo
+        // suelo, agua y techo
         for (y in half + 1 until h) {
             val rowDist = half.toFloat() / (y - half)
-            val fog = 1f - exp(-0.19f * rowDist)
-            val att = 1f / (1f + 0.07f * rowDist * rowDist)
+            val fog = 1f - exp(-v.fogK * rowDist)
             val rx0 = dirX - planeX; val ry0 = dirY - planeY
             val sx = rowDist * (2f * planeX) / w; val sy = rowDist * (2f * planeY) / w
-            var fx = px + rowDist * rx0; var fy = py + rowDist * ry0
+            var fx = camX + rowDist * rx0; var fy = camY + rowDist * ry0
             val yc = h - y - 1
             for (x in 0 until w) {
-                val cx = floor(fx); val cy = floor(fy)
-                val tx = ((fx - cx) * TEX).toInt() and (TEX - 1); val ty = ((fy - cy) * TEX).toInt() and (TEX - 1)
-                val light = 0.2f + 1.25f * flash[x] * att
-                pix[y * w + x] = shade(floorTex[ty * TEX + tx], light, fog)
-                pix[yc * w + x] = shade(ceilTex[ty * TEX + tx], light * 0.7f, min(1f, fog + 0.1f))
+                val cxI = floor(fx).toInt(); val cyI = floor(fy).toInt()
+                val tx = ((fx - cxI) * TEX).toInt() and (TEX - 1); val ty = ((fy - cyI) * TEX).toInt() and (TEX - 1)
+                val ddx = fx - px; val ddy = fy - py
+                var light = lightAt(ddx * ddx + ddy * ddy)
+                val inMap = cxI in 0 until mw && cyI in 0 until mh
+                val c: Int
+                if (inMap && water[cyI * mw + cxI]) {
+                    // agua: refraccion leve (la textura se desplaza con olas) y caustica
+                    val u = fx + 0.06f * sin(fy * 6f + time * 1.7f); val vv = fy + 0.06f * cos(fx * 6f + time * 1.4f)
+                    val wtx = ((u - floor(u)) * TEX).toInt() and (TEX - 1); val wty = ((vv - floor(vv)) * TEX).toInt() and (TEX - 1)
+                    val caus = 0.5f + 0.5f * sin((fx + fy) * 8f + time * 2.2f) * sin((fx - fy) * 6f - time * 1.7f)
+                    light *= 0.78f + 0.5f * caus
+                    var wc = v.water[wty * TEX + wtx]
+                    if (caus > 0.9f) wc = rgb(((wc shr 16) and 255) + 60, ((wc shr 8) and 255) + 60, (wc and 255) + 50)
+                    c = wc
+                } else c = v.floor[ty * TEX + tx]
+                pix[y * w + x] = shade(c, light, fog)
+                val lampCell = inMap && ((cxI * 7 + cyI * 3) % 4 == 0)
+                pix[yc * w + x] = shade(if (lampCell) v.lamp[ty * TEX + tx] else v.ceil[ty * TEX + tx], light * (if (lampCell) 1.4f else 0.8f), min(1f, fog + 0.05f))
                 fx += sx; fy += sy
             }
         }
         // paredes
         for (x in 0 until w) {
-            val camX = 2f * x / w - 1f
-            val rayX = dirX + planeX * camX; val rayY = dirY + planeY * camX
-            var mapX = px.toInt(); var mapY = py.toInt()
+            val camXr = 2f * x / w - 1f
+            val rayX = dirX + planeX * camXr; val rayY = dirY + planeY * camXr
+            var mapX = camX.toInt(); var mapY = camY.toInt()
             val ddx = if (rayX == 0f) 1e30f else abs(1f / rayX); val ddy = if (rayY == 0f) 1e30f else abs(1f / rayY)
             val stepX: Int; val stepY: Int; var sideX: Float; var sideY: Float
-            if (rayX < 0) { stepX = -1; sideX = (px - mapX) * ddx } else { stepX = 1; sideX = (mapX + 1f - px) * ddx }
-            if (rayY < 0) { stepY = -1; sideY = (py - mapY) * ddy } else { stepY = 1; sideY = (mapY + 1f - py) * ddy }
+            if (rayX < 0) { stepX = -1; sideX = (camX - mapX) * ddx } else { stepX = 1; sideX = (mapX + 1f - camX) * ddx }
+            if (rayY < 0) { stepY = -1; sideY = (camY - mapY) * ddy } else { stepY = 1; sideY = (mapY + 1f - camY) * ddy }
             var side = 0; var hit = 0; var guard = 0
             while (hit == 0 && guard++ < 64) {
                 if (sideX < sideY) { sideX += ddx; mapX += stepX; side = 0 } else { sideY += ddy; mapY += stepY; side = 1 }
@@ -288,76 +535,65 @@ private class MgEngine(val ctx: Context, val w: Int, val h: Int) {
             }
             val perp = max(0.05f, if (side == 0) sideX - ddx else sideY - ddy)
             zbuf[x] = perp
-            var wx = if (side == 0) py + perp * rayY else px + perp * rayX
+            var wx = if (side == 0) camY + perp * rayY else camX + perp * rayX
             wx -= floor(wx)
             var texX = (wx * TEX).toInt().coerceIn(0, TEX - 1)
             if ((side == 0 && rayX > 0) || (side == 1 && rayY < 0)) texX = TEX - 1 - texX
             val lineH = max(1, (h / perp).toInt())
-            val start = half - lineH / 2
-            val end = half + lineH / 2
-            val tex = wallTex[(hit - 1).coerceIn(0, 2)]
-            val fog = 1f - exp(-0.19f * perp)
-            val light = (0.2f + 1.25f * flash[x] / (1f + 0.07f * perp * perp)) * (if (side == 1) 0.78f else 1f)
+            val start = half - lineH / 2; val end = half + lineH / 2
+            val tx = v.walls[(hit - 1).coerceIn(0, 2)]
+            val fog = 1f - exp(-v.fogK * perp)
+            val hx = camX + perp * rayX - px; val hy = camY + perp * rayY - py
+            val light = lightAt(hx * hx + hy * hy) * (if (side == 1) 0.78f else 1f)
             for (y in max(0, start) until min(h, end)) {
                 val texY = ((y - start) * TEX / lineH) and (TEX - 1)
-                pix[y * w + x] = shade(tex[texY * TEX + texX], light, fog)
+                pix[y * w + x] = shade(tx[texY * TEX + texX], light, fog)
             }
         }
-        // cofres (billboards)
-        val inv = 1f / (planeX * dirY - dirX * planeY)
-        val order = chests.indices.filter { mask and (1 shl it) == 0 }.sortedByDescending {
-            val ex = chests[it][0] + 0.5f - px; val ey = chests[it][1] + 0.5f - py; ex * ex + ey * ey
-        }
-        for (i in order) {
-            val sx = chests[i][0] + 0.5f - px; val sy = chests[i][1] + 0.5f - py
-            val tx = inv * (dirY * sx - dirX * sy); val ty = inv * (-planeY * sx + planeX * sy)
-            if (ty < 0.25f) continue
-            val scrX = (w / 2f * (1f + tx / ty)).toInt()
-            val unit = (h / ty).toInt()
-            val size = max(3, (unit * 0.42f).toInt())
-            val floorY = half + unit / 2
-            val top = floorY - size
-            val left = scrX - size / 2
-            val fog = 1f - exp(-0.19f * ty)
-            val pulse = 0.5f + 0.5f * sin(time * 3f)
-            for (xx in left until left + size) {
-                if (xx < 0 || xx >= w || ty >= zbuf[xx]) continue
-                val texX = ((xx - left) * CHEST / size).coerceIn(0, CHEST - 1)
-                val light = 0.55f + 1.1f * flash[xx] / (1f + 0.07f * ty * ty) + 0.25f * pulse
-                for (yy in max(0, top) until min(h, floorY)) {
-                    val texY = ((yy - top) * CHEST / size).coerceIn(0, CHEST - 1)
-                    val c = chestTex[texY * CHEST + texX]
-                    if (c != 0) pix[yy * w + xx] = shade(c, light, fog * 0.7f)
-                }
-            }
-            // haz de luz dorado, solo cuando estas relativamente cerca
-            if (ty < 7f) {
-                val a0 = 0.32f * (1f - ty / 7f)
-                for (xx in scrX - 1..scrX + 1) {
-                    if (xx < 0 || xx >= w || ty >= zbuf[xx]) continue
-                    val bt = top - size * 3
-                    for (yy in max(0, bt) until min(h, top)) {
-                        val a = a0 * (yy - bt).toFloat() / (size * 3f)
-                        val c = pix[yy * w + xx]
-                        val rr = ((c shr 16) and 255) + ((255 - ((c shr 16) and 255)) * a).toInt()
-                        val gg = ((c shr 8) and 255) + ((210 - ((c shr 8) and 255)) * a).toInt()
-                        val bb = (c and 255) + ((90 - (c and 255)) * a).toInt()
-                        pix[yy * w + xx] = rgb(rr, gg, bb)
+        // sprites: cofres, monstruo y jugador, del mas lejano al mas cercano
+        val kinds = ArrayList<FloatArray>() // [tipo, indice, dist2]
+        for (i in chests.indices) { val ex = chests[i][0] + 0.5f - camX; val ey = chests[i][1] + 0.5f - camY; kinds.add(floatArrayOf(0f, i.toFloat(), ex * ex + ey * ey)) }
+        if (mActive) { val ex = mX - camX; val ey = mY - camY; kinds.add(floatArrayOf(1f, 0f, ex * ex + ey * ey)) }
+        kinds.add(floatArrayOf(2f, 0f, (px - camX) * (px - camX) + (py - camY) * (py - camY)))
+        kinds.sortByDescending { it[2] }
+        val pulse = 0.5f + 0.5f * sin(time * 3f)
+        val bob = if (stepT < 0.25f && stepT > 0f) 1 else 0
+        for (k in kinds) {
+            when (k[0].toInt()) {
+                0 -> {
+                    val c = chests[k[1].toInt()]
+                    billboard(chestTex, 16, 16, c[0] + 0.5f, c[1] + 0.5f, 0.42f, 1f + 0.4f * pulse, 0.6f, 0)
+                    // haz dorado hacia arriba, visible de cerca
+                    val sx = c[0] + 0.5f - camX; val sy = c[1] + 0.5f - camY
+                    val ty = invDet * (-planeY * sx + planeX * sy); val tx = invDet * (dirY * sx - dirX * sy)
+                    if (ty > 0.2f && ty < 9f) {
+                        val scrX = (w / 2f * (1f + tx / ty)).toInt(); val unit = (h / ty).toInt()
+                        val floorY = half + unit / 2; val top = floorY - (unit * 0.42f).toInt()
+                        val bt = top - unit
+                        val a0 = 0.3f * (1f - ty / 9f)
+                        for (xx in scrX - 1..scrX + 1) {
+                            if (xx < 0 || xx >= w || ty >= zbuf[xx]) continue
+                            for (yy in max(0, bt) until min(h, top)) {
+                                val a = a0 * (yy - bt).toFloat() / max(1, top - bt)
+                                val cc = pix[yy * w + xx]
+                                pix[yy * w + xx] = rgb(((cc shr 16) and 255) + ((255 - ((cc shr 16) and 255)) * a).toInt(), ((cc shr 8) and 255) + ((210 - ((cc shr 8) and 255)) * a).toInt(), (cc and 255) + ((90 - (cc and 255)) * a).toInt())
+                            }
+                        }
                     }
                 }
+                1 -> billboard(monsterTex, 20, 44, mX, mY, 1.25f, 1.2f, 0.55f, (sin(time * 5f) * 1.2f).toInt())
+                else -> billboard(playerTex, 16, 24, px, py, 0.62f, 1.7f, 0.1f, bob)
             }
         }
-        // acabado PS1: vineta, color de 15 bits con tramado ordenado y estatica de radio cerca de un cofre
-        val near = nearest()
-        val thr = if (near < 6f) ((6f - near) / 6f * 16f).toInt() else 0
+        // acabado PS1: vineta, color de 15 bits con tramado ordenado y estatica cuando el monstruo esta cerca
+        val thr = if (mActive && monsterDist < 8f) ((8f - monsterDist) / 8f * 22f).toInt() else 0
         for (i in 0 until w * h) {
             val x = i % w; val y = i / w
-            val c = pix[i]
-            val v = vig[i]
+            val c = pix[i]; val vg = vig[i]
             val d = BAYER[(y and 3) * 4 + (x and 3)]
-            var r = min(255, (((c shr 16) and 255) * v shr 8) + d) and 0xF8
-            var g = min(255, (((c shr 8) and 255) * v shr 8) + d) and 0xF8
-            var b = min(255, ((c and 255) * v shr 8) + d) and 0xF8
+            var r = min(255, (((c shr 16) and 255) * vg shr 8) + d) and 0xF8
+            var g = min(255, (((c shr 8) and 255) * vg shr 8) + d) and 0xF8
+            var b = min(255, ((c and 255) * vg shr 8) + d) and 0xF8
             if (thr > 0) {
                 rs = rs xor (rs shl 13); rs = rs xor (rs ushr 17); rs = rs xor (rs shl 5)
                 if ((rs and 0xFF) < thr) { val gr = 70 + ((rs shr 8) and 127); r = gr; g = gr; b = gr }
@@ -375,29 +611,36 @@ private class LookAcc { var acc = 0f }
 fun MiniGameScreen(onExit: () -> Unit) {
     val ctx = LocalContext.current
     var phase by remember { mutableIntStateOf(0) } // 0 carga, 1 jugando, 2 resultado
+    var died by remember { mutableStateOf(false) }
+    val sess = remember { mutableIntStateOf(0) }
     BackHandler { if (phase == 1) phase = 2 else onExit() }
     when (phase) {
-        0 -> LoadingScreen(2000, onDone = { phase = if (MiniStore.left(ctx) <= 0) 2 else 1 })
-        1 -> MiniGamePlay(onFinish = { phase = 2 })
+        0 -> LoadingScreen(2000, onDone = { phase = if (MiniStore.locked(ctx)) 2 else 1 })
+        1 -> MiniGamePlay(sess, onFinish = { d -> if (d) MiniStore.lock(ctx); died = d; phase = 2 })
         else -> {
-            val total = MiniStore.total(ctx)
-            val left = MiniStore.left(ctx)
-            val msg = (if (total > 0) "Encontraste $total Pawb hoy" else "Hoy no has encontrado cofres") +
-                (if (left <= 0) "\nYa abriste los ${MiniStore.PER_DAY} cofres. Vuelve mañana" else "\nTe quedan $left cofres por encontrar")
+            val s = sess.intValue
+            val msg = when {
+                died -> "El monstruo te atrapó\nConseguiste $s Pawb\nNo puedes volver hasta mañana"
+                MiniStore.locked(ctx) && s == 0 -> "Hoy ya no puedes entrar\nVuelve mañana"
+                else -> "Saliste del juego\nConseguiste $s Pawb"
+            }
             LoadingScreen(2800, onDone = onExit, message = msg)
         }
     }
 }
 
 @Composable
-private fun MiniGamePlay(onFinish: () -> Unit) {
+private fun MiniGamePlay(sess: MutableIntState, onFinish: (Boolean) -> Unit) {
     val ctx = LocalContext.current
     val dens = LocalDensity.current
+    val audio = remember { MgAudio(ctx.applicationContext) }
+    DisposableEffect(Unit) { onDispose { audio.release() } }
     BoxWithConstraints(Modifier.fillMaxSize().background(Color.Black)) {
         val wPx = with(dens) { maxWidth.toPx() }; val hPx = with(dens) { maxHeight.toPx() }
         val rw = 176
         val rh = (rw * hPx / wPx).roundToInt().coerceIn(80, 130)
-        val eng = remember { MgEngine(ctx, rw, rh) }
+        val variant = remember { makeVariant(Random.nextBoolean()) }
+        val eng = remember { MgEngine(ctx, rw, rh, variant, audio) }
         val bmp = remember { Bitmap.createBitmap(rw, rh, Bitmap.Config.ARGB_8888) }
         val img = remember { bmp.asImageBitmap() }
         var tick by remember { mutableLongStateOf(0L) }
@@ -407,26 +650,28 @@ private fun MiniGamePlay(onFinish: () -> Unit) {
         var toast by remember { mutableStateOf("") }
         var toastT by remember { mutableFloatStateOf(0f) }
         var hintT by remember { mutableFloatStateOf(7f) }
+        var scareT by remember { mutableFloatStateOf(-1f) }
         val radius = with(dens) { 56.dp.toPx() }
 
         LaunchedEffect(eng) {
             var last = 0L
-            var finishT = -1f
             while (true) {
                 withFrameNanosCompat { t ->
                     val dt = if (last == 0L) 0.016f else ((t - last) / 1e9f).coerceAtMost(0.05f)
                     last = t
-                    val l = look.acc; look.acc = 0f
-                    val ev = eng.update(dt, joy.x, joy.y, l)
-                    if (ev >= 0) {
-                        toast = if (ev >= 1000) "¡¡ +$ev Pawb !!" else "+$ev Pawb"; toastT = 2.2f
-                        if (eng.found >= MiniStore.PER_DAY) finishT = 2.0f
+                    if (scareT < 0f) {
+                        val l = look.acc; look.acc = 0f
+                        val ev = eng.update(dt, joy.x, joy.y, l)
+                        if (ev >= 0) { toast = if (ev >= 1000) "¡¡ +$ev Pawb !!" else "+$ev Pawb"; toastT = 2.2f; sess.intValue = eng.session }
+                        if (eng.caught) scareT = 0f
+                        eng.render()
+                        bmp.setPixels(eng.pix, 0, rw, 0, 0, rw, rh)
+                    } else {
+                        scareT += dt
+                        if (scareT > 1.8f) { scareT = -2f; onFinish(true) }
                     }
-                    if (finishT >= 0f) { finishT -= dt; if (finishT <= 0f) { finishT = -1f; onFinish() } }
                     if (toastT > 0f) toastT -= dt
                     if (hintT > 0f) hintT -= dt
-                    eng.render()
-                    bmp.setPixels(eng.pix, 0, rw, 0, 0, rw, rh)
                     tick = t
                 }
             }
@@ -474,23 +719,93 @@ private fun MiniGamePlay(onFinish: () -> Unit) {
                 }
             },
         )
-        // interfaz minima
         Text(
-            "COFRES  ${eng.found}/${MiniStore.PER_DAY}", color = Color(0xFFCFC8B8), fontFamily = FontFamily.Monospace, fontSize = 13.sp,
+            "PAWB  +${eng.session}", color = Color(0xFFCFC8B8), fontFamily = FontFamily.Monospace, fontSize = 13.sp,
             fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.TopStart).padding(16.dp),
         )
         Text(
             "SALIR", color = Color(0xFFCFC8B8), fontFamily = FontFamily.Monospace, fontSize = 13.sp, fontWeight = FontWeight.Bold,
-            modifier = Modifier.align(Alignment.TopEnd).clickable { onFinish() }.padding(16.dp),
+            modifier = Modifier.align(Alignment.TopEnd).clickable { if (scareT < 0f) onFinish(false) }.padding(16.dp),
         )
         if (hintT > 0f) Text(
-            "Izquierda: moverte · Derecha: mirar\nBusca los cofres dorados en la niebla", color = Color(0xFFCFC8B8).copy(alpha = min(1f, hintT)),
-            fontFamily = FontFamily.Monospace, fontSize = 12.sp, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 18.dp),
+            "${variant.name}\nIzquierda: moverte · Derecha: mirar\nBusca los cofres dorados. Algo te persigue.", color = Color(0xFFCFC8B8).copy(alpha = min(1f, hintT)),
+            fontFamily = FontFamily.Monospace, fontSize = 12.sp, textAlign = TextAlign.Center, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 18.dp),
         )
         if (toastT > 0f) Text(
             toast, color = Color(0xFFFFE082).copy(alpha = min(1f, toastT)), fontFamily = FontFamily.Monospace, fontSize = 26.sp,
             fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.Center),
         )
+        if (scareT >= 0f) ScareOverlay(scareT)
+    }
+}
+
+/** El screamer: la cara del monstruo llena la pantalla, con sacudidas, destellos rojos y estatica. */
+@Composable
+private fun ScareOverlay(t: Float) {
+    Canvas(Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures { } }) {
+        val rnd = Random((t * 60f).toInt() * 31 + 7)
+        val hh = size.height; val cx = size.width / 2f; val cy = hh * 0.52f
+        withTransform({
+            translate((rnd.nextFloat() - 0.5f) * 50f, (rnd.nextFloat() - 0.5f) * 36f)
+            scale(1f + 0.3f * min(1f, t * 3f), 1f + 0.3f * min(1f, t * 3f), Offset(cx, cy))
+        }) {
+            drawRect(Color(0xFF1C0000))
+            drawOval(Color(0xFFD9D3C9), Offset(cx - hh * 0.40f, cy - hh * 0.56f), Size(hh * 0.80f, hh * 1.12f))
+            drawOval(Color.Black, Offset(cx - hh * 0.30f, cy - hh * 0.22f), Size(hh * 0.21f, hh * 0.30f))
+            drawOval(Color.Black, Offset(cx + hh * 0.09f, cy - hh * 0.22f), Size(hh * 0.21f, hh * 0.30f))
+            drawCircle(Color(0xFFFF2A1E), hh * 0.025f, Offset(cx - hh * 0.195f, cy - hh * 0.08f))
+            drawCircle(Color(0xFFFF2A1E), hh * 0.025f, Offset(cx + hh * 0.195f, cy - hh * 0.08f))
+            val mouth = Path().apply {
+                moveTo(cx - hh * 0.26f, cy + hh * 0.22f)
+                for (i in 1..10) lineTo(cx - hh * 0.26f + hh * 0.052f * i, cy + hh * (if (i % 2 == 0) 0.22f else 0.30f))
+                lineTo(cx + hh * 0.26f, cy + hh * 0.46f); lineTo(cx - hh * 0.26f, cy + hh * 0.46f); close()
+            }
+            drawPath(mouth, Color.Black)
+        }
+        if ((t * 22f).toInt() % 2 == 0) drawRect(Color.Red.copy(alpha = 0.28f))
+        if ((t * 11f).toInt() % 3 == 0) drawRect(Color.White.copy(alpha = 0.18f))
+        repeat(260) { drawRect(Color.White.copy(alpha = 0.5f), Offset(rnd.nextFloat() * size.width, rnd.nextFloat() * hh), Size(4f, 4f)) }
+        repeat(8) { drawRect(Color.Black.copy(alpha = 0.7f), Offset(0f, rnd.nextFloat() * hh), Size(size.width, 6f + rnd.nextFloat() * 14f)) }
+    }
+}
+
+/** Glitch de 1 s de la pantalla de inicio cuando intentas entrar al minijuego estando bloqueado. */
+@Composable
+fun MiniGlitchOverlay() {
+    val at = MiniNav.glitchAt.longValue
+    if (at != 0L) GlitchBody(at)
+}
+
+@Composable
+private fun GlitchBody(at: Long) {
+    var t by remember(at) { mutableFloatStateOf(0f) }
+    LaunchedEffect(at) {
+        MiniNav.glitchOn.value = true
+        val start = androidx.compose.runtime.withFrameNanos { it }
+        while (true) {
+            val n = androidx.compose.runtime.withFrameNanos { it }
+            t = (n - start) / 1e9f
+            val rr = Random((t * 40f).toInt() + 3)
+            MiniNav.shakeX.floatValue = (rr.nextFloat() - 0.5f) * 36f * (1f - 0.5f * t)
+            MiniNav.shakeY.floatValue = (rr.nextFloat() - 0.5f) * 14f
+            if (t >= 1f) break
+        }
+        MiniNav.shakeX.floatValue = 0f; MiniNav.shakeY.floatValue = 0f
+        MiniNav.glitchOn.value = false
+        MiniNav.glitchAt.longValue = 0L
+    }
+    Canvas(Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures { } }) {
+        val rnd = Random((t * 30f).toInt() * 7919 + 1)
+        val cols = listOf(Color(0xFF00FFFF), Color(0xFFFF00AA), Color.White, Color.Black)
+        repeat(18) {
+            val y = rnd.nextFloat() * size.height; val hh = 4f + rnd.nextFloat() * 46f
+            drawRect(cols[rnd.nextInt(cols.size)].copy(alpha = 0.32f), Offset((rnd.nextFloat() - 0.5f) * 120f, y), Size(size.width, hh))
+        }
+        repeat(3) { drawRect(Color.Black.copy(alpha = 0.92f), Offset(0f, rnd.nextFloat() * size.height), Size(size.width, 8f + rnd.nextFloat() * 30f)) }
+        var y = 0f
+        while (y < size.height) { drawRect(Color.Black.copy(alpha = 0.12f), Offset(0f, y), Size(size.width, 2f)); y += 6f }
+        repeat(220) { drawRect(Color.White.copy(alpha = 0.45f), Offset(rnd.nextFloat() * size.width, rnd.nextFloat() * size.height), Size(3f, 3f)) }
+        if ((t * 14f).toInt() % 2 == 0) drawRect(Color.White.copy(alpha = 0.10f))
     }
 }
 

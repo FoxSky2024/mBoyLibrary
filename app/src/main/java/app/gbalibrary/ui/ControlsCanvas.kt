@@ -77,7 +77,7 @@ fun ControlsCanvas(
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val sw = constraints.maxWidth.toFloat()
         val sh = constraints.maxHeight.toFloat()
-        val ds = app.gbalibrary.emu.Native.isDs
+        val ds = app.gbalibrary.emu.Native.hasXY
         if (ds) layout.ensureDsButtons()
         layout.ensureQuickButtons()
         for (item in layout.items.toList()) {

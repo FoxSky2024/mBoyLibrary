@@ -14,6 +14,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.graphicsLayer
 import app.gbalibrary.ui.preloadImages
 import androidx.compose.runtime.setValue
 import app.gbalibrary.data.DataDir
@@ -266,12 +267,19 @@ class MainActivity : ComponentActivity() {
                     )
                 }
                 androidx.compose.foundation.layout.Box {
+                    androidx.compose.foundation.layout.Box(
+                        if (app.gbalibrary.ui.MiniNav.glitchOn.value) Modifier.graphicsLayer {
+                            translationX = app.gbalibrary.ui.MiniNav.shakeX.floatValue; translationY = app.gbalibrary.ui.MiniNav.shakeY.floatValue
+                        } else Modifier,
+                    ) {
                     LibraryApp(
                         vm = vm,
                         actions = actions,
                         onPlay = { game -> play(game, "") },
                         onPlaySlot = { game, slot -> play(game, slot) },
                     )
+                    }
+                    app.gbalibrary.ui.MiniGlitchOverlay()
                     if (app.gbalibrary.ui.MiniNav.show.value) app.gbalibrary.ui.MiniGameScreen(onExit = { app.gbalibrary.ui.MiniNav.show.value = false })
                     // arranque de la app: 5 s de pantalla de carga (precarga de objetos), solo una vez por proceso
                     var starting by remember { mutableStateOf(!app.gbalibrary.ui.Boot.shown) }

@@ -318,19 +318,21 @@ class GbaGlView(context: Context) : GLSurfaceView(context) {
             val sh = surfaceH.toFloat()
             var dw: Float
             var dh: Float
+            val asp = Native.displayAspect
+            val lw = if (asp > 0f) h * asp else w.toFloat() // ancho logico (NES/SNES: pixeles no cuadrados, 4:3)
             when (scaleMode) {
                 VideoScale.STRETCH -> { dw = sw; dh = sh }
                 VideoScale.ORIGINAL -> {
-                    val s = max(1f, floor(min(sw / w, sh / h)))
-                    dw = w * s; dh = h * s
+                    val s = max(1f, floor(min(sw / lw, sh / h)))
+                    dw = lw * s; dh = h * s
                 }
                 VideoScale.FULL -> {
-                    val s = max(sw / w, sh / h)
-                    dw = w * s; dh = h * s
+                    val s = max(sw / lw, sh / h)
+                    dw = lw * s; dh = h * s
                 }
                 else -> {
-                    val s = min(sw / w, sh / h)
-                    dw = w * s; dh = h * s
+                    val s = min(sw / lw, sh / h)
+                    dw = lw * s; dh = h * s
                 }
             }
             val x = ((sw - dw) / 2f).toInt()

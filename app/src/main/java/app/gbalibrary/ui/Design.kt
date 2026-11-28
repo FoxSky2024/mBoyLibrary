@@ -126,6 +126,8 @@ fun systemOf(g: Game): String {
     val name = (g.entry.ifEmpty { g.fileName }).lowercase()
     return when {
         name.endsWith(".nds") -> "DS"
+        name.endsWith(".nes") -> "NES"
+        name.endsWith(".sfc") || name.endsWith(".smc") -> "SNES"
         name.endsWith(".gbc") -> "GBC"
         name.endsWith(".gb") -> "GB"
         name.endsWith(".gba") || name.endsWith(".agb") -> "GBA"
@@ -140,6 +142,8 @@ fun SystemBadge(system: String, modifier: Modifier = Modifier) {
         "GBA" -> Color(0xFF3949AB)
         "GBC" -> Color(0xFF00897B)
         "DS" -> Color(0xFF8E24AA)
+        "NES" -> Color(0xFFC62828)
+        "SNES" -> Color(0xFF6A5ACD)
         else -> app.gbalibrary.data.Systems.byShort(system)?.accent?.copy(alpha = 0.85f) ?: Color(0xFF6D6D6D)
     }
     Text(

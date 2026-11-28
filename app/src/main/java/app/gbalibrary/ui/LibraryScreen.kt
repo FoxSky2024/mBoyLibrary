@@ -611,7 +611,7 @@ private fun TopBar(
             Ic(Icons.Filled.Add, size = 26.dp, tint = p.accent, modifier = Modifier.clickable { Sfx.click(); addMenu = true }.padding(horizontal = 10.dp, vertical = 4.dp))
             DropdownMenu(expanded = addMenu, onDismissRequest = { addMenu = false }) {
                 DropdownMenuItem(text = { Text("Agregar carpeta de ROMs") }, onClick = { addMenu = false; actions.addFolder() })
-                DropdownMenuItem(text = { Text("Agregar archivos (.gba .gbc .gb .nds .zip .7z)") }, onClick = { addMenu = false; actions.addFiles() })
+                DropdownMenuItem(text = { Text("Agregar archivos (.gba .gbc .gb .nds .nes .sfc .smc .zip .7z)") }, onClick = { addMenu = false; actions.addFiles() })
                 DropdownMenuItem(text = { Text("Volver a escanear carpetas") }, onClick = { addMenu = false; onRescan() })
             }
         }
@@ -723,18 +723,6 @@ private fun SidePanel(
             Text("COLECCIONES", color = p.dim, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 6.dp))
             collections.forEach { c -> SideItem(c, all.count { c in it.collections }, selected == c, focusIndex >= 0 && sideKeys.getOrNull(focusIndex) == c) { onSelect(c) } }
         }
-        // acceso al minijuego de cofres (3 al dia)
-        val mctx = LocalContext.current
-        Row(
-            Modifier.fillMaxWidth().padding(top = 16.dp).clickable { Sfx.click(); MiniNav.show.value = true }.padding(horizontal = 16.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            androidx.compose.foundation.Image(androidx.compose.ui.res.painterResource(app.gbalibrary.R.drawable.load_a), null, Modifier.size(30.dp, 18.dp))
-            Column {
-                Text("Minijuego", color = p.text, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                Text("Cofres hoy: ${MiniStore.found(mctx)}/${MiniStore.PER_DAY}", color = p.dim, fontSize = 11.sp)
-            }
-        }
     }
 }
 
@@ -759,7 +747,7 @@ private fun SideItem(label: String, count: Int, selected: Boolean, focused: Bool
 @Composable
 private fun SystemFilterRow(all: List<Game>, selected: String, onSelect: (String) -> Unit) {
     val p = LocalPalette.current
-    val systems = listOf("" to "Todos", "GBA" to "GBA", "GBC" to "GBC", "GB" to "GB", "DS" to "DS") +
+    val systems = listOf("" to "Todos", "GBA" to "GBA", "GBC" to "GBC", "GB" to "GB", "DS" to "DS", "NES" to "NES", "SNES" to "SNES") +
         app.gbalibrary.data.Systems.external.map { it.short to it.short }
     Row(
         Modifier.fillMaxWidth().background(p.panel.copy(alpha = Settings.boxOpacity.floatValue))
@@ -785,7 +773,7 @@ private fun EmptyLibrary(actions: LibraryActions) {
     EmptyState(
         icon = Icons.Filled.SportsEsports,
         title = "Tu biblioteca está vacía",
-        body = "Agrega la carpeta donde guardas tus ROMs (.gba, .gbc, .gb, .nds, .zip, .7z). Solo juegos que poseas.",
+        body = "Agrega la carpeta donde guardas tus ROMs (.gba, .gbc, .gb, .nds, .nes, .sfc, .smc, .zip, .7z). Solo juegos que poseas.",
     ) {
         AppButton("Agregar carpeta de ROMs", actions.addFolder, kind = BtnKind.PRIMARY, big = true, icon = Icons.Filled.FolderOpen)
         AppButton("Agregar archivos", actions.addFiles)
@@ -964,8 +952,9 @@ fun FitTitle(
 @Composable
 private fun AppRail(vertical: Boolean, current: String, onSelect: (String) -> Unit, modifier: Modifier = Modifier) {
     val p = LocalPalette.current
-    val items = listOf("home", "shop", "music", "gallery", "news", "profile", "settings")
+    val items = listOf("home", "shop", "music", "mini", "gallery", "news", "profile", "settings")
     val bg = Color.Transparent // barra transparente
+    val mctx = LocalContext.current
     @Composable
     fun item(id: String) {
         val on = current == id
@@ -979,13 +968,14 @@ private fun AppRail(vertical: Boolean, current: String, onSelect: (String) -> Un
                     .clip(RoundedCornerShape(50)).background(Color.White),
             )
             Box(
-                Modifier.size(42.dp).clip(shape).background(if (on) p.accent else p.card).clickable { onSelect(id) },
+                Modifier.size(42.dp).clip(shape).background(if (on) p.accent else p.card).clickable { if (id == "mini") { Sfx.click(); MiniNav.tryEnter(mctx) } else onSelect(id) },
                 contentAlignment = Alignment.Center,
             ) {
                 when (id) {
                     "home" -> Ic(androidx.compose.material.icons.Icons.Filled.Home, 24.dp, tint)
                     "shop" -> PawIcon(22.dp, tint)
                     "music" -> Ic(androidx.compose.material.icons.Icons.Filled.MusicNote, 22.dp, tint)
+                    "mini" -> androidx.compose.foundation.Image(androidx.compose.ui.res.painterResource(app.gbalibrary.R.drawable.load_a), null, Modifier.size(28.dp, 17.dp))
                     "gallery" -> Ic(androidx.compose.material.icons.Icons.Filled.PhotoLibrary, 22.dp, tint)
                     "news" -> Ic(androidx.compose.material.icons.Icons.Filled.RssFeed, 22.dp, tint)
                     "profile" -> Text(Settings.profileName.value.take(1).uppercase().ifBlank { "?" }, color = tint, fontWeight = FontWeight.Black, fontSize = 17.sp)

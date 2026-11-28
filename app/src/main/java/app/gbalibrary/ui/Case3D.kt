@@ -75,6 +75,8 @@ fun caseStyleFor(console: ConsoleDef): CaseStyle = when (console.short) {
     "GBA" -> CaseStyle(CaseKind.GBA, 0.125f, 4.dp, 3.dp, Color(0xCC8E7CFF), Color(0xFF3B2F7A)) // indigo GBA
     "GBC" -> CaseStyle(CaseKind.GBC, 0.120f, 4.dp, 3.dp, Color(0xCC4FD1C5), Color(0xFF17706B)) // verde agua GBC
     "GB" -> CaseStyle(CaseKind.GB, 0.130f, 3.dp, 3.dp, Color(0xCCC5C8CC), Color(0xFF6E7176)) // gris DMG
+    "NES" -> CaseStyle(CaseKind.GENERIC, 0.115f, 4.dp, 3.dp, Color(0xCCD9D9D9), Color(0xFF8A8A8A)) // gris NES
+    "SNES" -> CaseStyle(CaseKind.GENERIC, 0.115f, 4.dp, 3.dp, Color(0xCCB9B4D6), Color(0xFF5A557E)) // lila SNES
     "DS" -> CaseStyle(CaseKind.DS, 0.085f, 4.dp, 3.dp, Color(0xCCF2F4F7), Color(0xFF9AA0A8)) // plata/blanco DS Lite
     else -> CaseStyle(CaseKind.GENERIC, 0.110f, 4.dp, 3.dp, Color(0x66FFFFFF))
 }

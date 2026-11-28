@@ -19,13 +19,16 @@ jobs:
         run: |
           for abi in arm64-v8a armeabi-v7a x86_64; do
             mkdir -p app/src/main/jniLibs/$abi
-            if curl -fsSL "https://buildbot.libretro.com/nightly/android/latest/$abi/melonds_libretro_android.so.zip" -o /tmp/melonds-$abi.zip \
-               && unzip -o -j /tmp/melonds-$abi.zip -d /tmp/melonds-$abi; then
-              mv /tmp/melonds-$abi/melonds_libretro_android.so app/src/main/jniLibs/$abi/libmelonds.so
-              echo "Nucleo DS listo para $abi"
-            else
-              echo "AVISO: no se pudo descargar el nucleo DS para $abi (la app compila igual, sin DS)"
-            fi
+            for core in melonds:libmelonds fceumm:libfceumm snes9x:libsnes9x; do
+              name=${core%%:*}; lib=${core##*:}
+              if curl -fsSL "https://buildbot.libretro.com/nightly/android/latest/$abi/${name}_libretro_android.so.zip" -o /tmp/$name-$abi.zip \
+                 && unzip -o -j /tmp/$name-$abi.zip -d /tmp/$name-$abi; then
+                mv /tmp/$name-$abi/${name}_libretro_android.so app/src/main/jniLibs/$abi/$lib.so
+                echo "Nucleo $name listo para $abi"
+              else
+                echo "AVISO: no se pudo descargar el nucleo $name para $abi (la app compila igual, sin ese sistema)"
+              fi
+            done
           done
       - name: Build release APK
         run: |
