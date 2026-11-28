@@ -127,6 +127,8 @@ fun systemOf(g: Game): String {
     return when {
         name.endsWith(".nds") -> "DS"
         name.endsWith(".nes") -> "NES"
+        name.endsWith(".pce") || name.endsWith(".sgx") -> "PCE"
+        name.endsWith(".chd") || name.endsWith(".pbp") || name.endsWith(".iso") || name.endsWith(".img") -> "PS1"
         name.endsWith(".sfc") || name.endsWith(".smc") -> "SNES"
         name.endsWith(".gbc") -> "GBC"
         name.endsWith(".gb") -> "GB"
@@ -143,6 +145,8 @@ fun SystemBadge(system: String, modifier: Modifier = Modifier) {
         "GBC" -> Color(0xFF00897B)
         "DS" -> Color(0xFF8E24AA)
         "NES" -> Color(0xFFC62828)
+        "PCE" -> Color(0xFFEF6C00)
+        "PS1" -> Color(0xFF546E7A)
         "SNES" -> Color(0xFF6A5ACD)
         else -> app.gbalibrary.data.Systems.byShort(system)?.accent?.copy(alpha = 0.85f) ?: Color(0xFF6D6D6D)
     }

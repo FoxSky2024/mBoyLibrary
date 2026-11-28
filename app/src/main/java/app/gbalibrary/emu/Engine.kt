@@ -26,6 +26,8 @@ class Engine(
     private val rtcMode: Int = 0,
     /** Se llama una vez con lo que se uso al cargar: (tipo de guardado, RTC). */
     private val onDetected: (Int, Boolean) -> Unit = { _, _ -> },
+    /** Ruta real del disco (PS1: archivos de cientos de MB que no caben en memoria); null = usar romProvider. */
+    private val discPath: (() -> String?)? = null,
 ) {
     companion object {
         const val SAMPLE_RATE = 44100
@@ -239,22 +241,32 @@ class Engine(
         coreLock.lock()
         var track: AudioTrack? = null
         try {
-            val rom = romProvider()
-            if (rom == null || rom.isEmpty()) {
-                onError("No se pudo leer la ROM")
-                return
-            }
-            val found = SaveType.analyze(rom, File(savePath).length())
-            saveType = if (saveOverride >= 0) saveOverride else found.type
-            val rtc = when (rtcMode) {
-                1 -> true
-                2 -> false
-                else -> found.rtc
-            }
-            Log.i("Engine", "Guardado: ${SaveType.label(saveType)} (override=$saveOverride), RTC=$rtc (modo $rtcMode)")
-            if (!Native.load(rom, savePath, saveType, rtc)) {
-                onError(Native.lastError.ifEmpty { "mGBA no pudo cargar esta ROM" })
-                return
+            val disc = discPath?.invoke()
+            var rtc = false
+            if (disc != null) {
+                saveType = 0
+                if (!Native.loadDisc(disc, savePath)) {
+                    onError(Native.lastError.ifEmpty { "No se pudo cargar el disco" })
+                    return
+                }
+            } else {
+                val rom = romProvider()
+                if (rom == null || rom.isEmpty()) {
+                    onError("No se pudo leer la ROM")
+                    return
+                }
+                val found = SaveType.analyze(rom, File(savePath).length())
+                saveType = if (saveOverride >= 0) saveOverride else found.type
+                rtc = when (rtcMode) {
+                    1 -> true
+                    2 -> false
+                    else -> found.rtc
+                }
+                Log.i("Engine", "Guardado: ${SaveType.label(saveType)} (override=$saveOverride), RTC=$rtc (modo $rtcMode)")
+                if (!Native.load(rom, savePath, saveType, rtc)) {
+                    onError(Native.lastError.ifEmpty { "mGBA no pudo cargar esta ROM" })
+                    return
+                }
             }
             try {
                 onDetected(saveType, rtc)

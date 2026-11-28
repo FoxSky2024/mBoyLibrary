@@ -19,7 +19,7 @@ jobs:
         run: |
           for abi in arm64-v8a armeabi-v7a x86_64; do
             mkdir -p app/src/main/jniLibs/$abi
-            for core in melonds:libmelonds fceumm:libfceumm snes9x:libsnes9x; do
+            for core in melonds:libmelonds fceumm:libfceumm snes9x:libsnes9x pcsx_rearmed:libpcsx_rearmed mednafen_pce_fast:libmednafen_pce_fast; do
               name=${core%%:*}; lib=${core##*:}
               if curl -fsSL "https://buildbot.libretro.com/nightly/android/latest/$abi/${name}_libretro_android.so.zip" -o /tmp/$name-$abi.zip \
                  && unzip -o -j /tmp/$name-$abi.zip -d /tmp/$name-$abi; then

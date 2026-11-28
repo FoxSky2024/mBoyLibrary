@@ -45,6 +45,8 @@ object CoverFetcher {
             "gb" -> "Nintendo - Game Boy"
             "nds" -> "Nintendo - Nintendo DS"
             "nes" -> "Nintendo - Nintendo Entertainment System"
+            "pce", "sgx" -> "NEC - PC Engine - TurboGrafx 16"
+            "chd", "pbp", "iso" -> "Sony - PlayStation"
             "sfc", "smc" -> "Nintendo - Super Nintendo Entertainment System"
             else -> "Nintendo - Game Boy Advance"
         }
@@ -59,6 +61,8 @@ object CoverFetcher {
             "gb" -> "Game Boy"
             "nds" -> "Nintendo DS"
             "nes" -> "Nintendo Entertainment System"
+            "pce", "sgx" -> "PC Engine"
+            "chd", "pbp", "iso" -> "PlayStation"
             "sfc", "smc" -> "Super Nintendo"
             else -> "Game Boy Advance"
         }

@@ -39,6 +39,7 @@ import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.PathOperation
 import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
 import androidx.compose.ui.graphics.drawscope.withTransform
@@ -127,10 +128,66 @@ fun KeychainView(
     }
 }
 
+private const val STACK_RES = 96
+private const val STACK_LAYERS = 25
+
 /**
- * Sprite stacking: el dibujo del llavero se repite en capas con profundidad; al girar (yaw) las capas se
- * desplazan y se ve el grosor, como un objeto 3D hecho de rebanadas. Las capas del fondo van mas oscuras.
+ * Sprite stacking real: de la silueta del dibujo se construye un volumen (cojin redondeado) y se corta en
+ * STACK_LAYERS rebanadas. Cada rebanada es DISTINTA: solo tiene los pixeles que existen a esa profundidad.
+ * La capa exterior de cada columna lleva el dibujo (cara), las interiores son pared oscura.
  */
+private fun buildStack(src: IntArray): List<ImageBitmap> {
+    val n = STACK_RES
+    val inf = 1e6f
+    val dist = FloatArray(n * n) { if ((src[it] ushr 24) > 127) inf else 0f }
+    // distancia al borde (chamfer en dos pasadas)
+    for (y in 0 until n) for (x in 0 until n) {
+        val i = y * n + x
+        var d = dist[i]
+        if (d == 0f) continue
+        d = minOf(d, (if (x > 0) dist[i - 1] else 0f) + 1f, (if (y > 0) dist[i - n] else 0f) + 1f)
+        d = minOf(d, (if (x > 0 && y > 0) dist[i - n - 1] else 0f) + 1.4f, (if (x < n - 1 && y > 0) dist[i - n + 1] else 0f) + 1.4f)
+        dist[i] = d
+    }
+    for (y in n - 1 downTo 0) for (x in n - 1 downTo 0) {
+        val i = y * n + x
+        var d = dist[i]
+        if (d == 0f) continue
+        d = minOf(d, (if (x < n - 1) dist[i + 1] else 0f) + 1f, (if (y < n - 1) dist[i + n] else 0f) + 1f)
+        d = minOf(d, (if (x < n - 1 && y < n - 1) dist[i + n + 1] else 0f) + 1.4f, (if (x > 0 && y < n - 1) dist[i + n - 1] else 0f) + 1.4f)
+        dist[i] = d
+    }
+    val radius = 8f // ancho del bisel redondeado en pixeles
+    val h = FloatArray(n * n) {
+        if (dist[it] <= 0f) 0f else {
+            val t = 1f - minOf(dist[it] / radius, 1f)
+            Math.sqrt((1f - t * t).toDouble()).toFloat().coerceAtLeast(0.25f)
+        }
+    }
+    val step = 2f / (STACK_LAYERS - 1)
+    fun shade(c: Int, f: Float): Int {
+        val r = ((c shr 16 and 0xFF) * f).toInt().coerceIn(0, 255)
+        val g = ((c shr 8 and 0xFF) * f).toInt().coerceIn(0, 255)
+        val b = ((c and 0xFF) * f).toInt().coerceIn(0, 255)
+        return (c and -0x1000000) or (r shl 16) or (g shl 8) or b
+    }
+    // layers[0] = cara trasera ... layers[N-1] = cara delantera
+    return List(STACK_LAYERS) { k ->
+        val d = -1f + k * step
+        val out = IntArray(n * n)
+        for (i in 0 until n * n) {
+            val hh = h[i]
+            if (hh <= 0f || kotlin.math.abs(d) > hh + 1e-4f) continue
+            val skin = if (d >= 0f) d + step > hh else -d + step > hh
+            val base = src[i] or (0xFF shl 24)
+            out[i] = if (skin) {
+                if (d >= 0f) shade(base, 0.7f + 0.3f * hh) else shade(base, 0.45f)
+            } else shade(base, 0.5f + 0.15f * (1f - kotlin.math.abs(d)))
+        }
+        android.graphics.Bitmap.createBitmap(out, n, n, android.graphics.Bitmap.Config.ARGB_8888).asImageBitmap()
+    }
+}
+
 @Composable
 private fun StackedCharm(k: ShopKeychain, yaw: Float) {
     val dens = LocalDensity.current
@@ -140,162 +197,38 @@ private fun StackedCharm(k: ShopKeychain, yaw: Float) {
             CanvasDrawScope().draw(dens, LayoutDirection.Ltr, androidx.compose.ui.graphics.Canvas(b), Size(px.toFloat(), px.toFloat())) { drawCharm(k) }
         }
     }
+    val layers: List<ImageBitmap>? = remember(bmp) {
+        val b = bmp ?: return@remember null
+        val small = ImageBitmap(STACK_RES, STACK_RES)
+        CanvasDrawScope().draw(dens, LayoutDirection.Ltr, androidx.compose.ui.graphics.Canvas(small), Size(STACK_RES.toFloat(), STACK_RES.toFloat())) {
+            drawImage(b, dstSize = IntSize(STACK_RES, STACK_RES), filterQuality = androidx.compose.ui.graphics.FilterQuality.Medium)
+        }
+        val px = IntArray(STACK_RES * STACK_RES)
+        small.readPixels(px)
+        buildStack(px)
+    }
     Canvas(Modifier.fillMaxSize()) {
-        val b = bmp ?: return@Canvas
+        val ls = layers ?: return@Canvas
         val rad = Math.toRadians(yaw.toDouble()).toFloat()
         val c = cos(rad); val sn = sin(rad)
-        val n = 10
-        val thick = size.width * 0.2f
-        val facing = c >= 0f
+        val pitch = 0.42f
+        val cp = cos(pitch); val sp = sin(pitch)
+        val half = size.width * 0.13f // medio grosor
         val dst = IntSize(size.width.roundToInt(), size.height.roundToInt())
-        for (i in 0 until n) {
-            val u = i / (n - 1f) // orden de dibujo: 1 = capa mas cercana al que mira
-            val z = (u - 0.5f) * thick * (if (facing) 1f else -1f)
+        val cx = size.width / 2f; val cy = size.height / 2f
+        // se dibuja de lo mas lejano a lo mas cercano al que mira
+        val order = if (c >= 0f) ls.indices else ls.indices.reversed()
+        for (i in order) {
+            val d = -1f + i * (2f / (ls.size - 1))
+            val z = d * half
             withTransform({
-                translate(z * sn, 0f)
-                scale(c, 1f, Offset(size.width / 2f, size.height / 2f))
+                translate(z * sn, -z * c * sp)
+                scale(c, cp, Offset(cx, cy))
             }) {
-                drawImage(
-                    b, dstSize = dst,
-                    colorFilter = if (u < 0.999f) ColorFilter.tint(Color.Black.copy(alpha = (1f - (0.4f + 0.6f * u)).coerceIn(0f, 0.8f)), BlendMode.SrcAtop) else null,
-                )
+                drawImage(ls[i], dstSize = dst, filterQuality = androidx.compose.ui.graphics.FilterQuality.Low)
             }
         }
     }
-}
-
-private fun DrawScope.drawSpark(x: Float, y: Float, r: Float, c: Color) {
-    val q = r * 0.25f
-    val p = Path().apply {
-        moveTo(x, y - r); lineTo(x + q, y - q); lineTo(x + r, y); lineTo(x + q, y + q)
-        lineTo(x, y + r); lineTo(x - q, y + q); lineTo(x - r, y); lineTo(x - q, y - q); close()
-    }
-    drawPath(p, c)
-}
-
-private fun DrawScope.drawFx(fx: Int, sec: Float, burst: Float) {
-    val w = size.width
-    if (fx != 0) for (n in 0 until 12) {
-        val seed = (n * 0.618034f) % 1f
-        val seed2 = (n * 0.37f) % 1f
-        val ph = (sec * 0.5f + n / 12f) % 1f
-        val fade = sin(PI.toFloat() * ph)
-        when (fx) {
-            1 -> drawSpark(w * (0.05f + 0.9f * seed), w * (0.05f + 0.9f * seed2), w * 0.09f * fade, Color(0xFFFFF59D).copy(alpha = fade))
-            2 -> {
-                val c = androidx.compose.ui.graphics.lerp(Color(0xFFFFEB3B), Color(0xFFE53935), ph)
-                drawCircle(c.copy(alpha = 1f - ph), w * 0.1f * (1f - ph) + 1f, Offset(w * (0.2f + 0.6f * seed) + sin(ph * 6.28f + n) * w * 0.04f, w * (1.0f - ph * 1.1f)))
-            }
-            3 -> drawCircle(Color.White.copy(alpha = 0.9f * fade), w * 0.045f, Offset(w * (0.05f + 0.9f * seed) + sin(ph * 6.28f + n) * w * 0.05f, w * (-0.1f + ph * 1.2f)))
-            4 -> {
-                val x = w * (0.1f + 0.8f * seed) + sin(ph * 6.28f + n) * w * 0.03f
-                val y = w * (1.0f - ph * 1.2f)
-                val r = w * 0.04f
-                val c = Color(0xFFFF6F9C).copy(alpha = fade)
-                drawCircle(c, r, Offset(x - r, y)); drawCircle(c, r, Offset(x + r, y))
-                drawPath(Path().apply { moveTo(x - r * 2f, y + r * 0.3f); lineTo(x + r * 2f, y + r * 0.3f); lineTo(x, y + r * 2.6f); close() }, c)
-            }
-            else -> drawCircle(Color(0xFFB2EBF2).copy(alpha = 0.8f * fade), w * (0.03f + 0.04f * seed2), Offset(w * (0.1f + 0.8f * seed) + sin(ph * 6.28f + n) * w * 0.04f, w * (1.0f - ph * 1.2f)), style = Stroke(w * 0.015f))
-        }
-    }
-    if (burst >= 0f) {
-        val cx = w / 2f
-        for (n in 0 until 14) {
-            val a = n * 2f * PI.toFloat() / 14f
-            val d = w * (0.2f + 0.75f * burst)
-            drawSpark(cx + cos(a) * d, cx + sin(a) * d, w * 0.08f * (1f - burst) + 1f, (if (n % 2 == 0) Color(0xFFFFE082) else Color.White).copy(alpha = 1f - burst))
-        }
-        drawCircle(Color.White.copy(alpha = 0.6f * (1f - burst)), w * (0.3f + 0.6f * burst), Offset(cx, cx), style = Stroke(w * 0.03f))
-    }
-}
-
-/** Vista de inspeccion: el llavero grande que se puede girar arrastrando; tocar fuera lo cierra. */
-@Composable
-fun KeychainInspect(id: String, onClose: () -> Unit) {
-    val k = ShopCatalog.keychain(id) ?: return
-    var ry by remember { mutableFloatStateOf(0f) }
-    val spin = remember { Animatable(0f) }
-    LaunchedEffect(Unit) { spin.animateTo(360f, tween(1400, easing = FastOutSlowInEasing)) }
-    Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Box(
-            Modifier.fillMaxSize().background(Color(0xCC000000))
-                .pointerInput(Unit) { detectHorizontalDragGestures { _, d -> ry += d * 0.6f } }
-                .pointerInput(Unit) { detectTapGestures { onClose() } },
-            contentAlignment = Alignment.Center,
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                KeychainView(id, scale = 1.9f, swing = false, yaw = ry + spin.value)
-                Text(k.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                Text(k.rarity.label, color = k.rarity.color, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                Text("Arrastra para girar · toca para cerrar", color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp)
-            }
-        }
-    }
-}
-
-/**
- * Tres argollas semitransparentes (ancladas al borde inferior de la cabecera del perfil, se mueven con ella).
- * Mantener presionado un llavero y arrastrarlo: solo se puede soltar en una argolla (si hay otro, se intercambian).
- */
-@Composable
-fun KeychainRings(headerBottomRoot: Float) {
-    val dens = LocalDensity.current
-    var rootY by remember { mutableFloatStateOf(0f) }
-    var w by remember { mutableIntStateOf(0) }
-    var inspect by remember { mutableStateOf<String?>(null) }
-    var dragI by remember { mutableIntStateOf(-1) }
-    var dx by remember { mutableFloatStateOf(0f) }
-    var dy by remember { mutableFloatStateOf(0f) }
-    val ringPx = with(dens) { 28.dp.toPx() }
-    val gapPx = with(dens) { 54.dp.toPx() }
-    val endPx = with(dens) { 290.dp.toPx() }
-    val scale = 0.9f
-    val ringY = headerBottomRoot - rootY - with(dens) { 12.dp.toPx() }
-    fun cx(i: Int) = w - endPx - i * gapPx
-    val visible = headerBottomRoot > 0f && w > 0 && ringY > with(dens) { 40.dp.toPx() }
-    Box(Modifier.fillMaxSize().onGloballyPositioned { rootY = it.positionInRoot().y; w = it.size.width }) {
-        if (visible) {
-            for (i in 0..2) {
-                Box(
-                    Modifier.offset { IntOffset((cx(i) - ringPx / 2f).roundToInt(), (ringY - ringPx / 2f).roundToInt()) }
-                        .size(28.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.10f))
-                        .border(2.dp, Color.White.copy(alpha = 0.40f), CircleShape),
-                )
-            }
-            for (i in 0..2) {
-                val kid = Pawb.kcSlots[i]
-                if (kid.isEmpty()) continue
-                androidx.compose.runtime.key(kid) {
-                    val half = with(dens) { 42.dp.toPx() } * scale
-                    val top = with(dens) { 8.dp.toPx() } * scale
-                    KeychainView(
-                        kid,
-                        Modifier.offset {
-                            IntOffset((cx(i) - half + (if (dragI == i) dx else 0f)).roundToInt(), (ringY - top + (if (dragI == i) dy else 0f)).roundToInt())
-                        },
-                        scale = scale,
-                        onMove = { mx, my -> dragI = i; dx += mx; dy += my },
-                        onEnd = {
-                            if (dragI == i) {
-                                val px = cx(i) + dx; val py = ringY + dy
-                                var best = i; var bd = Float.MAX_VALUE
-                                for (j in 0..2) {
-                                    val ddx = px - cx(j); val ddy = py - ringY
-                                    val d = ddx * ddx + ddy * ddy
-                                    if (d < bd) { bd = d; best = j }
-                                }
-                                val lim = with(dens) { 70.dp.toPx() }
-                                if (bd <= lim * lim && best != i) Pawb.swapKeychain(i, best)
-                            }
-                            dragI = -1; dx = 0f; dy = 0f
-                        },
-                        onInspect = { inspect = kid },
-                    )
-                }
-            }
-        }
-    }
-    inspect?.let { KeychainInspect(it) { inspect = null } }
 }
 
 private fun DrawScope.drawChain(c: Color) {

@@ -611,7 +611,7 @@ private fun TopBar(
             Ic(Icons.Filled.Add, size = 26.dp, tint = p.accent, modifier = Modifier.clickable { Sfx.click(); addMenu = true }.padding(horizontal = 10.dp, vertical = 4.dp))
             DropdownMenu(expanded = addMenu, onDismissRequest = { addMenu = false }) {
                 DropdownMenuItem(text = { Text("Agregar carpeta de ROMs") }, onClick = { addMenu = false; actions.addFolder() })
-                DropdownMenuItem(text = { Text("Agregar archivos (.gba .gbc .gb .nds .nes .sfc .smc .zip .7z)") }, onClick = { addMenu = false; actions.addFiles() })
+                DropdownMenuItem(text = { Text("Agregar archivos (.gba .gbc .gb .nds .nes .sfc .smc .pce .chd .pbp .iso .zip .7z)") }, onClick = { addMenu = false; actions.addFiles() })
                 DropdownMenuItem(text = { Text("Volver a escanear carpetas") }, onClick = { addMenu = false; onRescan() })
             }
         }
@@ -747,7 +747,7 @@ private fun SideItem(label: String, count: Int, selected: Boolean, focused: Bool
 @Composable
 private fun SystemFilterRow(all: List<Game>, selected: String, onSelect: (String) -> Unit) {
     val p = LocalPalette.current
-    val systems = listOf("" to "Todos", "GBA" to "GBA", "GBC" to "GBC", "GB" to "GB", "DS" to "DS", "NES" to "NES", "SNES" to "SNES") +
+    val systems = listOf("" to "Todos", "GBA" to "GBA", "GBC" to "GBC", "GB" to "GB", "DS" to "DS", "NES" to "NES", "SNES" to "SNES", "PCE" to "PCE", "PS1" to "PS1") +
         app.gbalibrary.data.Systems.external.map { it.short to it.short }
     Row(
         Modifier.fillMaxWidth().background(p.panel.copy(alpha = Settings.boxOpacity.floatValue))
@@ -773,7 +773,7 @@ private fun EmptyLibrary(actions: LibraryActions) {
     EmptyState(
         icon = Icons.Filled.SportsEsports,
         title = "Tu biblioteca está vacía",
-        body = "Agrega la carpeta donde guardas tus ROMs (.gba, .gbc, .gb, .nds, .nes, .sfc, .smc, .zip, .7z). Solo juegos que poseas.",
+        body = "Agrega la carpeta donde guardas tus ROMs (.gba, .gbc, .gb, .nds, .nes, .sfc, .smc, .pce, .chd, .pbp, .iso, .zip, .7z). Solo juegos que poseas.",
     ) {
         AppButton("Agregar carpeta de ROMs", actions.addFolder, kind = BtnKind.PRIMARY, big = true, icon = Icons.Filled.FolderOpen)
         AppButton("Agregar archivos", actions.addFiles)

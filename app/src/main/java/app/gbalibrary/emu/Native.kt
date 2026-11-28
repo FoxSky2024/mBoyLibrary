@@ -16,8 +16,14 @@ object Native {
     /** Nucleos libretro de NES y SNES (jniLibs/<abi>/libfceumm.so y libsnes9x.so). */
     const val NES_CORE_LIB = "libfceumm.so"
     const val SNES_CORE_LIB = "libsnes9x.so"
+    const val PS1_CORE_LIB = "libpcsx_rearmed.so"
+    const val PCE_CORE_LIB = "libmednafen_pce_fast.so"
 
-    /** 0 = mGBA, 1 = DS, 2 = NES, 3 = SNES. */
+    /** Extension del juego que se va a abrir (la pone EmulatorActivity); ayuda a elegir nucleo (.pce, .sfc). */
+    @Volatile
+    var hintExt = ""
+
+    /** 0 = mGBA, 1 = DS, 2 = NES, 3 = SNES, 4 = PS1, 5 = PC Engine. */
     @Volatile
     private var core = 0
 
@@ -27,10 +33,10 @@ object Native {
     val isRetro: Boolean get() = core != 0
 
     /** true si el sistema tiene botones X e Y (DS y SNES). */
-    val hasXY: Boolean get() = core == 1 || core == 3
+    val hasXY: Boolean get() = core == 1 || core == 3 || core == 4
 
     /** Relacion de aspecto en pantalla (los pixeles de NES/SNES no son cuadrados); 0 = la de la imagen. */
-    val displayAspect: Float get() = if (core == 2 || core == 3) 4f / 3f else 0f
+    val displayAspect: Float get() = if (core >= 2) 4f / 3f else 0f
 
     /** Ultimo motivo de error al cargar (para mostrarlo al usuario). */
     @Volatile
@@ -63,7 +69,7 @@ object Native {
         return false
     }
 
-    private fun loadRetro(rom: ByteArray, savePath: String, lib: String, nombre: String, ext: String, id: Int): Boolean {
+    private fun loadRetro(rom: ByteArray, savePath: String, lib: String, nombre: String, ext: String, id: Int, realPath: String? = null): Boolean {
         val problem = Retro.available(lib)
         if (problem != null) {
             lastError = "Falta el n\u00facleo de $nombre en esta versi\u00f3n de la app. Compila con el workflow incluido para a\u00f1adirlo. ($problem)"
@@ -71,15 +77,22 @@ object Native {
         }
         val root = File(savePath).parentFile?.parentFile
         val sys = File(root, "System").apply { mkdirs() }
-        val tmpRom = File(System.getProperty("java.io.tmpdir") ?: ".", "retro_rom.$ext").path
+        val tmpRom = realPath ?: File(System.getProperty("java.io.tmpdir") ?: ".", "retro_rom.$ext").path
         val ok = Retro.load(lib, rom, tmpRom, sys.path, savePath.removeSuffix(".sav") + ".srm")
         core = if (ok) id else 0
         if (!ok) lastError = "$nombre no pudo cargar esta ROM (revisa que no est\u00e9 da\u00f1ada)"
         return ok
     }
 
+    /** PS1: el disco se abre por ruta (no se lee a memoria). */
+    fun loadDisc(path: String, savePath: String): Boolean {
+        lastError = ""
+        return loadRetro(ByteArray(0), savePath, PS1_CORE_LIB, "PlayStation (PCSX ReARMed)", path.substringAfterLast('.', "chd"), 4, path)
+    }
+
     fun load(rom: ByteArray, savePath: String, saveType: Int, rtc: Boolean): Boolean {
         lastError = ""
+        if (hintExt == "pce" || hintExt == "sgx") return loadRetro(rom, savePath, PCE_CORE_LIB, "PC Engine (Beetle PCE Fast)", "pce", 5)
         if (looksLikeNes(rom)) return loadRetro(rom, savePath, NES_CORE_LIB, "NES (FCEUmm)", "nes", 2)
         if (!looksLikeDs(rom) && looksLikeSnes(rom)) return loadRetro(rom, savePath, SNES_CORE_LIB, "SNES (Snes9x)", "sfc", 3)
         if (looksLikeDs(rom)) {

@@ -11,7 +11,7 @@ import java.io.InputStream
 import java.security.MessageDigest
 
 object RomScanner {
-    private val EXTENSIONS = setOf("gba", "agb", "gbc", "gb", "nds", "nes", "sfc", "smc")
+    private val EXTENSIONS = setOf("gba", "agb", "gbc", "gb", "nds", "nes", "sfc", "smc", "pce", "sgx", "chd", "pbp", "iso")
 
     /** Unicas extensiones que se miran; todo lo demas (imagenes, videos, musica, txt, pdf...) se ignora sin abrirlo. */
     private val WANTED = EXTENSIONS + setOf("zip", "7z")
