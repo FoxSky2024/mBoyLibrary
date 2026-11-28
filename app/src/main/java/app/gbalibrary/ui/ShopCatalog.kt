@@ -62,6 +62,20 @@ object ShopCatalog {
         ShopBg("bg_dusk", "Atardecer", 110, Rarity.EPIC, listOf(c(0xFFFF8A4C), c(0xFF6A1B6E), c(0xFF0B0620)), 2),
         ShopBg("bg_aurora", "Aurora", 120, Rarity.EPIC, listOf(c(0xFF37E8A0), c(0xFF2B4BD6), c(0xFF0A0620)), 2),
         ShopBg("bg_gold", "Oro viejo", 250, Rarity.LEGENDARY, listOf(c(0xFFF5B642), c(0xFF7A4A08), c(0xFF140C02)), 3),
+        ShopBg("bg_lav", "Lavanda", 35, Rarity.COMMON, listOf(c(0xFF6A4C9C), c(0xFF120A22)), 0),
+        ShopBg("bg_slate", "Pizarra", 30, Rarity.COMMON, listOf(c(0xFF37474F), c(0xFF0B1013)), 1),
+        ShopBg("bg_rose", "Rosa polvo", 45, Rarity.COMMON, listOf(c(0xFFB76E79), c(0xFF2A1218)), 3),
+        ShopBg("bg_sand", "Desierto", 45, Rarity.COMMON, listOf(c(0xFFC9A66B), c(0xFF2B1D0A)), 2),
+        ShopBg("bg_lagoon", "Laguna", 70, Rarity.RARE, listOf(c(0xFF26C6DA), c(0xFF04232A)), 2),
+        ShopBg("bg_cherry", "Cereza", 70, Rarity.RARE, listOf(c(0xFFD81B60), c(0xFF22040F)), 1),
+        ShopBg("bg_neon", "Ciudad neón", 90, Rarity.RARE, listOf(c(0xFF00E5FF), c(0xFFFF2BD6), c(0xFF05050F)), 1),
+        ShopBg("bg_toxic", "Radiactivo", 90, Rarity.RARE, listOf(c(0xFFAEEA00), c(0xFF1B3A0A)), 3),
+        ShopBg("bg_nebula", "Nebulosa", 130, Rarity.EPIC, listOf(c(0xFF7C4DFF), c(0xFFFF4081), c(0xFF05050F)), 2),
+        ShopBg("bg_lava", "Lava", 130, Rarity.EPIC, listOf(c(0xFFFF6F00), c(0xFFB71C1C), c(0xFF140202)), 2),
+        ShopBg("bg_glacier", "Glaciar", 120, Rarity.EPIC, listOf(c(0xFFE1F5FE), c(0xFF0288D1), c(0xFF011627)), 3),
+        ShopBg("bg_vapor", "Vaporwave", 140, Rarity.EPIC, listOf(c(0xFFFF71CE), c(0xFF01CDFE), c(0xFF05FFA1)), 2),
+        ShopBg("bg_cosmos", "Cosmos", 280, Rarity.LEGENDARY, listOf(c(0xFF3A1A6A), c(0xFF0A0A2A), c(0xFF000000)), 3),
+        ShopBg("bg_rainbow", "Arcoíris", 300, Rarity.LEGENDARY, listOf(c(0xFFFF5252), c(0xFFFFEB3B), c(0xFF69F0AE), c(0xFF448AFF), c(0xFFE040FB)), 2),
     )
 
     val banners = listOf(
@@ -95,6 +109,20 @@ object ShopCatalog {
         ShopBanner("bn_diamond", "Diamante", 320, Rarity.LEGENDARY, "DIAMANTE", "Brillo eterno", listOf(c(0xFFE0F7FA), c(0xFF80DEEA), c(0xFF7E57C2)), 3),
         ShopBanner("bn_void", "Vacío", 300, Rarity.LEGENDARY, "VACÍO", "Nada te detiene", listOf(c(0xFF000000), c(0xFF4A148C), c(0xFF000000)), 2),
         ShopBanner("bn_sun", "Sol naciente", 280, Rarity.LEGENDARY, "SOL NACIENTE", "Nuevo día", listOf(c(0xFFFFCA28), c(0xFFFF7043), c(0xFFC2185B)), 2),
+        ShopBanner("bn_pixel", "Píxel", 35, Rarity.COMMON, "PIXEL ART", "Cuadro a cuadro", listOf(c(0xFF3B7DD8), c(0xFF0E2236)), 3),
+        ShopBanner("bn_grape", "Uva", 40, Rarity.COMMON, "UVA", "Dulce y morado", listOf(c(0xFF8E24AA), c(0xFF311B92)), 2),
+        ShopBanner("bn_coral", "Coral", 45, Rarity.COMMON, "CORAL", "Mar cálido", listOf(c(0xFFFF8A65), c(0xFFD84315)), 1),
+        ShopBanner("bn_ink", "Tinta", 45, Rarity.COMMON, "TINTA", "Negro profundo", listOf(c(0xFF263238), c(0xFF000000)), 0),
+        ShopBanner("bn_storm", "Tormenta", 85, Rarity.RARE, "TORMENTA", "Truenos lejanos", listOf(c(0xFF455A64), c(0xFFFFEA00)), 1),
+        ShopBanner("bn_jungle", "Selva", 80, Rarity.RARE, "SELVA", "Húmedo y verde", listOf(c(0xFF1B5E20), c(0xFF76FF03)), 2),
+        ShopBanner("bn_rose", "Oro rosa", 90, Rarity.RARE, "ORO ROSA", "Elegante", listOf(c(0xFFFFD1DC), c(0xFFB76E79)), 3),
+        ShopBanner("bn_retro2", "Consola retro", 90, Rarity.RARE, "RETRO 8 BIT", "Cartucho y a jugar", listOf(c(0xFFB0BEC5), c(0xFF546E7A)), 3),
+        ShopBanner("bn_aurora", "Aurora", 140, Rarity.EPIC, "AURORA", "Luces del norte", listOf(c(0xFF37E8A0), c(0xFF2B4BD6), c(0xFF0A0620)), 2),
+        ShopBanner("bn_inferno", "Infierno", 150, Rarity.EPIC, "INFIERNO", "Sin retorno", listOf(c(0xFFFF5252), c(0xFF7F0000), c(0xFF140000)), 1),
+        ShopBanner("bn_ice", "Cristal", 140, Rarity.EPIC, "CRISTAL", "Frío y claro", listOf(c(0xFFE1F5FE), c(0xFF4FC3F7), c(0xFF0D47A1)), 3),
+        ShopBanner("bn_ghost", "Fantasma", 135, Rarity.EPIC, "FANTASMA", "Buuu", listOf(c(0xFFECEFF1), c(0xFF455A64), c(0xFF0B0F12)), 2),
+        ShopBanner("bn_cosmos", "Cosmos", 310, Rarity.LEGENDARY, "COSMOS", "Más allá", listOf(c(0xFF7C4DFF), c(0xFF18FFFF), c(0xFF000000)), 3),
+        ShopBanner("bn_gold2", "Rey del Pawb", 330, Rarity.LEGENDARY, "REY DEL PAWB", "Todo el oro", listOf(c(0xFFFFE082), c(0xFFB8860B), c(0xFF3E2A00)), 1),
     )
 
     /** Skins del emulador: colores de los botones tactiles. */
@@ -119,6 +147,13 @@ object ShopCatalog {
         ShopSkin("sk_toxic", "Tóxico", 150, Rarity.EPIC, c(0xCC1B3A0A), c(0xFFAEEA00), c(0xFFAEEA00), c(0xCCCCFF90), shape = 4, pattern = 1, theme = "Radiactivo"),
         ShopSkin("sk_obsidian", "Obsidiana", 320, Rarity.LEGENDARY, c(0xE6000000), c(0xFFB388FF), c(0xFFE1BEE7), c(0xCCEA80FC), shape = 4, pattern = 3, idle2 = c(0xE61A0B2E), theme = "Cristal oscuro"),
         ShopSkin("sk_rainbow", "Arcoíris", 300, Rarity.LEGENDARY, c(0xAA3B2F7A), c(0xFFFFFFFF), Color.White, c(0xCCFFEB3B), shape = 3, pattern = 3, idle2 = c(0xAAC2185B), theme = "Prisma"),
+        ShopSkin("sk_ocean", "Océano", 60, Rarity.COMMON, c(0xAA0B5E8C), c(0xFF4FC3F7), Color.White, c(0xCCB3E5FC), shape = 1, pattern = 3, theme = "Olas"),
+        ShopSkin("sk_peach", "Durazno", 60, Rarity.COMMON, c(0xAAFF8A65), c(0xFFFFE0B2), Color.White, c(0xCCFFCCBC), shape = 1, pattern = 2, theme = "Suave"),
+        ShopSkin("sk_steel", "Acero", 90, Rarity.RARE, c(0xCC455A64), c(0xFFCFD8DC), Color.White, c(0xCC90A4AE), shape = 2, pattern = 1, theme = "Metal"),
+        ShopSkin("sk_neonp", "Neón rosa", 110, Rarity.RARE, c(0x99000000), c(0xFFFF2BD6), c(0xFFFF2BD6), c(0xCC00E5FF), shape = 1, pattern = 1, theme = "Luces rosas"),
+        ShopSkin("sk_lava", "Lava", 150, Rarity.EPIC, c(0xCC3B0F05), c(0xFFFF6F00), c(0xFFFFC107), c(0xCCFF3D00), shape = 3, pattern = 3, idle2 = c(0xCC7F1D00), theme = "Magma"),
+        ShopSkin("sk_aurora", "Aurora", 160, Rarity.EPIC, c(0xAA0A2A3A), c(0xFF69F0AE), Color.White, c(0xCCB388FF), shape = 4, pattern = 3, idle2 = c(0xAA1A0B4A), theme = "Luces del norte"),
+        ShopSkin("sk_void", "Vacío", 330, Rarity.LEGENDARY, c(0xF0000000), c(0xFF7C4DFF), c(0xFFB388FF), c(0xCCFFFFFF), shape = 4, pattern = 2, idle2 = c(0xF0120628), theme = "Agujero negro"),
     )
 
     val frames = listOf(
@@ -184,6 +219,24 @@ object ShopCatalog {
         ShopFrame("fr_smoke", "Humo", 140, Rarity.RARE, 22, c(0xFFCFD8DC), c(0xFF37474F)),
         ShopFrame("fr_petal", "Pétalos", 140, Rarity.RARE, 23, c(0xFFFFC1D9), c(0xFFD81B60)),
         ShopFrame("fr_petal2", "Pétalos dorados", 190, Rarity.EPIC, 23, c(0xFFFFE082), c(0xFF6D4C41)),
+        ShopFrame("fr_wood2", "Cerezo", 55, Rarity.COMMON, 3, c(0xFFC2185B), c(0xFF4A0A22)),
+        ShopFrame("fr_pixblue", "Píxel cian", 50, Rarity.COMMON, 2, c(0xFF18FFFF), c(0xFF06202A)),
+        ShopFrame("fr_pixgold", "Píxel dorado", 55, Rarity.COMMON, 2, c(0xFFFFD54F), c(0xFF3E2A00)),
+        ShopFrame("fr_ticketr", "Entrada roja", 65, Rarity.COMMON, 7, c(0xFFFFCDD2), c(0xFFC62828)),
+        ShopFrame("fr_neony", "Neón amarillo", 125, Rarity.RARE, 1, c(0xFFFFEA00), c(0xFFFF9100)),
+        ShopFrame("fr_neonv", "Neón violeta", 125, Rarity.RARE, 1, c(0xFFB388FF), c(0xFF00E5FF)),
+        ShopFrame("fr_hearts3", "Corazones dorados", 170, Rarity.RARE, 19, c(0xFFFFE082), c(0xFF6D4C41)),
+        ShopFrame("fr_bubbles3", "Burbujas rosa", 125, Rarity.RARE, 20, c(0xFFF8BBD0), c(0xFFAD1457)),
+        ShopFrame("fr_snow2", "Nevada rosa", 160, Rarity.RARE, 17, c(0xFFFFFFFF), c(0xFFEC407A)),
+        ShopFrame("fr_smoke2", "Humo violeta", 150, Rarity.RARE, 22, c(0xFFE1BEE7), c(0xFF311B92)),
+        ShopFrame("fr_stars3", "Estrellas doradas", 200, Rarity.EPIC, 18, c(0xFFFFE082), c(0xFF3E2A00)),
+        ShopFrame("fr_elec3", "Voltaje cian", 235, Rarity.EPIC, 21, c(0xFF18FFFF), c(0xFF001F2B)),
+        ShopFrame("fr_flamep", "Llamas moradas", 235, Rarity.EPIC, 16, c(0xFFE040FB), c(0xFF311B92)),
+        ShopFrame("fr_petal3", "Pétalos azules", 190, Rarity.EPIC, 23, c(0xFFB3E5FC), c(0xFF0D47A1)),
+        ShopFrame("fr_crystalo", "Cristal ámbar", 225, Rarity.EPIC, 11, c(0xFFFFE082), c(0xFFE65100)),
+        ShopFrame("fr_galaxy3", "Galaxia roja", 260, Rarity.LEGENDARY, 13, c(0xFF4A1A1A), c(0xFF0A0505)),
+        ShopFrame("fr_cosmic2", "Cósmico dorado", 330, Rarity.LEGENDARY, 18, c(0xFFFFD54F), c(0xFF4A148C)),
+        ShopFrame("fr_inferno2", "Infierno azul", 340, Rarity.LEGENDARY, 16, c(0xFF18FFFF), c(0xFF001A33)),
     )
 
     val stickers = listOf(
@@ -195,6 +248,15 @@ object ShopCatalog {
         ShopSticker("st_new", "NEW!", 40, Rarity.RARE),
         ShopSticker("st_100", "100%", 70, Rarity.EPIC),
         ShopSticker("st_pow", "¡POW!", 70, Rarity.EPIC),
+        ShopSticker("st_ok", "OK", 20, Rarity.COMMON),
+        ShopSticker("st_wow", "WOW", 30, Rarity.COMMON),
+        ShopSticker("st_lol", "LOL", 30, Rarity.COMMON),
+        ShopSticker("st_fire", "FUEGO", 40, Rarity.RARE),
+        ShopSticker("st_gm", "GAME OVER", 50, Rarity.RARE),
+        ShopSticker("st_1up", "1UP", 60, Rarity.RARE),
+        ShopSticker("st_pro", "PRO", 70, Rarity.EPIC),
+        ShopSticker("st_mvp", "MVP", 80, Rarity.EPIC),
+        ShopSticker("st_king", "REY", 150, Rarity.LEGENDARY),
     )
 
     val packs = listOf(
@@ -235,6 +297,22 @@ object ShopCatalog {
         ShopKeychain("kc_icecrown", "Corona de hielo", 340, Rarity.LEGENDARY, 10, c(0xFF81D4FA), c(0xFF01579B), fx = 3),
         ShopKeychain("kc_galaxy", "Orbe galaxia", 320, Rarity.LEGENDARY, 9, c(0xFF7E57C2), c(0xFF1A0B3B), fx = 1),
         ShopKeychain("kc_bubble", "Cartucho burbuja", 260, Rarity.LEGENDARY, 4, c(0xFF80DEEA), c(0xFF006064), fx = 5),
+        ShopKeychain("kc_bpaw", "Huella azul", 50, Rarity.COMMON, 0, c(0xFF4FC3F7), c(0xFF01579B)),
+        ShopKeychain("kc_rstar", "Estrella roja", 70, Rarity.COMMON, 1, c(0xFFFF5252), c(0xFF7F0000)),
+        ShopKeychain("kc_mkey", "Llave plateada", 90, Rarity.COMMON, 11, c(0xFFCFD8DC), c(0xFF455A64)),
+        ShopKeychain("kc_pcoin", "Moneda morada", 110, Rarity.COMMON, 5, c(0xFFB388FF), c(0xFF4527A0)),
+        ShopKeychain("kc_pflower", "Flor azul", 140, Rarity.RARE, 12, c(0xFF81D4FA), c(0xFF0D47A1), fx = 5),
+        ShopKeychain("kc_ebolt", "Rayo eléctrico", 160, Rarity.RARE, 6, c(0xFF18FFFF), c(0xFF006064), fx = 1),
+        ShopKeychain("kc_gmoon", "Luna dorada", 170, Rarity.RARE, 7, c(0xFFFFE082), c(0xFFB8860B), fx = 1),
+        ShopKeychain("kc_wcat", "Gato blanco", 150, Rarity.RARE, 8, c(0xFFECEFF1), c(0xFF607D8B), fx = 3),
+        ShopKeychain("kc_lheart", "Corazón de hielo", 210, Rarity.EPIC, 2, c(0xFF80D8FF), c(0xFF01579B), fx = 3),
+        ShopKeychain("kc_fgem", "Gema de fuego", 220, Rarity.EPIC, 3, c(0xFFFF8A65), c(0xFFBF360C), fx = 2),
+        ShopKeychain("kc_lgem", "Gema de amor", 210, Rarity.EPIC, 3, c(0xFFF48FB1), c(0xFF880E4F), fx = 4),
+        ShopKeychain("kc_bcart", "Cartucho dorado", 240, Rarity.EPIC, 4, c(0xFFFFE082), c(0xFF8D6E00), fx = 1),
+        ShopKeychain("kc_fcrown", "Corona de fuego", 330, Rarity.LEGENDARY, 10, c(0xFFFF7043), c(0xFFB71C1C), fx = 2),
+        ShopKeychain("kc_lcrown", "Corona del amor", 320, Rarity.LEGENDARY, 10, c(0xFFF48FB1), c(0xFFAD1457), fx = 4),
+        ShopKeychain("kc_bcrown", "Corona burbuja", 320, Rarity.LEGENDARY, 10, c(0xFF80DEEA), c(0xFF006064), fx = 5),
+        ShopKeychain("kc_vorb", "Orbe del vacío", 350, Rarity.LEGENDARY, 9, c(0xFF311B92), c(0xFF000000), fx = 1),
     )
     val assetKeychains = androidx.compose.runtime.mutableStateListOf<ShopKeychain>()
     fun keychainsAll(): List<ShopKeychain> = keychains + assetKeychains
